@@ -1,17 +1,11 @@
-import { createLogger, transports, format } from 'winston';
+import http from 'http';
+import app from './app';
+import { logger } from './util';
 
-const logger = createLogger({
-  transports: [
-    new transports.Console({ level: 'warn' }),
-    new transports.File({ dirname: 'logs', filename: 'node-tlcv.log' }),
-  ],
-  format: format.combine(
-    format.timestamp(),
-    format.printf((info) => `${info.timestamp} [${info.level.toUpperCase().padStart(5)}] ${info.message}`),
-  ),
+const server = http.createServer(app);
+
+server.listen(8080, () => {
+  logger.info('Started listening on port 8080!');
 });
 
-logger.debug('Hello, World!');
-logger.info('Hello, World!');
-logger.warn('Hello, World!');
-logger.error('Hello, World!');
+

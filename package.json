@@ -6,14 +6,24 @@
     "node": ">= 14.16 <15"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "ejs": "^3.1.6",
+    "express": "^4.17.1",
+    "on-finished": "^2.3.0",
     "tslib": "~2.3.0",
     "winston": "^3.3.3"
   },
   "devDependencies": {
+    "@types/chess.js": "^0.11.2",
+    "@types/cors": "^2.8.12",
+    "@types/ejs": "^3.0.7",
+    "@types/express": "^4.17.13",
     "@types/jest": "~26.0.23",
     "@types/node": "~14.14.45",
+    "@types/on-finished": "^2.3.1",
     "@typescript-eslint/eslint-plugin": "~4.28.2",
     "@typescript-eslint/parser": "~4.28.2",
+    "chess.js": "^0.12.0",
     "eslint": "~7.30.0",
     "eslint-config-prettier": "~8.3.0",
     "eslint-plugin-jest": "~24.3.6",

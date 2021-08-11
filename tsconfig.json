@@ -3,12 +3,12 @@
     "target": "es6",
     "module": "commonjs",
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
     "allowJs": false,
     "importHelpers": true,
     "jsx": "react",
     "sourceMap": true,
-    "strict": true
+    "strict": true,
+    "esModuleInterop": true,
   },
   "include": [
     "src/**/*",
