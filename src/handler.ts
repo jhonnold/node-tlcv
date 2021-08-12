@@ -1,3 +1,4 @@
+import { Chess } from 'chess.js';
 import ChessGame from './chess-game';
 import { logger } from './util';
 
@@ -11,7 +12,11 @@ class Handler {
   private onFenCommand(msg: string) {
     const tokens = msg.split(/\s+/g);
 
-    this.game.fen = tokens.slice(1).join(' ').trim();
+    this.game.fen = tokens.slice(1).join(' ').trim() + ' - - 0 1';
+    if (!this.game.loaded) {
+      this.game.instance = new Chess(this.game.fen);
+      this.game.loaded = true;
+    }
 
     const newStm = tokens[2].trim();
     if (newStm != this.game.stm) {
@@ -29,6 +34,10 @@ class Handler {
 
   private onPlayerCommand(msg: string) {
     const tokens = msg.split(/\s+/g);
+
+    // New game
+    this.game.instance = new Chess();
+    this.game.loaded = true;
 
     if (tokens[0] == 'WPLAYER:') {
       this.game.white.name = tokens.slice(1).join(' ');
@@ -48,14 +57,18 @@ class Handler {
       this.game.white.think = tokens[3] || '0';
       this.game.white.nodes = tokens[4] || '0';
       this.game.white.pv = tokens.slice(5);
-      logger.info(`Updated game ${this.game.name}, White Player: ${tokens[1]}d ${tokens[2]}cp ${tokens[3]}ms ${tokens[4]}n`);
+      logger.info(
+        `Updated game ${this.game.name}, White Player: ${tokens[1]}d ${tokens[2]}cp ${tokens[3]}ms ${tokens[4]}n`,
+      );
     } else if (tokens[0] == 'BPV:') {
       this.game.black.depth = tokens[1] || '1';
       this.game.black.score = tokens[2] || '0';
       this.game.black.think = tokens[3] || '0';
       this.game.black.nodes = tokens[4] || '0';
       this.game.black.pv = tokens.slice(5);
-      logger.info(`Updated game ${this.game.name}, Black Player: ${tokens[1]}d ${tokens[2]}cp ${tokens[3]}ms ${tokens[4]}n`);
+      logger.info(
+        `Updated game ${this.game.name}, Black Player: ${tokens[1]}d ${tokens[2]}cp ${tokens[3]}ms ${tokens[4]}n`,
+      );
     }
   }
 
@@ -68,6 +81,32 @@ class Handler {
     } else if (tokens[0] == 'BTIME:') {
       this.game.black.time = tokens[1];
       logger.info(`Updated game ${this.game.name}, Black Time: ${this.game.black.time}`);
+    }
+  }
+
+  private onMove(msg: string) {
+    const tokens = msg.split(/\s+/g);
+
+    const res = this.game.instance.move(tokens[2]);
+
+    if (res) {
+      if (tokens[0] == 'WMOVE:') {
+        this.game.white.lastStart = res.from;
+        this.game.white.lastEnd = res.to;
+        logger.info(
+          `Updated game ${this.game.name}, White Last Move: ${this.game.white.lastStart}${this.game.white.lastEnd}`,
+        );
+      } else if (tokens[0] == 'BMOVE:') {
+        this.game.black.lastStart = res.from;
+        this.game.black.lastEnd = res.to;
+        logger.info(
+          `Updated game ${this.game.name}, Black Last Move: ${this.game.black.lastStart}${this.game.black.lastEnd}`,
+        );
+      }
+    } else {
+      logger.warn(`Unable to update game ${this.game.name} as ${tokens[2]} could not be parsed!`);
+
+      this.game.instance = new Chess(this.game.fen);
     }
   }
 
@@ -93,6 +132,8 @@ class Handler {
       this.onPV(str);
     } else if (/^(W|B)TIME:/.test(str)) {
       this.onTime(str);
+    } else if (/^(W|B)MOVE:/.test(str)) {
+      this.onMove(str);
     }
 
     return messageId;

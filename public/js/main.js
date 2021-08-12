@@ -7,9 +7,10 @@ $(document).ready(function () {
   function setTime(id, time, startThink) {
     const msLeft = time * 10;
     const usedTime = new Date().getTime() - startThink;
-    const timeRemainingInSeconds = (msLeft - usedTime) / 1000;
+    const timeRemainingInSeconds = Math.max(0, (msLeft - usedTime) / 1000);
     const seconds = Math.floor(timeRemainingInSeconds % 60);
     const minutes = Math.floor(timeRemainingInSeconds / 60);
+
     const text = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
 
     $('#' + id).html('<mark>' + text + '</mark>');
@@ -45,6 +46,15 @@ $(document).ready(function () {
     }, 1000);
   }
 
+  function highlight(sq, enable = true) {
+    if (!sq) return;
+
+    const el = $('#board').find('.square-' + sq);
+
+    if (enable) el.addClass('highlight-last');
+    else el.removeClass('highlight-last');
+  }
+
   function update() {
     $.get('/data?_=' + new Date().getTime(), function (data) {
       $('#black-name').text(data.black.name);
@@ -57,10 +67,21 @@ $(document).ready(function () {
 
       if (data.stm === 'w') {
         if (!whiteCountdownInterval) startWhiteTimer(data);
+
+        highlight(data.white.lastStart, false);
+        highlight(data.white.lastEnd, false);
+        highlight(data.black.lastStart);
+        highlight(data.black.lastEnd);
       } else {
         if (!blackCountdownInterval) startBlackTimer(data);
+
+        highlight(data.black.lastStart, false);
+        highlight(data.black.lastEnd, false);
+        highlight(data.white.lastStart);
+        highlight(data.white.lastEnd);
       }
 
+      $('#fen').text(data.fen);
       board.position(data.fen);
     });
   }
