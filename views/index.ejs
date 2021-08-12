@@ -5,71 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>TLCV</title>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"
-      integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU"
-      crossorigin="anonymous"
-    />
-    <style>
-      .stm {
-        color: red;
-      }
-    </style>
+    <link rel="stylesheet" href="https://unpkg.com/reset-css/reset.css" />
+    <link rel="stylesheet" href="https://cdn.rawgit.com/Chalarangelo/mini.css/v3.0.1/dist/mini-default.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" />
+    <link rel="stylesheet" href="/css/main.css" />
   </head>
-
   <body>
-    <div style="display: flex; width: 100%;">
-      <div id="board" style="flex: 1;"></div>
-      <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 5px">
-        <div>
-          <h3 id="blackName"></h3>
-          <p id="blackDepth"></p>
-          <p id="blackScore"></p>
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-12">
+          <h3 id="black-name"></h3>
+          <h3><small id="black-info"></small></h3>
+          <h5 class="card fluid"><small class="section" id="black-pv"></small></h5>
         </div>
-        <div>
-          <h3 id="whiteName"></h3>
-          <p id="whiteDepth"></p>
-          <p id="whiteScore"></p>
+      </div>
+      <div class="row">
+        <div id="board" class="col-sm-12"></div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          <h3 id="white-name"></h3>
+          <h3><small id="white-info"></small></h3>
+          <h5 class="card fluid"><small class="section" id="white-pv"></small></h5>
         </div>
       </div>
     </div>
-    <script
-      src="https://code.jquery.com/jquery-3.5.1.min.js"
-      integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"
-      integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD"
-      crossorigin="anonymous"
-    ></script>
-    <script>
-      const board = Chessboard('board');
-
-      function update() {
-        $.get('/data?_=' + new Date().getTime(), function (data) {
-          $('#blackName').text(data.black.name);
-          $('#blackDepth').text('Depth: ' + data.black.depth);
-          $('#blackScore').text('Score: ' + data.black.score + 'cp');
-          $('#whiteName').text(data.white.name);
-          $('#whiteDepth').text('Depth: ' + data.white.depth);
-          $('#whiteScore').text('Score: ' + data.white.score + 'cp');
-
-          if (data.stm == 'w') {
-            $('#blackName').removeClass('stm');
-            $('#whiteName').addClass('stm');
-          } else {
-            $('#blackName').addClass('stm');
-            $('#whiteName').removeClass('stm');
-          }
-
-          board.position(data.fen);
-        });
-      }
-
-      update();
-      setInterval(update, 2500);
-    </script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="/js/main.js"></script>
   </body>
 </html>

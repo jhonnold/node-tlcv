@@ -9,21 +9,22 @@ class Handler {
   }
 
   private onFenCommand(msg: string) {
-    const fen = msg.substr(5).trim();
-    this.game.fen = fen;
-    this.game.stm = fen.slice(-1);
+    const tokens = msg.split(/\s+/g);
+
+    this.game.fen = tokens.slice(1).join(' ').trim();
+    this.game.stm = tokens[2].trim();
 
     logger.info(`Updated game ${this.game.name}, FEN: ${this.game.fen}, STM: ${this.game.stm}`);
   }
 
   private onPlayerCommand(msg: string) {
-    const name = msg.substr(9);
+    const tokens = msg.split(/\s+/g);
 
-    if (msg.startsWith('W')) {
-      this.game.white.name = name;
+    if (tokens[0] == 'WPLAYER:') {
+      this.game.white.name = tokens.slice(1).join(' ');
       logger.info(`Updated game ${this.game.name}, White Player: ${this.game.white.name}`);
-    } else {
-      this.game.black.name = name;
+    } else if (tokens[0] == 'BPLAYER:') {
+      this.game.black.name = tokens.slice(1).join(' ');
       logger.info(`Updated game ${this.game.name}, Black Player: ${this.game.black.name}`);
     }
   }
@@ -34,11 +35,17 @@ class Handler {
     if (tokens[0] == 'WPV:') {
       this.game.white.depth = tokens[1] || '1';
       this.game.white.score = tokens[2] || '0';
-      logger.info(`Updated game ${this.game.name}, White Player: ${tokens[1]}d ${tokens[2]}cp`);
+      this.game.white.think = tokens[3] || '0';
+      this.game.white.nodes = tokens[4] || '0';
+      this.game.white.pv = tokens.slice(5);
+      logger.info(`Updated game ${this.game.name}, White Player: ${tokens[1]}d ${tokens[2]}cp ${tokens[3]}ms ${tokens[4]}n`);
     } else if (tokens[0] == 'BPV:') {
       this.game.black.depth = tokens[1] || '1';
       this.game.black.score = tokens[2] || '0';
-      logger.info(`Updated game ${this.game.name}, Black Player: ${tokens[1]}d ${tokens[2]}cp`);
+      this.game.black.think = tokens[3] || '0';
+      this.game.black.nodes = tokens[4] || '0';
+      this.game.black.pv = tokens.slice(5);
+      logger.info(`Updated game ${this.game.name}, Black Player: ${tokens[1]}d ${tokens[2]}cp ${tokens[3]}ms ${tokens[4]}n`);
     }
   }
 
@@ -56,9 +63,9 @@ class Handler {
       logger.debug(`No Message Id found for ${str}`);
     }
 
-    if (str.startsWith('FEN: ')) {
+    if (/^FEN:/.test(str)) {
       this.onFenCommand(str);
-    } else if (str.startsWith('WPLAYER: ') || str.startsWith('BPLAYER: ')) {
+    } else if (/^(W|B)PLAYER/.test(str)) {
       this.onPlayerCommand(str);
     } else if (/^(W|B)PV:/.test(str)) {
       this.onPV(str);

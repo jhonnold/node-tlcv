@@ -2,11 +2,17 @@ class Player {
   public name: string;
   public depth: string;
   public score: string;
+  public think: string;
+  public nodes: string;
+  public pv: string[];
 
-  constructor(name = 'Unknown', depth = '1', score = '0') {
+  constructor(name = 'Unknown', depth = '1', score = '0', think = '0', nodes = '0') {
     this.name = name;
     this.depth = depth;
     this.score = score;
+    this.think = think;
+    this.nodes = nodes;
+    this.pv = [];
   }
 }
 
