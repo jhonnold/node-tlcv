@@ -12,7 +12,17 @@ class Handler {
     const tokens = msg.split(/\s+/g);
 
     this.game.fen = tokens.slice(1).join(' ').trim();
-    this.game.stm = tokens[2].trim();
+
+    const newStm = tokens[2].trim();
+    if (newStm != this.game.stm) {
+      this.game.stm = newStm;
+
+      if (this.game.stm == 'w') {
+        this.game.white.startThink = new Date().getTime();
+      } else {
+        this.game.black.startThink = new Date().getTime();
+      }
+    }
 
     logger.info(`Updated game ${this.game.name}, FEN: ${this.game.fen}, STM: ${this.game.stm}`);
   }
@@ -49,6 +59,18 @@ class Handler {
     }
   }
 
+  private onTime(msg: string) {
+    const tokens = msg.split(/\s+/g);
+
+    if (tokens[0] == 'WTIME:') {
+      this.game.white.time = tokens[1];
+      logger.info(`Updated game ${this.game.name}, White Time: ${this.game.white.time}`);
+    } else if (tokens[0] == 'BTIME:') {
+      this.game.black.time = tokens[1];
+      logger.info(`Updated game ${this.game.name}, Black Time: ${this.game.black.time}`);
+    }
+  }
+
   onMessage(buff: Buffer): string | null {
     let messageId: string | null = null;
     let str = buff.toString();
@@ -69,6 +91,8 @@ class Handler {
       this.onPlayerCommand(str);
     } else if (/^(W|B)PV:/.test(str)) {
       this.onPV(str);
+    } else if (/^(W|B)TIME:/.test(str)) {
+      this.onTime(str);
     }
 
     return messageId;
