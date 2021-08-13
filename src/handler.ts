@@ -1,4 +1,4 @@
-import { Chess, Square } from 'chess.js';
+import { Chess } from 'chess.js';
 import ChessGame from './chess-game';
 import { logger } from './util';
 
@@ -10,9 +10,7 @@ class Handler {
   }
 
   private onFenCommand(msg: string) {
-    const tokens = msg.split(/\s+/g);
-
-    logger.info(tokens.slice(1).join(' '));
+    const tokens = msg.trim().split(/\s+/g);
 
     this.game.fen = tokens.slice(1).join(' ');
     if (tokens.length == 3) this.game.fen += ' - - 0 1';
@@ -65,14 +63,16 @@ class Handler {
       this.game.white.think = tokens[3] || '0';
       this.game.white.nodes = tokens[4] || '0';
 
-      const gameCopy = new Chess(this.game.instance.fen());
-      const pv = tokens.slice(5);
-      for (let i = 0; i < pv.length; i++) {
-        const m = gameCopy.move(pv[i], { sloppy: true });
-        if (m) pv[i] = m.san;
-        else break;
+      if (this.game.stm == 'w') {
+        const gameCopy = new Chess(this.game.instance.fen());
+        const pv = tokens.slice(5);
+        for (let i = 0; i < pv.length; i++) {
+          const m = gameCopy.move(pv[i], { sloppy: true });
+          if (m) pv[i] = m.san;
+          else break;
+        }
+        this.game.white.pv = pv;
       }
-      this.game.white.pv = pv;
 
       logger.info(
         `Updated game ${this.game.name}, White Player: ${tokens[1]}d ${tokens[2]}cp ${tokens[3]}ms ${tokens[4]}n`,
@@ -83,14 +83,16 @@ class Handler {
       this.game.black.think = tokens[3] || '0';
       this.game.black.nodes = tokens[4] || '0';
 
-      const gameCopy = new Chess(this.game.instance.fen());
-      const pv = tokens.slice(5);
-      for (let i = 0; i < pv.length; i++) {
-        const m = gameCopy.move(pv[i], { sloppy: true });
-        if (m) pv[i] = m.san;
-        else break;
+      if (this.game.stm == 'b') {
+        const gameCopy = new Chess(this.game.instance.fen());
+        const pv = tokens.slice(5);
+        for (let i = 0; i < pv.length; i++) {
+          const m = gameCopy.move(pv[i], { sloppy: true });
+          if (m) pv[i] = m.san;
+          else break;
+        }
+        this.game.black.pv = pv;
       }
-      this.game.black.pv = pv;
 
       logger.info(
         `Updated game ${this.game.name}, Black Player: ${tokens[1]}d ${tokens[2]}cp ${tokens[3]}ms ${tokens[4]}n`,

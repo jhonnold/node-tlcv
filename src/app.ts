@@ -18,7 +18,7 @@ app.get('/', (_: Request, res: Response): void => {
 });
 
 app.get('/data', (_: Request, res: Response): void => {
-  res.status(200).send({ ...game, instanceFen: game.instance.fen(), pgn: game.instance.pgn() });
+  res.status(200).send({ ...game, instanceFen: game.instance.fen() });
 });
 
 export default app;
