@@ -1,100 +1,43 @@
-$(document).ready(function () {
-  const board = Chessboard('board');
+const timerIntervals = {
+  white: null,
+  black: null,
+};
 
-  let whiteCountdownInterval = null;
-  let blackCountdownInterval = null;
+function msToTimeString(ms) {
+  const timeRemainingInSeconds = ms / 1000;
+  const seconds = Math.floor(timeRemainingInSeconds % 60);
+  const minutes = Math.floor(timeRemainingInSeconds / 60);
 
-  function setTime(id, time, startThink) {
-    const msLeft = time * 10;
-    const usedTime = new Date().getTime() - startThink;
-    const timeRemainingInSeconds = Math.max(0, (msLeft - usedTime) / 1000);
-    const seconds = Math.floor(timeRemainingInSeconds % 60);
-    const minutes = Math.floor(timeRemainingInSeconds / 60);
+  return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+}
 
-    const text = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+function setTimes(time, start, color = 'white') {
+  const usedTime = new Date().getTime() - start;
+  $('#' + color + '-time').html('<mark>' + msToTimeString(Math.max(0, time * 10 - usedTime)) + '</mark>');
+  $('#' + color + '-think').text(msToTimeString(new Date().getTime() - start));
+}
 
-    $('#' + id).html('<mark>' + text + '</mark>');
-  }
+function startTimer(data, color = 'white') {
+  const opp = color == 'white' ? 'black' : 'white';
+  const time = data[color].time;
+  const start = data[color].startThink;
 
-  function startBlackTimer(data) {
-    const time = data.black.time;
-    const startThink = data.black.startThink;
+  clearInterval(timerIntervals[opp]);
+  timerIntervals[opp] = null;
+  $('#' + opp + '-time').text($('#' + opp + '-time > mark').text());
 
-    clearInterval(whiteCountdownInterval);
-    whiteCountdownInterval = null;
-    $('#white-time').text($('#white-time > mark').text());
+  setTimes(time, start, color);
+  timerIntervals[color] = setInterval(() => setTimes(time, start, color), 1000);
+}
 
-    setTime('black-time', time, startThink);
+function highlightSq(sq, enable = true) {
+  if (!sq) return;
 
-    blackCountdownInterval = setInterval(() => {
-      setTime('black-time', time, startThink);
-    }, 1000);
-  }
+  const el = $('#board').find('.square-' + sq);
 
-  function startWhiteTimer(data) {
-    const time = data.white.time;
-    const startThink = data.white.startThink;
-
-    clearInterval(blackCountdownInterval);
-    blackCountdownInterval = null;
-    $('#black-time').text($('#black-time > mark').text());
-
-    setTime('white-time', time, startThink);
-
-    whiteCountdownInterval = setInterval(() => {
-      setTime('white-time', time, startThink);
-    }, 1000);
-  }
-
-  function highlight(sq, enable = true) {
-    if (!sq) return;
-
-    const el = $('#board').find('.square-' + sq);
-
-    if (enable) el.addClass('highlight-last');
-    else el.removeClass('highlight-last');
-  }
-
-  function update() {
-    $.get('/data?_=' + new Date().getTime(), function (data) {
-      $('#black-name').text(data.black.name);
-      $('#black-score').text((data.black.score / 100).toFixed(2));
-      $('#black-depth').text(data.black.depth);
-      $('#black-nodes').text((data.black.nodes / 1000000).toFixed(2) + 'm');
-      $('#black-knps').text(Math.round(data.black.nodes / data.black.think / 10) + 'k');
-      $('#black-pv').text(data.black.pv.join(' '));
-
-      $('#white-name').text(data.white.name);
-      $('#white-score').text((data.white.score / 100).toFixed(2));
-      $('#white-depth').text(data.white.depth);
-      $('#white-nodes').text((data.white.nodes / 1000000).toFixed(2) + 'm');
-      $('#white-knps').text(Math.round(data.white.nodes / data.white.think / 10) + 'k');
-      $('#white-pv').text(data.white.pv.join(' '));
-
-      if (data.stm === 'w') {
-        if (!whiteCountdownInterval) startWhiteTimer(data);
-
-        highlight(data.white.lastStart, false);
-        highlight(data.white.lastEnd, false);
-        highlight(data.black.lastStart);
-        highlight(data.black.lastEnd);
-      } else {
-        if (!blackCountdownInterval) startBlackTimer(data);
-
-        highlight(data.black.lastStart, false);
-        highlight(data.black.lastEnd, false);
-        highlight(data.white.lastStart);
-        highlight(data.white.lastEnd);
-      }
-
-      $('#fen').text(data.instanceFen);
-      board.position(data.fen);
-    });
-  }
-
-  update();
-  setInterval(update, 2500);
-});
+  if (enable) el.addClass('highlight-last');
+  else el.removeClass('highlight-last');
+}
 
 function copyFen() {
   const $temp = $('<input>');
@@ -109,3 +52,51 @@ function copyFen() {
     $('#fen-tooltip').attr('aria-label', 'Click to copy');
   }, 1000);
 }
+
+function updateElText(el, val) {
+  const curr = el.text();
+
+  if (curr != val) el.text(val);
+}
+
+function updateInfo(data, color = 'white') {
+  updateElText($('#' + color + '-name'), data[color].name);
+  updateElText($('#' + color + '-score'), (data[color].score / 100).toFixed(2));
+  updateElText($('#' + color + '-depth'), data[color].depth);
+  updateElText($('#' + color + '-nodes'), (data[color].nodes / 1000000).toFixed(2) + 'm');
+  updateElText($('#' + color + '-knps'), Math.round(data[color].nodes / data[color].think / 10) + 'k');
+  updateElText($('#' + color + '-pv'), data[color].pv.join(' '));
+}
+
+$(document).ready(function () {
+  const board = Chessboard('board');
+
+  function update() {
+    $.get('/data?_=' + new Date().getTime(), (data) => {
+      updateInfo(data);
+      updateInfo(data, 'black');
+
+      if (data.stm === 'w') {
+        if (!timerIntervals['white']) startTimer(data);
+
+        highlightSq(data.white.lastStart, false);
+        highlightSq(data.white.lastEnd, false);
+        highlightSq(data.black.lastStart);
+        highlightSq(data.black.lastEnd);
+      } else {
+        if (!timerIntervals['black']) startTimer(data, 'black');
+
+        highlightSq(data.black.lastStart, false);
+        highlightSq(data.black.lastEnd, false);
+        highlightSq(data.white.lastStart);
+        highlightSq(data.white.lastEnd);
+      }
+
+      $('#fen').text(data.instanceFen);
+      board.position(data.fen);
+    });
+  }
+
+  update();
+  setInterval(update, 1000);
+});
