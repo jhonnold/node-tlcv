@@ -16,33 +16,75 @@
       <div class="card fluid">
         <div class="row">
           <div class="col-sm">
-            <h3><small id="black-info"></small></h3>
+            <div class="row">
+              <div class="col-sm">
+                <p class="small-margin"><small>Score</small></p>
+                <p class="small-margin" id="black-score"></p>
+              </div>
+              <div class="col-sm">
+                <p class="small-margin"><small>Depth</small></p>
+                <p class="small-margin" id="black-depth"></p>
+              </div>
+              <div class="col-sm">
+                <p class="small-margin"><small>Nodes</small></p>
+                <p class="small-margin" id="black-nodes"></p>
+              </div>
+              <div class="col-sm">
+                <p class="small-margin"><small>Knps</small></p>
+                <p class="small-margin" id="black-knps"></p>
+              </div>
+            </div>
           </div>
-          <div class="col-sm" style="text-align: right">
+          <div class="col-sm-3" style="text-align: right">
             <h3><small id="black-time"></small></h3>
           </div>
           <div class="col-sm-12">
-            <p><small id="black-pv"></small></p>
+            <p class="pv"><small id="black-pv"></small></p>
           </div>
         </div>
       </div>
       <div class="row">
-        <div id="board" class="col-sm-12"></div>
+        <div id="board" class="col-sm"></div>
       </div>
       <div class="row">
-        <pre id="fen" style="width: 100%"></pre>
+        <div
+          id="fen-tooltip"
+          class="tooltip col-sm"
+          aria-label="Click to copy"
+          style="cursor: pointer"
+          onclick="copyFen()"
+        >
+          <pre id="fen"></pre>
+        </div>
       </div>
       <h3 id="white-name"></h3>
       <div class="card fluid">
         <div class="row">
           <div class="col-sm">
-            <h3><small id="white-info"></small></h3>
+            <div class="row">
+              <div class="col-sm">
+                <p class="small-margin"><small>Score</small></p>
+                <p class="small-margin" id="white-score"></p>
+              </div>
+              <div class="col-sm">
+                <p class="small-margin"><small>Depth</small></p>
+                <p class="small-margin" id="white-depth"></p>
+              </div>
+              <div class="col-sm">
+                <p class="small-margin"><small>Nodes</small></p>
+                <p class="small-margin" id="white-nodes"></p>
+              </div>
+              <div class="col-sm">
+                <p class="small-margin"><small>Knps</small></p>
+                <p class="small-margin" id="white-knps"></p>
+              </div>
+            </div>
           </div>
-          <div class="col-sm" style="text-align: right">
+          <div class="col-sm-3 col-md-2" style="text-align: right">
             <h3><small id="white-time"></small></h3>
           </div>
           <div class="col-sm-12">
-            <p><small id="white-pv"></small></p>
+            <p class="pv"><small id="white-pv"></small></p>
           </div>
         </div>
       </div>

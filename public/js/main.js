@@ -58,11 +58,17 @@ $(document).ready(function () {
   function update() {
     $.get('/data?_=' + new Date().getTime(), function (data) {
       $('#black-name').text(data.black.name);
-      $('#black-info').text('d' + data.black.depth + ' ' + (data.black.score / 100).toFixed(2));
+      $('#black-score').text((data.black.score / 100).toFixed(2));
+      $('#black-depth').text(data.black.depth);
+      $('#black-nodes').text((data.black.nodes / 1000000).toFixed(2) + 'm');
+      $('#black-knps').text(Math.round(data.black.nodes / data.black.think / 10) + 'k');
       $('#black-pv').text(data.black.pv.join(' '));
 
       $('#white-name').text(data.white.name);
-      $('#white-info').text('d' + data.white.depth + ' ' + (data.white.score / 100).toFixed(2));
+      $('#white-score').text((data.white.score / 100).toFixed(2));
+      $('#white-depth').text(data.white.depth);
+      $('#white-nodes').text((data.white.nodes / 1000000).toFixed(2) + 'm');
+      $('#white-knps').text(Math.round(data.white.nodes / data.white.think / 10) + 'k');
       $('#white-pv').text(data.white.pv.join(' '));
 
       if (data.stm === 'w') {
@@ -81,7 +87,7 @@ $(document).ready(function () {
         highlight(data.white.lastEnd);
       }
 
-      $('#fen').text(data.fen);
+      $('#fen').text(data.instanceFen);
       board.position(data.fen);
     });
   }
@@ -89,3 +95,17 @@ $(document).ready(function () {
   update();
   setInterval(update, 2500);
 });
+
+function copyFen() {
+  const $temp = $('<input>');
+  $('body').append($temp);
+  $temp.val($('#fen').text()).select();
+  document.execCommand('copy');
+  $temp.remove();
+
+  $('#fen-tooltip').attr('aria-label', 'Copied!');
+
+  setTimeout(() => {
+    $('#fen-tooltip').attr('aria-label', 'Click to copy');
+  }, 1000);
+}
