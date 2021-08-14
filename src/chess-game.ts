@@ -1,28 +1,36 @@
-import { Chess, ChessInstance } from 'chess.js';
+import { Chess, ChessInstance, Move } from 'chess.js';
+import { logger } from './util';
+
+type SerializedGame = {
+  name: string;
+  white: Player;
+  black: Player;
+  fen: string;
+  stm: 'w' | 'b';
+  moveNumber: number;
+};
 
 class Player {
   public name: string;
-  public depth: string;
-  public score: string;
-  public think: string;
-  public nodes: string;
-  public time: string;
-  public startThink: number;
-  public lastStart: string;
-  public lastEnd: string;
-  public pv: string[];
+  public depth: number;
+  public score: number;
+  public nodes: number;
+  public usedTime: number;
+  public clockTime: number;
+  public startTime: number;
+  public lastMove: Move | null;
+  public pv: string[]; // san representation
 
   constructor() {
     this.name = 'Unknown';
-    this.depth = '0';
-    this.score = '0';
-    this.think = '0';
-    this.nodes = '0';
-    this.time = '0';
-    this.lastStart = '';
-    this.lastEnd = '';
+    this.depth = 0;
+    this.score = 0.0;
+    this.nodes = 0;
+    this.usedTime = 0;
+    this.clockTime = 0;
+    this.startTime = 0;
+    this.lastMove = null;
     this.pv = [];
-    this.startThink = new Date().getTime();
   }
 }
 
@@ -30,21 +38,48 @@ class ChessGame {
   public name: string;
   public white: Player;
   public black: Player;
-  public fen: string;
-  public stm: string;
-
   public instance: ChessInstance;
   public loaded: boolean;
+  public fen: string;
+  public moveNumber: number;
 
   constructor(name: string) {
     this.name = name;
     this.white = new Player();
     this.black = new Player();
-    this.fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w';
-    this.stm = 'w';
-
     this.instance = new Chess();
     this.loaded = false;
+    this.fen = this.instance.fen();
+    this.moveNumber = 1;
+  }
+
+  reset(): void {
+    this.instance = new Chess();
+    this.loaded = true;
+    this.fen = this.instance.fen();
+  }
+
+  resetFromFen(): void {
+    const { valid, ...err } = this.instance.validate_fen(this.fen);
+
+    if (valid) {
+      this.instance.load(this.fen);
+      this.loaded = true;
+    } else {
+      logger.error(`Unable to load fen ${this.fen} for game ${this.name}`);
+      logger.error(err.error);
+    }
+  }
+
+  toJSON(): SerializedGame {
+    return {
+      name: this.name,
+      white: this.white,
+      black: this.black,
+      fen: this.instance.fen(),
+      stm: this.instance.turn(),
+      moveNumber: this.moveNumber,
+    };
   }
 }
 

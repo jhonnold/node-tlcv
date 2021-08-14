@@ -13,14 +13,14 @@ function msToTimeString(ms) {
 
 function setTimes(time, start, color = 'white') {
   const usedTime = new Date().getTime() - start;
-  $('#' + color + '-time').html('<mark>' + msToTimeString(Math.max(0, time * 10 - usedTime)) + '</mark>');
-  $('#' + color + '-think').text(msToTimeString(new Date().getTime() - start));
+  $('#' + color + '-time').html('<mark>' + msToTimeString(Math.max(0, time - usedTime)) + '</mark>');
+  $('#' + color + '-think').text(msToTimeString(usedTime));
 }
 
 function startTimer(data, color = 'white') {
   const opp = color == 'white' ? 'black' : 'white';
-  const time = data[color].time;
-  const start = data[color].startThink;
+  const time = data[color].clockTime;
+  const start = data[color].startTime;
 
   clearInterval(timerIntervals[opp]);
   timerIntervals[opp] = null;
@@ -61,11 +61,24 @@ function updateElText(el, val) {
 
 function updateInfo(data, color = 'white') {
   updateElText($('#' + color + '-name'), data[color].name);
-  updateElText($('#' + color + '-score'), (data[color].score / 100).toFixed(2));
+  updateElText($('#' + color + '-score'), data[color].score.toFixed(2));
   updateElText($('#' + color + '-depth'), data[color].depth);
   updateElText($('#' + color + '-nodes'), (data[color].nodes / 1000000).toFixed(2) + 'm');
-  updateElText($('#' + color + '-knps'), Math.round(data[color].nodes / data[color].think / 10) + 'k');
-  updateElText($('#' + color + '-pv'), data[color].pv.join(' '));
+  updateElText($('#' + color + '-nps'), (data[color].nodes / data[color].usedTime / 1000).toFixed(2) + 'm');
+
+  let moveNumber = data.moveNumber;
+  let printNumber = color == 'white';
+  let text = '';
+
+  for (const move of data[color].pv) {
+    if (printNumber) text += `<strong>${++moveNumber}.</strong> `;
+
+    text += `${move} `;
+    printNumber = !printNumber;
+  }
+
+  if (color == 'black') text = `<strong>${data.moveNumber}...</strong> ` + text;
+  $('#' + color + '-pv').html(text);
 }
 
 $(document).ready(function () {
@@ -76,27 +89,37 @@ $(document).ready(function () {
       updateInfo(data);
       updateInfo(data, 'black');
 
-      if (data.stm === 'w') {
+      if (data.stm == 'w') {
         if (!timerIntervals['white']) startTimer(data);
 
-        highlightSq(data.white.lastStart, false);
-        highlightSq(data.white.lastEnd, false);
-        highlightSq(data.black.lastStart);
-        highlightSq(data.black.lastEnd);
+        if (data.white.lastMove) {
+          highlightSq(data.white.lastMove.from, false);
+          highlightSq(data.white.lastMove.to, false);
+        }
+
+        if (data.black.lastMove) {
+          highlightSq(data.black.lastMove.from);
+          highlightSq(data.black.lastMove.to);
+        }
       } else {
         if (!timerIntervals['black']) startTimer(data, 'black');
 
-        highlightSq(data.black.lastStart, false);
-        highlightSq(data.black.lastEnd, false);
-        highlightSq(data.white.lastStart);
-        highlightSq(data.white.lastEnd);
+        if (data.black.lastMove) {
+          highlightSq(data.black.lastMove.from, false);
+          highlightSq(data.black.lastMove.to, false);
+        }
+
+        if (data.white.lastMove) {
+          highlightSq(data.white.lastMove.from);
+          highlightSq(data.white.lastMove.to);
+        }
       }
 
-      $('#fen').text(data.instanceFen);
+      $('#fen').text(data.fen);
       board.position(data.fen);
     });
   }
 
   update();
-  setInterval(update, 1000);
+  setInterval(update, 2500);
 });
