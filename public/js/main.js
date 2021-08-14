@@ -66,19 +66,21 @@ function updateInfo(data, color = 'white') {
   updateElText($('#' + color + '-nodes'), (data[color].nodes / 1000000).toFixed(2) + 'm');
   updateElText($('#' + color + '-nps'), (data[color].nodes / data[color].usedTime / 1000).toFixed(2) + 'm');
 
-  let moveNumber = data.moveNumber;
-  let printNumber = color == 'white';
-  let text = '';
+  if (color.startsWith(data.stm)) {
+    let moveNumber = data.moveNumber;
+    let printNumber = color == 'white';
+    let text = '';
 
-  for (const move of data[color].pv) {
-    if (printNumber) text += `<strong>${++moveNumber}.</strong> `;
+    for (const move of data[color].pv) {
+      if (printNumber) text += `<strong>${++moveNumber}.</strong> `;
 
-    text += `${move} `;
-    printNumber = !printNumber;
+      text += `${move} `;
+      printNumber = !printNumber;
+    }
+
+    if (color == 'black') text = `<strong>${data.moveNumber}...</strong> ` + text;
+    $('#' + color + '-pv').html(text);
   }
-
-  if (color == 'black') text = `<strong>${data.moveNumber}...</strong> ` + text;
-  $('#' + color + '-pv').html(text);
 }
 
 $(document).ready(function () {
