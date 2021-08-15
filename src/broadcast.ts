@@ -20,7 +20,7 @@ export class Broadcast {
     this.handler = new Handler(this.game);
     this.connection = new Connection(this.url, this.port, this.handler);
 
-    this.connection.send('LOGONv15:Node TLCV');
+    this.connection.send('LOGONv15:tlcv.net');
     this.pings = setInterval(() => this.connection.send('PING'), 10000);
 
     this.handler.broadcast = this;

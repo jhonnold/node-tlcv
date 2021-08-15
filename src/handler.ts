@@ -15,6 +15,7 @@ enum Command {
   BTIME = 'BTIME',
   WMOVE = 'WMOVE',
   BMOVE = 'BMOVE',
+  SITE = 'SITE',
 }
 
 type CommandTokens = [Command, ...string[]];
@@ -41,6 +42,7 @@ class Handler {
       BTIME: this.onTime.bind(this),
       WMOVE: this.onMove.bind(this),
       BMOVE: this.onMove.bind(this),
+      SITE: this.onSite.bind(this),
     };
   }
 
@@ -118,7 +120,7 @@ class Handler {
     logger.info(`Updated game ${this.game.name} - Color: ${color}, ClockTime: ${this.game[color].clockTime}`);
   }
 
-  private onMove(tokens: CommandTokens) {
+  private onMove(tokens: CommandTokens): void {
     const [command, ...rest] = tokens;
 
     if (command != Command.WMOVE && command != Command.BMOVE) return;
@@ -143,6 +145,17 @@ class Handler {
     this.game[notColor].startTime = new Date().getTime();
   }
 
+  private onSite(tokens: CommandTokens): void {
+    const site = tokens.slice(1).join(' ');
+
+    this.game.site = site
+      .replace('GrahamCCRL.dyndns.org\\', '')
+      .replace('.e1e', '')
+      .replace('.ele', '');
+
+    logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`);
+  }
+
   onMessage(buff: Buffer): string | null {
     let messageId: string | null = null;
     let str = buff.toString().trim();
@@ -157,8 +170,10 @@ class Handler {
       logger.debug(`No Message Id found for ${str}`);
     }
 
-    // This one is different...
-    if (str.startsWith('CT') && this.broadcast) {
+    // Some are different...
+    if (str.startsWith('SITE:')) {
+      this.onSite([Command.SITE, str.replace('SITE:', '')]);
+    } else if (str.startsWith('CT') && this.broadcast) {
       if (str == 'CTRESET') this.broadcast.results = '';
       else {
         // chop of the CT:

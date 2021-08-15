@@ -3,6 +3,7 @@ import { logger } from './util';
 
 type SerializedGame = {
   name: string;
+  site: string;
   white: Player;
   black: Player;
   fen: string;
@@ -48,6 +49,7 @@ class Player {
 
 class ChessGame {
   public name: string;
+  public site: string;
   public white: Player;
   public black: Player;
   public instance: ChessInstance;
@@ -57,6 +59,7 @@ class ChessGame {
 
   constructor(name: string) {
     this.name = name;
+    this.site = '';
     this.white = new Player();
     this.black = new Player();
     this.instance = new Chess();
@@ -97,6 +100,7 @@ class ChessGame {
   toJSON(): SerializedGame {
     return {
       name: this.name,
+      site: this.site,
       white: this.white,
       black: this.black,
       fen: this.instance.fen(),
