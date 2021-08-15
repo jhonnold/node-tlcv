@@ -1,7 +1,7 @@
 import { Chess } from 'chess.js';
-import { parse } from 'path';
 import ChessGame from './chess-game';
 import { logger } from './util';
+import { Broadcast } from './broadcast';
 
 type Color = 'white' | 'black';
 
@@ -25,9 +25,11 @@ class Handler {
   };
 
   public game: ChessGame;
+  public broadcast: Broadcast | null;
 
   constructor(game: ChessGame) {
     this.game = game;
+    this.broadcast = null;
 
     this.commands = {
       FEN: this.onFen.bind(this),
@@ -47,15 +49,13 @@ class Handler {
     const lastToken = fenTokens.slice(-1)[0];
 
     // Sometimes we don't get castling info
-    if (lastToken == 'w' || lastToken == 'b')
-      fenTokens.push('-');
+    if (lastToken == 'w' || lastToken == 'b') fenTokens.push('-');
 
     fenTokens.push('-', '0', '1');
 
     this.game.fen = fenTokens.join(' '); // build the fen
 
-    if (!this.game.loaded)
-      this.game.resetFromFen();
+    if (!this.game.loaded) this.game.resetFromFen();
 
     logger.info(`Updated game ${this.game.name} - FEN: ${this.game.fen}`);
   }
@@ -64,14 +64,14 @@ class Handler {
     const [command, ...rest] = tokens;
     const name = rest.join(' ');
 
-    if (command != Command.WPLAYER && command != Command.BPLAYER)
-      return;
+    if (command != Command.WPLAYER && command != Command.BPLAYER) return;
 
-    const color: Color = (command == Command.WPLAYER) ? 'white' : 'black';
+    const color: Color = command == Command.WPLAYER ? 'white' : 'black';
 
     if (this.game[color].name != name) {
-      this.game.reset();
+      this.game[color].reset();
       this.game[color].name = name;
+      this.game.reset();
       logger.info(`Updated game ${this.game.name} - Color: ${color}, Name: ${this.game[color].name}`);
     }
   }
@@ -79,10 +79,9 @@ class Handler {
   private onPV(tokens: CommandTokens): void {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WPV && command != Command.BPV)
-      return;
+    if (command != Command.WPV && command != Command.BPV) return;
 
-    const color: Color = (command == Command.WPV) ? 'white' : 'black';
+    const color: Color = command == Command.WPV ? 'white' : 'black';
 
     this.game[color].depth = parseInt(rest[0]);
     this.game[color].score = parseInt(rest[1]) / 100;
@@ -100,20 +99,20 @@ class Handler {
     }
 
     // Only if we could parse at least 1 do
-    if (parsed.length)
-      this.game[color].pv = parsed;
+    if (parsed.length) this.game[color].pv = parsed;
 
-    logger.info(`Updated game ${this.game.name} - Color: ${color}, Depth: ${this.game[color].depth}, Score: ${this.game[color].score}, Nodes: ${this.game[color].nodes}, UsedTime: ${this.game[color].usedTime}`);
+    logger.info(
+      `Updated game ${this.game.name} - Color: ${color}, Depth: ${this.game[color].depth}, Score: ${this.game[color].score}, Nodes: ${this.game[color].nodes}, UsedTime: ${this.game[color].usedTime}`,
+    );
     logger.debug(`Updated game ${this.game.name} - Color: ${color}, PV: ${this.game[color].pv.join(' ')}`);
   }
 
   private onTime(tokens: CommandTokens): void {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WTIME && command != Command.BTIME)
-      return;
+    if (command != Command.WTIME && command != Command.BTIME) return;
 
-    const color: Color = (command == Command.WTIME) ? 'white' : 'black';
+    const color: Color = command == Command.WTIME ? 'white' : 'black';
     this.game[color].clockTime = parseInt(rest[0]) * 10;
 
     logger.info(`Updated game ${this.game.name} - Color: ${color}, ClockTime: ${this.game[color].clockTime}`);
@@ -122,11 +121,10 @@ class Handler {
   private onMove(tokens: CommandTokens) {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WMOVE && command != Command.BMOVE)
-      return;
+    if (command != Command.WMOVE && command != Command.BMOVE) return;
 
-    const color: Color = (command == Command.WMOVE) ? 'white' : 'black';
-    const notColor: Color = (command == Command.WMOVE) ? 'black' : 'white';
+    const color: Color = command == Command.WMOVE ? 'white' : 'black';
+    const notColor: Color = command == Command.WMOVE ? 'black' : 'white';
 
     this.game.moveNumber = parseInt(rest[0].replace('.', ''));
 
@@ -135,7 +133,9 @@ class Handler {
       this.game[color].lastMove = move;
       logger.info(`Updated game ${this.game.name} - Color: ${color}, Last Move: ${this.game[color].lastMove?.san}`);
     } else {
-      logger.warn(`Failed to parse ${rest[1]} for game ${this.game.name}! Loading from FEN...`);
+      logger.warn(
+        `Failed to parse ${rest[1]} for game ${this.game.name}, fen ${this.game.instance.fen()}! Loading from FEN...`,
+      );
       this.game.resetFromFen();
     }
 
@@ -157,14 +157,22 @@ class Handler {
       logger.debug(`No Message Id found for ${str}`);
     }
 
-    const tokens = str.split(/\s+/);
-    if (tokens[0].endsWith(':'))
-      tokens[0] = tokens[0].slice(0, -1);
+    // This one is different...
+    if (str.startsWith('CT') && this.broadcast) {
+      if (str == 'CTRESET') this.broadcast.results = '';
+      else {
+        // chop of the CT:
+        this.broadcast.results += str.substr(3) + '\n';
+      }
+    } else {
+      // All standard commands
+      const tokens = str.split(/\s+/);
+      if (tokens[0].endsWith(':')) tokens[0] = tokens[0].slice(0, -1);
 
-    const command = this.commands[tokens[0]];
+      const command = this.commands[tokens[0]];
 
-    if (command)
-      command(tokens as CommandTokens);
+      if (command) command(tokens as CommandTokens);
+    }
 
     return messageId;
   }

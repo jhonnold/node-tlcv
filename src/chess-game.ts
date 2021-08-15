@@ -32,6 +32,18 @@ class Player {
     this.lastMove = null;
     this.pv = [];
   }
+
+  reset(): void {
+    this.name = 'Unknown';
+    this.depth = 0;
+    this.score = 0.0;
+    this.nodes = 0;
+    this.usedTime = 0;
+    this.clockTime = 0;
+    this.startTime = 0;
+    this.lastMove = null;
+    this.pv = [];
+  }
 }
 
 class ChessGame {
@@ -51,20 +63,31 @@ class ChessGame {
     this.loaded = false;
     this.fen = this.instance.fen();
     this.moveNumber = 1;
+
+    this.setPGNHeaders();
+  }
+
+  private setPGNHeaders(): void {
+    this.instance.header('White', this.white.name);
+    this.instance.header('Black', this.black.name);
+    this.instance.header('Date', new Date().toDateString());
   }
 
   reset(): void {
     this.instance = new Chess();
     this.loaded = true;
     this.fen = this.instance.fen();
+
+    this.setPGNHeaders();
   }
 
   resetFromFen(): void {
     const { valid, ...err } = this.instance.validate_fen(this.fen);
 
     if (valid) {
-      this.instance.load(this.fen);
-      this.loaded = true;
+      logger.info(`Setting fen for game ${this.name} to ${this.fen}`);
+      this.loaded = this.instance.load(this.fen);
+      this.setPGNHeaders();
     } else {
       logger.error(`Unable to load fen ${this.fen} for game ${this.name}`);
       logger.error(err.error);

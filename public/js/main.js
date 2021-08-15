@@ -87,7 +87,11 @@ $(document).ready(function () {
   const board = Chessboard('board');
 
   function update() {
-    $.get('/data?_=' + new Date().getTime(), (data) => {
+    let base = document.location.href;
+    if (base.endsWith('/'))
+      base = base.slice(0, -1);
+
+    $.get(`${base}/data?_=${new Date().getTime()}`, (data) => {
       updateInfo(data);
       updateInfo(data, 'black');
 
