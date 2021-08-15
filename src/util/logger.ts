@@ -5,7 +5,7 @@ const { combine, timestamp, printf } = format;
 const logger = createLogger({
   transports: [
     new transports.Console({ level: 'info' }),
-    new transports.File({ dirname: 'logs', filename: 'node-tlcv.log', level: 'debug' }),
+    new transports.File({ dirname: 'logs', filename: 'node-tlcv.log', level: 'debug', maxsize: 1_000_000_000 }),
   ],
   format: combine(
     timestamp(),
