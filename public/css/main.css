@@ -41,6 +41,7 @@
 #fen-tooltip {
   grid-row-start: 5;
   grid-column-start: 1;
+  cursor: pointer;
 }
 
 #fen {

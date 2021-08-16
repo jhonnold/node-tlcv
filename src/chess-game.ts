@@ -71,9 +71,10 @@ class ChessGame {
   }
 
   private setPGNHeaders(): void {
+    this.instance.header('Site', this.site);
+    this.instance.header('Date', new Date().toDateString());
     this.instance.header('White', this.white.name);
     this.instance.header('Black', this.black.name);
-    this.instance.header('Date', new Date().toDateString());
   }
 
   reset(): void {

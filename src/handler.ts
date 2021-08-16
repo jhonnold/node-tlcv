@@ -16,6 +16,9 @@ enum Command {
   WMOVE = 'WMOVE',
   BMOVE = 'BMOVE',
   SITE = 'SITE',
+  CT = 'CT',
+  CTRESET = 'CTRESET',
+  PONG = 'PONG',
 }
 
 type CommandTokens = [Command, ...string[]];
@@ -23,6 +26,10 @@ type CommandTokens = [Command, ...string[]];
 class Handler {
   private commands: {
     [key: string]: ((tokens: CommandTokens) => void) | undefined;
+  };
+
+  private shouldSplit: {
+    [cmd in Command]: boolean;
   };
 
   public game: ChessGame;
@@ -33,17 +40,44 @@ class Handler {
     this.broadcast = null;
 
     this.commands = {
-      FEN: this.onFen.bind(this),
-      WPLAYER: this.onPlayer.bind(this),
-      BPLAYER: this.onPlayer.bind(this),
-      WPV: this.onPV.bind(this),
-      BPV: this.onPV.bind(this),
-      WTIME: this.onTime.bind(this),
-      BTIME: this.onTime.bind(this),
-      WMOVE: this.onMove.bind(this),
-      BMOVE: this.onMove.bind(this),
-      SITE: this.onSite.bind(this),
+      [Command.FEN]: this.onFen.bind(this),
+      [Command.WPLAYER]: this.onPlayer.bind(this),
+      [Command.BPLAYER]: this.onPlayer.bind(this),
+      [Command.WPV]: this.onPV.bind(this),
+      [Command.BPV]: this.onPV.bind(this),
+      [Command.WTIME]: this.onTime.bind(this),
+      [Command.BTIME]: this.onTime.bind(this),
+      [Command.WMOVE]: this.onMove.bind(this),
+      [Command.BMOVE]: this.onMove.bind(this),
+      [Command.SITE]: this.onSite.bind(this),
+      [Command.CTRESET]: this.onCTReset.bind(this),
+      [Command.CT]: this.onCT.bind(this),
+      [Command.PONG]: (_) => _, // no op
     };
+
+    this.shouldSplit = {
+      [Command.FEN]: true,
+      [Command.WPLAYER]: false,
+      [Command.BPLAYER]: false,
+      [Command.WPV]: true,
+      [Command.BPV]: true,
+      [Command.WTIME]: true,
+      [Command.BTIME]: true,
+      [Command.WMOVE]: true,
+      [Command.BMOVE]: true,
+      [Command.SITE]: false,
+      [Command.CTRESET]: false,
+      [Command.CT]: false,
+      [Command.PONG]: false,
+    };
+  }
+
+  private splitOnCommand(line: string): [Command, string] {
+    const argSplit = line.indexOf(':');
+
+    if (argSplit < 0) return [line as Command, ''];
+
+    return [line.substring(0, argSplit) as Command, line.substring(argSplit + 1)];
   }
 
   private onFen(tokens: CommandTokens): void {
@@ -148,12 +182,22 @@ class Handler {
   private onSite(tokens: CommandTokens): void {
     const site = tokens.slice(1).join(' ');
 
-    this.game.site = site
-      .replace('GrahamCCRL.dyndns.org\\', '')
-      .replace('.e1e', '')
-      .replace('.ele', '');
+    this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace('.e1e', '').replace('.ele', '');
 
     logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`);
+  }
+
+  private onCTReset(): void {
+    if (!this.broadcast) return;
+
+    this.broadcast.results = '';
+  }
+
+  private onCT(tokens: CommandTokens): void {
+    if (!this.broadcast) return;
+
+    const line = tokens.slice(1).join('\t');
+    this.broadcast.results += line + '\n';
   }
 
   onMessage(buff: Buffer): string | null {
@@ -170,23 +214,12 @@ class Handler {
       logger.debug(`No Message Id found for ${str}`);
     }
 
-    // Some are different...
-    if (str.startsWith('SITE:')) {
-      this.onSite([Command.SITE, str.replace('SITE:', '')]);
-    } else if (str.startsWith('CT') && this.broadcast) {
-      if (str == 'CTRESET') this.broadcast.results = '';
-      else {
-        // chop of the CT:
-        this.broadcast.results += str.substr(3) + '\n';
-      }
+    const [cmd, rest] = this.splitOnCommand(str);
+    const commandMethod = this.commands[cmd];
+    if (!commandMethod) {
+      logger.warn(`Unable to process ${cmd}!`);
     } else {
-      // All standard commands
-      const tokens = str.split(/\s+/);
-      if (tokens[0].endsWith(':')) tokens[0] = tokens[0].slice(0, -1);
-
-      const command = this.commands[tokens[0]];
-
-      if (command) command(tokens as CommandTokens);
+      commandMethod(this.shouldSplit[cmd] ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
     }
 
     return messageId;

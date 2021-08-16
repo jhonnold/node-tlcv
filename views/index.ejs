@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>TLCV (<%= game.site %>)</title>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-FGG2Y6TFLR"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -24,95 +23,32 @@
   <body>
     <div class="container">
       <div class="main-layout">
-        <div id="black-info">
-          <h3 id="black-name"></h3>
-          <div class="card fluid">
-            <div class="row">
-              <div class="col-sm">
-                <div class="row">
-                  <div class="col-sm">
-                    <p class="small-margin"><small>Score</small></p>
-                    <p class="small-margin" id="black-score"></p>
-                  </div>
-                  <div class="col-sm">
-                    <p class="small-margin"><small>Depth</small></p>
-                    <p class="small-margin" id="black-depth"></p>
-                  </div>
-                  <div class="col-sm">
-                    <p class="small-margin"><small>Nodes</small></p>
-                    <p class="small-margin" id="black-nodes"></p>
-                  </div>
-                  <div class="col-sm">
-                    <p class="small-margin"><small>Nps</small></p>
-                    <p class="small-margin" id="black-nps"></p>
-                  </div>
-                </div>
-              </div>
-              <div class="col-sm-3" style="text-align: right">
-                <h3><small id="black-time"></small></h3>
-                <h6><small id="black-think"></small></h6>
-              </div>
-              <div class="col-sm-12">
-                <p class="pv"><small id="black-pv"></small></p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <%- include('info-card', { color: 'black' }) %>
         <div id="board-container">
           <div id="board"></div>
         </div>
-        <div
-          id="fen-tooltip"
-          class="tooltip col-sm"
-          aria-label="Click to copy"
-          style="cursor: pointer"
-          onclick="copyFen()"
-        >
+        <div id="fen-tooltip" class="tooltip" aria-label="Click to copy">
           <pre id="fen"></pre>
         </div>
-        <div id="white-info">
-          <h3 id="white-name"></h3>
-          <div class="card fluid">
-            <div class="row">
-              <div class="col-sm">
-                <div class="row">
-                  <div class="col-sm">
-                    <p class="small-margin"><small>Score</small></p>
-                    <p class="small-margin" id="white-score"></p>
-                  </div>
-                  <div class="col-sm">
-                    <p class="small-margin"><small>Depth</small></p>
-                    <p class="small-margin" id="white-depth"></p>
-                  </div>
-                  <div class="col-sm">
-                    <p class="small-margin"><small>Nodes</small></p>
-                    <p class="small-margin" id="white-nodes"></p>
-                  </div>
-                  <div class="col-sm">
-                    <p class="small-margin"><small>Nps</small></p>
-                    <p class="small-margin" id="white-nps"></p>
-                  </div>
-                </div>
-              </div>
-              <div class="col-sm-3 col-md-2" style="text-align: right">
-                <h3><small id="white-time"></small></h3>
-                <h6><small id="white-think"></small></h6>
-              </div>
-              <div class="col-sm-12">
-                <p class="pv"><small id="white-pv"></small></p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <%- include('info-card', { color: 'white' }) %>
         <div id="button-container">
-          <a href="<%= game.name %>/pgn" target="_blank" class="primary button">PGN</a>
-          <a href="<%= game.name %>/result-table" target="_blank" class="primary button">Results</a>
+          <a href="<%= port %>/pgn" target="_blank" class="primary button">PGN</a>
+          <a href="<%= port %>/result-table" target="_blank" class="primary button">Results</a>
         </div>
-        <div
       </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
     <script src="/js/main.js"></script>
+    <script>
+      $(document).ready(function () {
+        const board = Chessboard('board');
+
+        update(<%- port %>, board);
+        setInterval(() => update(<%- port %>, board), 2500);
+
+        $('#fen-tooltip').click(copyFen);
+      });
+    </script>
   </body>
 </html>

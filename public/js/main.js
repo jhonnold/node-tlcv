@@ -31,8 +31,6 @@ function startTimer(data, color = 'white') {
 }
 
 function highlightSq(sq, enable = true) {
-  if (!sq) return;
-
   const el = $('#board').find('.square-' + sq);
 
   if (enable) el.addClass('highlight-last');
@@ -83,49 +81,38 @@ function updateInfo(data, color = 'white') {
   }
 }
 
-$(document).ready(function () {
-  const board = Chessboard('board');
+function update(game, board) {
+  $.get(`${game}/data?_=${new Date().getTime()}`, (data) => {
+    updateInfo(data);
+    updateInfo(data, 'black');
 
-  function update() {
-    let base = document.location.href;
-    if (base.endsWith('/'))
-      base = base.slice(0, -1);
+    if (data.stm == 'w') {
+      if (!timerIntervals['white']) startTimer(data);
 
-    $.get(`${base}/data?_=${new Date().getTime()}`, (data) => {
-      updateInfo(data);
-      updateInfo(data, 'black');
-
-      if (data.stm == 'w') {
-        if (!timerIntervals['white']) startTimer(data);
-
-        if (data.white.lastMove) {
-          highlightSq(data.white.lastMove.from, false);
-          highlightSq(data.white.lastMove.to, false);
-        }
-
-        if (data.black.lastMove) {
-          highlightSq(data.black.lastMove.from);
-          highlightSq(data.black.lastMove.to);
-        }
-      } else {
-        if (!timerIntervals['black']) startTimer(data, 'black');
-
-        if (data.black.lastMove) {
-          highlightSq(data.black.lastMove.from, false);
-          highlightSq(data.black.lastMove.to, false);
-        }
-
-        if (data.white.lastMove) {
-          highlightSq(data.white.lastMove.from);
-          highlightSq(data.white.lastMove.to);
-        }
+      if (data.white.lastMove) {
+        highlightSq(data.white.lastMove.from, false);
+        highlightSq(data.white.lastMove.to, false);
       }
 
-      $('#fen').text(data.fen);
-      board.position(data.fen);
-    });
-  }
+      if (data.black.lastMove) {
+        highlightSq(data.black.lastMove.from);
+        highlightSq(data.black.lastMove.to);
+      }
+    } else {
+      if (!timerIntervals['black']) startTimer(data, 'black');
 
-  update();
-  setInterval(update, 2500);
-});
+      if (data.black.lastMove) {
+        highlightSq(data.black.lastMove.from, false);
+        highlightSq(data.black.lastMove.to, false);
+      }
+
+      if (data.white.lastMove) {
+        highlightSq(data.white.lastMove.from);
+        highlightSq(data.white.lastMove.to);
+      }
+    }
+
+    $('#fen').text(data.fen);
+    board.position(data.fen);
+  });
+}

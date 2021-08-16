@@ -47,4 +47,5 @@ const broadcasts: { [name: number]: Broadcast } = {
   16083: new Broadcast('125.237.41.141', 16083),
   16084: new Broadcast('125.237.41.141', 16084),
 };
+
 export default broadcasts;
