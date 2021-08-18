@@ -120,7 +120,8 @@ $(document).ready(function () {
 
   $('#fen-tooltip').click(copyFen);
 
-  const socket = io();
+  const socket = io({ autoConnect: false });
+  socket.on('connect', () => socket.emit('join', port));
   socket.on('update', (data) => update(data, board));
-  socket.emit('join', port);
+  socket.connect();
 });

@@ -11,4 +11,8 @@ io.on('connection', (socket: Socket) => {
     socket.join(String(port));
     socket.emit('update', broadcasts[port].game.toJSON());
   });
+
+  socket.on('disconnect', () => {
+    logger.info('A user has left!');
+  });
 });
