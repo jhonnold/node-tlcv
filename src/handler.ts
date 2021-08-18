@@ -1,11 +1,12 @@
 import { Chess } from 'chess.js';
-import ChessGame from './chess-game';
-import { logger } from './util';
+import { ChessGame } from './chess-game';
+import { logger, splitOnCommand } from './util';
 import { Broadcast } from './broadcast';
+import { io } from './io';
 
 type Color = 'white' | 'black';
 
-enum Command {
+export enum Command {
   FEN = 'FEN',
   WPLAYER = 'WPLAYER',
   BPLAYER = 'BPLAYER',
@@ -21,17 +22,19 @@ enum Command {
   PONG = 'PONG',
 }
 
+type ConfigItem = {
+  fn: (tokens: CommandTokens) => void;
+  split: boolean;
+};
+
+type CommandConfig = {
+  [key in Command]: ConfigItem;
+};
+
 type CommandTokens = [Command, ...string[]];
 
 class Handler {
-  private commands: {
-    [key: string]: ((tokens: CommandTokens) => void) | undefined;
-  };
-
-  private shouldSplit: {
-    [cmd in Command]: boolean;
-  };
-
+  private commandConfig: CommandConfig;
   public game: ChessGame;
   public broadcast: Broadcast | null;
 
@@ -39,45 +42,21 @@ class Handler {
     this.game = game;
     this.broadcast = null;
 
-    this.commands = {
-      [Command.FEN]: this.onFen.bind(this),
-      [Command.WPLAYER]: this.onPlayer.bind(this),
-      [Command.BPLAYER]: this.onPlayer.bind(this),
-      [Command.WPV]: this.onPV.bind(this),
-      [Command.BPV]: this.onPV.bind(this),
-      [Command.WTIME]: this.onTime.bind(this),
-      [Command.BTIME]: this.onTime.bind(this),
-      [Command.WMOVE]: this.onMove.bind(this),
-      [Command.BMOVE]: this.onMove.bind(this),
-      [Command.SITE]: this.onSite.bind(this),
-      [Command.CTRESET]: this.onCTReset.bind(this),
-      [Command.CT]: this.onCT.bind(this),
-      [Command.PONG]: (_) => _, // no op
+    this.commandConfig = {
+      [Command.FEN]: { fn: this.onFen.bind(this), split: true },
+      [Command.WPLAYER]: { fn: this.onPlayer.bind(this), split: false },
+      [Command.BPLAYER]: { fn: this.onPlayer.bind(this), split: false },
+      [Command.WPV]: { fn: this.onPV.bind(this), split: true },
+      [Command.BPV]: { fn: this.onPV.bind(this), split: true },
+      [Command.WTIME]: { fn: this.onTime.bind(this), split: true },
+      [Command.BTIME]: { fn: this.onTime.bind(this), split: true },
+      [Command.WMOVE]: { fn: this.onMove.bind(this), split: true },
+      [Command.BMOVE]: { fn: this.onMove.bind(this), split: true },
+      [Command.SITE]: { fn: this.onSite.bind(this), split: false },
+      [Command.CTRESET]: { fn: this.onCTReset.bind(this), split: false },
+      [Command.CT]: { fn: this.onCT.bind(this), split: false },
+      [Command.PONG]: { fn: (_) => _, split: false },
     };
-
-    this.shouldSplit = {
-      [Command.FEN]: true,
-      [Command.WPLAYER]: false,
-      [Command.BPLAYER]: false,
-      [Command.WPV]: true,
-      [Command.BPV]: true,
-      [Command.WTIME]: true,
-      [Command.BTIME]: true,
-      [Command.WMOVE]: true,
-      [Command.BMOVE]: true,
-      [Command.SITE]: false,
-      [Command.CTRESET]: false,
-      [Command.CT]: false,
-      [Command.PONG]: false,
-    };
-  }
-
-  private splitOnCommand(line: string): [Command, string] {
-    const argSplit = line.indexOf(':');
-
-    if (argSplit < 0) return [line as Command, ''];
-
-    return [line.substring(0, argSplit) as Command, line.substring(argSplit + 1)];
   }
 
   private onFen(tokens: CommandTokens): void {
@@ -108,7 +87,10 @@ class Handler {
       this.game[color].reset();
       this.game[color].name = name;
       this.game.reset();
+
       logger.info(`Updated game ${this.game.name} - Color: ${color}, Name: ${this.game[color].name}`);
+
+      io.to(this.game.name).emit('update', this.game.toJSON());
     }
   }
 
@@ -141,6 +123,8 @@ class Handler {
       `Updated game ${this.game.name} - Color: ${color}, Depth: ${this.game[color].depth}, Score: ${this.game[color].score}, Nodes: ${this.game[color].nodes}, UsedTime: ${this.game[color].usedTime}`,
     );
     logger.debug(`Updated game ${this.game.name} - Color: ${color}, PV: ${this.game[color].pv.join(' ')}`);
+
+    io.to(this.game.name).emit('update', this.game.toJSON());
   }
 
   private onTime(tokens: CommandTokens): void {
@@ -152,6 +136,8 @@ class Handler {
     this.game[color].clockTime = parseInt(rest[0]) * 10;
 
     logger.info(`Updated game ${this.game.name} - Color: ${color}, ClockTime: ${this.game[color].clockTime}`);
+
+    io.to(this.game.name).emit('update', this.game.toJSON());
   }
 
   private onMove(tokens: CommandTokens): void {
@@ -177,14 +163,18 @@ class Handler {
 
     // start the timer for the other side
     this.game[notColor].startTime = new Date().getTime();
+
+    io.to(this.game.name).emit('update', this.game.toJSON());
   }
 
   private onSite(tokens: CommandTokens): void {
     const site = tokens.slice(1).join(' ');
 
-    this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace('.e1e', '').replace('.ele', '');
+    this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
 
     logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`);
+
+    io.to(this.game.name).emit('update', this.game.toJSON());
   }
 
   private onCTReset(): void {
@@ -196,8 +186,7 @@ class Handler {
   private onCT(tokens: CommandTokens): void {
     if (!this.broadcast) return;
 
-    const line = tokens.slice(1).join('\t');
-    this.broadcast.results += line + '\n';
+    this.broadcast.results += tokens[1] + '\n';
   }
 
   onMessage(buff: Buffer): string | null {
@@ -214,13 +203,11 @@ class Handler {
       logger.debug(`No Message Id found for ${str}`);
     }
 
-    const [cmd, rest] = this.splitOnCommand(str);
-    const commandMethod = this.commands[cmd];
-    if (!commandMethod) {
-      logger.warn(`Unable to process ${cmd}!`);
-    } else {
-      commandMethod(this.shouldSplit[cmd] ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
-    }
+    const [cmd, rest] = splitOnCommand(str);
+    const commandConfig = this.commandConfig[cmd] as ConfigItem | undefined;
+
+    if (!commandConfig) logger.warn(`Unable to process ${cmd}!`);
+    else commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
 
     return messageId;
   }

@@ -19,6 +19,7 @@
 .main-layout {
   display: grid;
   grid-template-columns: 60% 40%;
+  grid-template-rows: auto 1fr 1fr auto auto;
 }
 
 #board-container {

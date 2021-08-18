@@ -81,38 +81,46 @@ function updateInfo(data, color = 'white') {
   }
 }
 
-function update(game, board) {
-  $.get(`${game}/data?_=${new Date().getTime()}`, (data) => {
-    updateInfo(data);
-    updateInfo(data, 'black');
+function update(data, board) {
+  updateInfo(data);
+  updateInfo(data, 'black');
 
-    if (data.stm == 'w') {
-      if (!timerIntervals['white']) startTimer(data);
+  if (data.stm == 'w') {
+    if (!timerIntervals['white']) startTimer(data);
 
-      if (data.white.lastMove) {
-        highlightSq(data.white.lastMove.from, false);
-        highlightSq(data.white.lastMove.to, false);
-      }
-
-      if (data.black.lastMove) {
-        highlightSq(data.black.lastMove.from);
-        highlightSq(data.black.lastMove.to);
-      }
-    } else {
-      if (!timerIntervals['black']) startTimer(data, 'black');
-
-      if (data.black.lastMove) {
-        highlightSq(data.black.lastMove.from, false);
-        highlightSq(data.black.lastMove.to, false);
-      }
-
-      if (data.white.lastMove) {
-        highlightSq(data.white.lastMove.from);
-        highlightSq(data.white.lastMove.to);
-      }
+    if (data.white.lastMove) {
+      highlightSq(data.white.lastMove.from, false);
+      highlightSq(data.white.lastMove.to, false);
     }
 
-    $('#fen').text(data.fen);
-    board.position(data.fen);
-  });
+    if (data.black.lastMove) {
+      highlightSq(data.black.lastMove.from);
+      highlightSq(data.black.lastMove.to);
+    }
+  } else {
+    if (!timerIntervals['black']) startTimer(data, 'black');
+
+    if (data.black.lastMove) {
+      highlightSq(data.black.lastMove.from, false);
+      highlightSq(data.black.lastMove.to, false);
+    }
+
+    if (data.white.lastMove) {
+      highlightSq(data.white.lastMove.from);
+      highlightSq(data.white.lastMove.to);
+    }
+  }
+
+  $('#fen').text(data.fen);
+  board.position(data.fen);
 }
+
+$(document).ready(function () {
+  const board = Chessboard('board');
+
+  $('#fen-tooltip').click(copyFen);
+
+  const socket = io();
+  socket.on('update', (data) => update(data, board));
+  socket.emit('join', port);
+});

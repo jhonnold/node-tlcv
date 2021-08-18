@@ -4,111 +4,254 @@ import { logger } from './util';
 type SerializedGame = {
   name: string;
   site: string;
-  white: Player;
-  black: Player;
+  white: SerializedPlayer;
+  black: SerializedPlayer;
   fen: string;
   stm: 'w' | 'b';
   moveNumber: number;
 };
 
-class Player {
-  public name: string;
-  public depth: number;
-  public score: number;
-  public nodes: number;
-  public usedTime: number;
-  public clockTime: number;
-  public startTime: number;
-  public lastMove: Move | null;
-  public pv: string[]; // san representation
+type SerializedPlayer = {
+  name: string;
+  depth: number;
+  score: number;
+  nodes: number;
+  usedTime: number;
+  clockTime: number;
+  startTime: number;
+  lastMove: Move | null;
+  pv: string[];
+};
 
-  constructor() {
-    this.name = 'Unknown';
-    this.depth = 0;
-    this.score = 0.0;
-    this.nodes = 0;
-    this.usedTime = 0;
-    this.clockTime = 0;
-    this.startTime = 0;
-    this.lastMove = null;
-    this.pv = [];
-  }
-
-  reset(): void {
-    this.name = 'Unknown';
-    this.depth = 0;
-    this.score = 0.0;
-    this.nodes = 0;
-    this.usedTime = 0;
-    this.clockTime = 0;
-    this.startTime = 0;
-    this.lastMove = null;
-    this.pv = [];
-  }
-}
-
-class ChessGame {
-  public name: string;
-  public site: string;
-  public white: Player;
-  public black: Player;
-  public instance: ChessInstance;
-  public loaded: boolean;
-  public fen: string;
-  public moveNumber: number;
+export class ChessGame {
+  private _name: string;
+  private _site: string;
+  private _white: Player;
+  private _black: Player;
+  private _instance: ChessInstance;
+  private _loaded: boolean;
+  private _fen: string;
+  private _moveNumber: number;
 
   constructor(name: string) {
-    this.name = name;
-    this.site = '';
-    this.white = new Player();
-    this.black = new Player();
-    this.instance = new Chess();
-    this.loaded = false;
-    this.fen = this.instance.fen();
-    this.moveNumber = 1;
+    this._name = name;
+    this._site = '';
+    this._white = new Player();
+    this._black = new Player();
+
+    this._instance = new Chess();
+    this._loaded = false;
+
+    this._fen = this._instance.fen();
+    this._moveNumber = 1;
 
     this.setPGNHeaders();
   }
 
   private setPGNHeaders(): void {
-    this.instance.header('Site', this.site);
-    this.instance.header('Date', new Date().toDateString());
-    this.instance.header('White', this.white.name);
-    this.instance.header('Black', this.black.name);
+    this._instance.header('Site', this._site);
+    this._instance.header('Date', new Date().toDateString());
+    this._instance.header('White', this._white.name);
+    this._instance.header('Black', this._black.name);
   }
 
   reset(): void {
-    this.instance = new Chess();
-    this.loaded = true;
-    this.fen = this.instance.fen();
+    this._instance = new Chess();
+    this._loaded = true;
+
+    this._fen = this._instance.fen();
 
     this.setPGNHeaders();
   }
 
   resetFromFen(): void {
-    const { valid, ...err } = this.instance.validate_fen(this.fen);
+    const { valid, ...err } = this._instance.validate_fen(this._fen);
 
     if (valid) {
-      logger.info(`Setting fen for game ${this.name} to ${this.fen}`);
-      this.loaded = this.instance.load(this.fen);
+      logger.info(`Setting fen for game ${this._name} to ${this._fen}`);
+      this._loaded = this._instance.load(this._fen);
       this.setPGNHeaders();
     } else {
-      logger.error(`Unable to load fen ${this.fen} for game ${this.name}`);
+      logger.error(`Unable to load fen ${this._fen} for game ${this._name}`);
       logger.error(err.error);
     }
   }
 
   toJSON(): SerializedGame {
     return {
-      name: this.name,
-      site: this.site,
-      white: this.white,
-      black: this.black,
-      fen: this.instance.fen(),
-      stm: this.instance.turn(),
-      moveNumber: this.moveNumber,
+      name: this._name,
+      site: this._site,
+      white: this._white.toJSON(),
+      black: this._black.toJSON(),
+      fen: this._instance.fen(),
+      stm: this._instance.turn(),
+      moveNumber: this._moveNumber,
     };
+  }
+
+  public get name(): string {
+    return this._name;
+  }
+
+  public get site(): string {
+    return this._site;
+  }
+
+  public set site(v: string) {
+    this._site = v;
+  }
+
+  public get white(): Player {
+    return this._white;
+  }
+
+  public get black(): Player {
+    return this._black;
+  }
+
+  public get instance(): ChessInstance {
+    return this._instance;
+  }
+
+  public get loaded(): boolean {
+    return this._loaded;
+  }
+
+  public get fen(): string {
+    return this._fen;
+  }
+
+  public set fen(v: string) {
+    this._fen = v;
+  }
+
+  public get moveNumber(): number {
+    return this._moveNumber;
+  }
+
+  public set moveNumber(v: number) {
+    this._moveNumber = v;
   }
 }
 
-export default ChessGame;
+export class Player {
+  private _name: string;
+  private _depth: number;
+  private _score: number;
+  private _nodes: number;
+  private _usedTime: number;
+  private _clockTime: number;
+  private _startTime: number;
+  private _lastMove: Move | null;
+  private _pv: string[]; // san representation
+
+  constructor() {
+    this._name = 'Unknown';
+    this._depth = 0;
+    this._score = 0.0;
+    this._nodes = 0;
+    this._usedTime = 0;
+    this._clockTime = 0;
+    this._startTime = 0;
+    this._lastMove = null;
+    this._pv = [];
+  }
+
+  reset(): void {
+    this._name = 'Unknown';
+    this._depth = 0;
+    this._score = 0.0;
+    this._nodes = 0;
+    this._usedTime = 0;
+    this._clockTime = 0;
+    this._startTime = 0;
+    this._lastMove = null;
+    this._pv = [];
+  }
+
+  toJSON(): SerializedPlayer {
+    return {
+      name: this._name,
+      depth: this._depth,
+      score: this._score,
+      nodes: this._nodes,
+      usedTime: this._usedTime,
+      clockTime: this._clockTime,
+      startTime: this._startTime,
+      lastMove: this._lastMove,
+      pv: this._pv,
+    };
+  }
+
+  public get name(): string {
+    return this._name;
+  }
+
+  public set name(v: string) {
+    this._name = v;
+  }
+
+  public get depth(): number {
+    return this._depth;
+  }
+
+  public set depth(v: number) {
+    this._depth = v;
+  }
+
+  public get score(): number {
+    return this._score;
+  }
+
+  public set score(v: number) {
+    this._score = v;
+  }
+
+  public get nodes(): number {
+    return this._nodes;
+  }
+
+  public set nodes(v: number) {
+    this._nodes = v;
+  }
+
+  public get usedTime(): number {
+    return this._usedTime;
+  }
+
+  public set usedTime(v: number) {
+    this._usedTime = v;
+  }
+
+  public get clockTime(): number {
+    return this._clockTime;
+  }
+
+  public set clockTime(v: number) {
+    this._clockTime = v;
+  }
+
+  public get startTime(): number {
+    return this._startTime;
+  }
+
+  public set startTime(v: number) {
+    this._startTime = v;
+  }
+
+  public get lastMove(): Move | null {
+    return this._lastMove;
+  }
+
+  public set lastMove(v: Move | null) {
+    this._lastMove = v;
+  }
+
+  public get pv(): string[] {
+    return this._pv;
+  }
+
+  public set pv(v: string[]) {
+    this._pv = v;
+  }
+}

@@ -39,16 +39,10 @@
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-    <script src="/js/main.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-      $(document).ready(function () {
-        const board = Chessboard('board');
-
-        update(<%- port %>, board);
-        setInterval(() => update(<%- port %>, board), 2500);
-
-        $('#fen-tooltip').click(copyFen);
-      });
+      var port = <%= port %>;
     </script>
+    <script src="/js/main.js"></script>
   </body>
 </html>

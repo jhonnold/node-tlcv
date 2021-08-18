@@ -1,6 +1,9 @@
 import Connection from './connection';
 import Handler from './handler';
-import ChessGame from './chess-game';
+import { ChessGame } from './chess-game';
+
+export const defaultUrl = '125.237.41.141';
+export const defaultPort = 16093;
 
 export class Broadcast {
   public url: string;
@@ -12,7 +15,7 @@ export class Broadcast {
 
   private pings: NodeJS.Timeout;
 
-  constructor(url = '125.237.41.141', port = 16093) {
+  constructor(url = defaultUrl, port = defaultPort) {
     this.url = url;
     this.port = port;
 
