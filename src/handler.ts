@@ -23,7 +23,7 @@ export enum Command {
 }
 
 type ConfigItem = {
-  fn: (tokens: CommandTokens) => void;
+  fn: (tokens: CommandTokens) => boolean;
   split: boolean;
 };
 
@@ -34,15 +34,15 @@ type CommandConfig = {
 type CommandTokens = [Command, ...string[]];
 
 class Handler {
-  private commandConfig: CommandConfig;
-  public game: ChessGame;
-  public broadcast: Broadcast | null;
+  private _commandConfig: CommandConfig;
+  private _broadcast: Broadcast;
+  private _game: ChessGame;
 
-  constructor(game: ChessGame) {
-    this.game = game;
-    this.broadcast = null;
+  constructor(broadcast: Broadcast) {
+    this._broadcast = broadcast;
+    this._game = this._broadcast.game;
 
-    this.commandConfig = {
+    this._commandConfig = {
       [Command.FEN]: { fn: this.onFen.bind(this), split: true },
       [Command.WPLAYER]: { fn: this.onPlayer.bind(this), split: false },
       [Command.BPLAYER]: { fn: this.onPlayer.bind(this), split: false },
@@ -55,11 +55,11 @@ class Handler {
       [Command.SITE]: { fn: this.onSite.bind(this), split: false },
       [Command.CTRESET]: { fn: this.onCTReset.bind(this), split: false },
       [Command.CT]: { fn: this.onCT.bind(this), split: false },
-      [Command.PONG]: { fn: (_) => _, split: false },
+      [Command.PONG]: { fn: () => false, split: false },
     };
   }
 
-  private onFen(tokens: CommandTokens): void {
+  private onFen(tokens: CommandTokens): boolean {
     const [, ...fenTokens] = tokens;
     const lastToken = fenTokens.slice(-1)[0];
 
@@ -68,45 +68,48 @@ class Handler {
 
     fenTokens.push('-', '0', '1');
 
-    this.game.fen = fenTokens.join(' '); // build the fen
+    this._game.fen = fenTokens.join(' '); // build the fen
+    if (!this._game.loaded) this._game.resetFromFen();
 
-    if (!this.game.loaded) this.game.resetFromFen();
+    logger.info(`Updated game ${this._game.name} - FEN: ${this._game.fen}`);
 
-    logger.info(`Updated game ${this.game.name} - FEN: ${this.game.fen}`);
+    // Never update on the FEN since we maintain our own state
+    return false;
   }
 
-  private onPlayer(tokens: CommandTokens): void {
+  private onPlayer(tokens: CommandTokens): boolean {
     const [command, ...rest] = tokens;
     const name = rest.join(' ');
 
-    if (command != Command.WPLAYER && command != Command.BPLAYER) return;
+    if (command != Command.WPLAYER && command != Command.BPLAYER) return false;
 
     const color: Color = command == Command.WPLAYER ? 'white' : 'black';
 
-    if (this.game[color].name != name) {
-      this.game[color].reset();
-      this.game[color].name = name;
-      this.game.reset();
+    if (this._game[color].name != name) {
+      this._game[color].reset();
+      this._game[color].name = name;
+      this._game.reset();
 
-      logger.info(`Updated game ${this.game.name} - Color: ${color}, Name: ${this.game[color].name}`);
-
-      io.to(this.game.name).emit('update', this.game.toJSON());
+      logger.info(`Updated game ${this._game.name} - Color: ${color}, Name: ${this._game[color].name}`);
+      return true;
     }
+
+    return false;
   }
 
-  private onPV(tokens: CommandTokens): void {
+  private onPV(tokens: CommandTokens): boolean {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WPV && command != Command.BPV) return;
+    if (command != Command.WPV && command != Command.BPV) return false;
 
     const color: Color = command == Command.WPV ? 'white' : 'black';
 
-    this.game[color].depth = parseInt(rest[0]);
-    this.game[color].score = parseInt(rest[1]) / 100;
-    this.game[color].nodes = parseInt(rest[3]);
-    this.game[color].usedTime = parseInt(rest[2]) * 10;
+    this._game[color].depth = parseInt(rest[0]);
+    this._game[color].score = parseInt(rest[1]) / 100;
+    this._game[color].nodes = parseInt(rest[3]);
+    this._game[color].usedTime = parseInt(rest[2]) * 10;
 
-    const copy = new Chess(this.game.instance.fen());
+    const copy = new Chess(this._game.instance.fen());
     const pv = rest.slice(4);
     const parsed: string[] = [];
     for (const alg of pv) {
@@ -117,76 +120,73 @@ class Handler {
     }
 
     // Only if we could parse at least 1 do
-    if (parsed.length) this.game[color].pv = parsed;
+    if (parsed.length) this._game[color].pv = parsed;
 
     logger.info(
-      `Updated game ${this.game.name} - Color: ${color}, Depth: ${this.game[color].depth}, Score: ${this.game[color].score}, Nodes: ${this.game[color].nodes}, UsedTime: ${this.game[color].usedTime}`,
+      `Updated game ${this._game.name} - Color: ${color}, Depth: ${this._game[color].depth}, Score: ${this._game[color].score}, Nodes: ${this._game[color].nodes}, UsedTime: ${this._game[color].usedTime}`,
     );
-    logger.debug(`Updated game ${this.game.name} - Color: ${color}, PV: ${this.game[color].pv.join(' ')}`);
+    logger.info(`Updated game ${this._game.name} - Color: ${color}, PV: ${this._game[color].pv.join(' ')}`);
 
-    io.to(this.game.name).emit('update', this.game.toJSON());
+    return true;
   }
 
-  private onTime(tokens: CommandTokens): void {
+  private onTime(tokens: CommandTokens): boolean {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WTIME && command != Command.BTIME) return;
+    if (command != Command.WTIME && command != Command.BTIME) return false;
 
     const color: Color = command == Command.WTIME ? 'white' : 'black';
-    this.game[color].clockTime = parseInt(rest[0]) * 10;
+    this._game[color].clockTime = parseInt(rest[0]) * 10;
 
-    logger.info(`Updated game ${this.game.name} - Color: ${color}, ClockTime: ${this.game[color].clockTime}`);
-
-    io.to(this.game.name).emit('update', this.game.toJSON());
+    logger.info(`Updated game ${this._game.name} - Color: ${color}, ClockTime: ${this._game[color].clockTime}`);
+    return true;
   }
 
-  private onMove(tokens: CommandTokens): void {
+  private onMove(tokens: CommandTokens): boolean {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WMOVE && command != Command.BMOVE) return;
+    if (command != Command.WMOVE && command != Command.BMOVE) return false;
 
     const color: Color = command == Command.WMOVE ? 'white' : 'black';
     const notColor: Color = command == Command.WMOVE ? 'black' : 'white';
 
-    this.game.moveNumber = parseInt(rest[0].replace('.', ''));
+    this._game.moveNumber = parseInt(rest[0].replace('.', ''));
 
-    const move = this.game.instance.move(rest[1]);
+    const move = this._game.instance.move(rest[1]);
     if (move) {
-      this.game[color].lastMove = move;
-      logger.info(`Updated game ${this.game.name} - Color: ${color}, Last Move: ${this.game[color].lastMove?.san}`);
+      this._game[color].lastMove = move;
+      logger.info(`Updated game ${this._game.name} - Color: ${color}, Last Move: ${this._game[color].lastMove?.san}`);
     } else {
       logger.warn(
-        `Failed to parse ${rest[1]} for game ${this.game.name}, fen ${this.game.instance.fen()}! Loading from FEN...`,
+        `Failed to parse ${rest[1]} for game ${this._game.name}, fen ${this._game.instance.fen()}! Loading from FEN...`,
       );
-      this.game.resetFromFen();
+      this._game.resetFromFen();
     }
 
     // start the timer for the other side
-    this.game[notColor].startTime = new Date().getTime();
-
-    io.to(this.game.name).emit('update', this.game.toJSON());
+    this._game[notColor].startTime = new Date().getTime();
+    return true;
   }
 
-  private onSite(tokens: CommandTokens): void {
+  private onSite(tokens: CommandTokens): boolean {
     const site = tokens.slice(1).join(' ');
 
-    this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
+    this._game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
 
-    logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`);
-
-    io.to(this.game.name).emit('update', this.game.toJSON());
+    logger.info(`Updated game ${this._game.name} - Site: ${this._game.site}`);
+    return true;
   }
 
-  private onCTReset(): void {
-    if (!this.broadcast) return;
+  private onCTReset(): boolean {
+    this._broadcast.results = '';
 
-    this.broadcast.results = '';
+    return false;
   }
 
-  private onCT(tokens: CommandTokens): void {
-    if (!this.broadcast) return;
+  private onCT(tokens: CommandTokens): boolean {
+    this._broadcast.results += tokens[1] + '\n';
 
-    this.broadcast.results += tokens[1] + '\n';
+    return false;
   }
 
   onMessage(buff: Buffer): string | null {
@@ -204,10 +204,14 @@ class Handler {
     }
 
     const [cmd, rest] = splitOnCommand(str);
-    const commandConfig = this.commandConfig[cmd] as ConfigItem | undefined;
+    const commandConfig = this._commandConfig[cmd] as ConfigItem | undefined;
 
     if (!commandConfig) logger.warn(`Unable to process ${cmd}!`);
-    else commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
+    else {
+      const updated = commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
+
+      if (updated) io.to(String(this._broadcast.port)).emit('update', this._broadcast.game.toJSON());
+    }
 
     return messageId;
   }

@@ -6,6 +6,7 @@
     "node": ">= 14.16 <15"
   },
   "dependencies": {
+    "chalk": "^4.1.2",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "ejs": "^3.1.6",
@@ -45,7 +46,8 @@
     "build:watch": "tsc -w -p tsconfig.release.json",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "jest --coverage --passWithNoTests",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "format": "prettier --write src"
   },
   "author": "Jay Honnold <jayhonnold@gmail.com>",
   "license": "MIT"

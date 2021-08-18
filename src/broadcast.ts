@@ -6,34 +6,56 @@ export const defaultUrl = '125.237.41.141';
 export const defaultPort = 16093;
 
 export class Broadcast {
-  public url: string;
-  public port: number;
-  public game: ChessGame;
-  public handler: Handler;
-  public connection: Connection;
-  public results: string;
-
-  private pings: NodeJS.Timeout;
+  private _url: string;
+  private _port: number;
+  private _results: string;
+  private _game: ChessGame;
+  private _handler: Handler;
+  private _connection: Connection;
+  private _pings: NodeJS.Timeout;
 
   constructor(url = defaultUrl, port = defaultPort) {
-    this.url = url;
-    this.port = port;
+    this._url = url;
+    this._port = port;
 
-    this.game = new ChessGame(String(this.port));
-    this.handler = new Handler(this.game);
-    this.connection = new Connection(this.url, this.port, this.handler);
+    this._game = new ChessGame(String(this._port));
+    this._handler = new Handler(this);
+    this._connection = new Connection(this._url, this._port, this._handler);
 
-    this.connection.send('LOGONv15:tlcv.net');
-    this.pings = setInterval(() => this.connection.send('PING'), 10000);
+    this._connection.send('LOGONv15:tlcv.net');
+    this._pings = setInterval(() => this._connection.send('PING'), 10000);
 
-    this.handler.broadcast = this;
-    this.results = '';
+    this._results = '';
+  }
+
+  loadResults(): Promise<string> {
+    return new Promise((resolve) => {
+      this._connection.send('RESULTTABLE');
+
+      setTimeout(() => resolve(this._results), 5000);
+    });
   }
 
   close(): void {
-    clearInterval(this.pings);
-    this.connection.send('LOGOFF');
-    setTimeout(this.connection.close, 250);
+    clearInterval(this._pings);
+    this._connection.send('LOGOFF');
+    setTimeout(this._connection.close, 250);
+  }
+
+  public get port(): number {
+    return this._port;
+  }
+
+  public get results(): string {
+    return this._results;
+  }
+
+  public set results(v: string) {
+    this._results = v;
+  }
+
+  public get game(): ChessGame {
+    return this._game;
   }
 }
 

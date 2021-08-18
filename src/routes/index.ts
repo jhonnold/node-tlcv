@@ -34,11 +34,11 @@ router.get('/:port(160[0-9]{2})/pgn', (req: Request, res: Response): void => {
   res.status(200).contentType('text/plain').send(broadcast.game.instance.pgn());
 });
 
-router.get('/:port(160[0-9]{2})/result-table', (req: Request, res: Response): void => {
+router.get('/:port(160[0-9]{2})/result-table', async (req: Request, res: Response): Promise<void> => {
   const { broadcast } = req as RequestWithBroadcast;
+  const results = await broadcast.loadResults();
 
-  broadcast.connection.send('RESULTTABLE');
-  setTimeout(() => res.status(200).contentType('text/plain').send(broadcast.results), 5000);
+  res.status(200).contentType('text/plain').send(results);
 });
 
 export default router;

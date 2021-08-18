@@ -9,5 +9,3 @@ io.attach(server);
 server.listen(8080, () => {
   logger.info('Started listening on port 8080!');
 });
-
-

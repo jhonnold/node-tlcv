@@ -33,13 +33,11 @@ class Connection {
   }
 
   private onMessage(msg: Buffer, rInfo: RemoteInfo) {
-    logger.debug(`Message received from ${rInfo.address}:${rInfo.port}`);
-    logger.info(msg);
+    logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`);
 
     const id = this.handler.onMessage(msg);
 
-    if (id)
-      this.send(`ACK: ${id}`);
+    if (id) this.send(`ACK: ${id}`);
   }
 
   send(msg: string): void {
