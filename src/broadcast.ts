@@ -26,7 +26,7 @@ export class Broadcast {
     this._handler = new Handler(this);
     this._connection = new Connection(this._url, this._port, this._handler);
 
-    this._connection.send(`LOGONv15:${username} (0 viewers)`);
+    this._connection.send(`LOGONv15:${username}`);
     this._pings = setInterval(() => this._connection.send('PING'), 10000);
 
     this._browserCount = 0;
@@ -92,8 +92,6 @@ export class Broadcast {
 
   public set browserCount(v: number) {
     this._browserCount = v;
-
-    this._connection.send(`CHANGE: ${username} (${v} viewers)`);
   }
 }
 
