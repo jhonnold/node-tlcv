@@ -5,5 +5,5 @@ export function splitOnCommand(line: string): [Command, string] {
 
   if (argSplit < 0) return [line as Command, ''];
 
-  return [line.substring(0, argSplit) as Command, line.substring(argSplit + 1)];
+  return [line.substring(0, argSplit) as Command, line.substring(argSplit + 1).trim()];
 }

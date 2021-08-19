@@ -31,6 +31,13 @@
           <pre id="fen"></pre>
         </div>
         <%- include('info-card', { color: 'white' }) %>
+        <div id="chat-area">
+          <div class="card fluid" id="chat-box"></div>
+          <ul class="card fluid" id="spectator-box">
+          </ul>
+          <input placeholder="Chat development in progress..." id="chat-msg" />
+          <button class="primary" id="chat-btn">Send</button>
+        </div>
         <div id="button-container">
           <a href="<%= port %>/pgn" target="_blank" class="primary button">PGN</a>
           <a href="<%= port %>/result-table" target="_blank" class="primary button">Results</a>

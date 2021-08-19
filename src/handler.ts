@@ -20,6 +20,9 @@ export enum Command {
   CT = 'CT',
   CTRESET = 'CTRESET',
   PONG = 'PONG',
+  ADDUSER = 'ADDUSER',
+  DELUSER = 'DELUSER',
+  CHAT = 'CHAT',
 }
 
 type ConfigItem = {
@@ -56,6 +59,9 @@ class Handler {
       [Command.CTRESET]: { fn: this.onCTReset.bind(this), split: false },
       [Command.CT]: { fn: this.onCT.bind(this), split: false },
       [Command.PONG]: { fn: () => false, split: false },
+      [Command.ADDUSER]: { fn: this.onAddUser.bind(this), split: false },
+      [Command.DELUSER]: { fn: this.onDelUser.bind(this), split: false },
+      [Command.CHAT]: { fn: this.onChat.bind(this), split: false },
     };
   }
 
@@ -189,6 +195,23 @@ class Handler {
     return false;
   }
 
+  private onAddUser(tokens: CommandTokens): boolean {
+    if (this._broadcast.spectators.has(tokens[1])) return false;
+
+    this._broadcast.spectators.add(tokens[1]);
+    return true;
+  }
+
+  private onDelUser(tokens: CommandTokens): boolean {
+    return this._broadcast.spectators.delete(tokens[1]);
+  }
+
+  private onChat(tokens: CommandTokens): boolean {
+    this._broadcast.chat.push(tokens[1]);
+
+    return true;
+  }
+
   onMessage(buff: Buffer): string | null {
     let messageId: string | null = null;
     let str = buff.toString().trim();
@@ -210,7 +233,8 @@ class Handler {
     else {
       const updated = commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
 
-      if (updated) io.to(String(this._broadcast.port)).emit('update', this._broadcast.game.toJSON());
+      if (updated)
+        io.to(String(this._broadcast.port)).emit('update', this._broadcast.toJSON());
     }
 
     return messageId;

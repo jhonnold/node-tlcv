@@ -4,11 +4,15 @@ import { ChessGame } from './chess-game';
 
 export const defaultUrl = '125.237.41.141';
 export const defaultPort = 16093;
+export const username = 'tlcv.net';
 
 export class Broadcast {
   private _url: string;
   private _port: number;
   private _results: string;
+  private _browserCount: number;
+  private _spectators: Set<string>;
+  private _chat: string[];
   private _game: ChessGame;
   private _handler: Handler;
   private _connection: Connection;
@@ -22,10 +26,13 @@ export class Broadcast {
     this._handler = new Handler(this);
     this._connection = new Connection(this._url, this._port, this._handler);
 
-    this._connection.send('LOGONv15:tlcv.net');
+    this._connection.send(`LOGONv15:${username} (0 viewers)`);
     this._pings = setInterval(() => this._connection.send('PING'), 10000);
 
+    this._browserCount = 0;
     this._results = '';
+    this._spectators = new Set();
+    this._chat = [];
   }
 
   loadResults(): Promise<string> {
@@ -36,10 +43,23 @@ export class Broadcast {
     });
   }
 
+  sendChat(msg: string): void {
+    this._connection.send(`CHAT: ${msg}`);
+  }
+
   close(): void {
     clearInterval(this._pings);
     this._connection.send('LOGOFF');
     setTimeout(this._connection.close, 250);
+  }
+
+  toJSON(): any {
+    return {
+      ...this._game.toJSON(),
+      spectators: Array.from(this._spectators),
+      browserCount: this._browserCount,
+      chat: this._chat.slice(-100),
+    };
   }
 
   public get port(): number {
@@ -56,6 +76,24 @@ export class Broadcast {
 
   public get game(): ChessGame {
     return this._game;
+  }
+
+  public get spectators(): Set<string> {
+    return this._spectators;
+  }
+
+  public get chat(): string[] {
+    return this._chat;
+  }
+
+  public get browserCount(): number {
+    return this._browserCount;
+  }
+
+  public set browserCount(v: number) {
+    this._browserCount = v;
+
+    this._connection.send(`CHANGE: ${username} (${v} viewers)`);
   }
 }
 

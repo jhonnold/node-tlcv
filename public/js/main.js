@@ -113,15 +113,62 @@ function update(data, board) {
 
   $('#fen').text(data.fen);
   board.position(data.fen);
+
+  $('#spectator-box').children().remove();
+
+  data.spectators.sort().forEach((name) => {
+    $('#spectator-box').append($('<li>').append($('<p>').text(name)));
+  });
+
+  $('#chat-box').children().remove();
+  data.chat.forEach((msg) => {
+    $('#chat-box').append($('<p>').text(msg));
+  });
 }
 
 $(document).ready(function () {
   const board = Chessboard('board');
+  $('#chat-area').height($('#board').height() - 318);
+
+  $(window).resize(() => {
+    board.resize();
+    $('#chat-area').height($('#board').height() - 318);
+  });
 
   $('#fen-tooltip').click(copyFen);
 
+  $('#chat-btn').click(() => {
+    const msg = $('#chat-msg').val();
+    if (!msg) return;
+
+    socket.emit('chat', msg);
+    $('#chat-msg').val('');
+  });
+
+  $('#chat-msg').bind('enterKey', () => {
+    const msg = $('#chat-msg').val();
+    if (!msg) return;
+
+    socket.emit('chat', msg);
+    $('#chat-msg').val('');
+  });
+
+  $('input').keyup(function (e) {
+    if (e.keyCode == 13) {
+      $(this).trigger('enterKey');
+    }
+  });
+
   const socket = io({ autoConnect: false });
   socket.on('connect', () => socket.emit('join', port));
-  socket.on('update', (data) => update(data, board));
+  socket.on('update', (data) => {
+    update(data, board);
+
+    $('#chat-box')
+      .stop()
+      .animate({
+        scrollTop: $('#chat-box')[0].scrollHeight,
+      });
+  });
   socket.connect();
 });
