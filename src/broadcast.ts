@@ -3,7 +3,7 @@ import Handler from './handler';
 import { ChessGame } from './chess-game';
 
 export const defaultUrl = '125.237.41.141';
-export const defaultPort = 16093;
+export const defaultPort = 16001;
 export const username = 'tlcv.net';
 
 export class Broadcast {
@@ -100,8 +100,8 @@ const broadcasts: { [name: number]: Broadcast } = {
   16002: new Broadcast('125.237.41.141', 16002),
   16053: new Broadcast('125.237.41.141', 16053),
   16063: new Broadcast('125.237.41.141', 16063),
-  16064: new Broadcast('125.237.41.141', 16064),
   16065: new Broadcast('125.237.41.141', 16065),
+  16066: new Broadcast('125.237.41.141', 16066),
   16091: new Broadcast('125.237.41.141', 16091),
   16092: new Broadcast('125.237.41.141', 16092),
   16093: new Broadcast('125.237.41.141', 16093),
