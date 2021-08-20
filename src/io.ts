@@ -30,6 +30,8 @@ io.on('connection', (socket: Socket) => {
   socket.on('nick', (user: string) => {
     if (!broadcast) return;
 
+    if (username) broadcast.spectators.delete(username);
+
     username = uniqueName(user, broadcast.spectators);
     if (username) broadcast.spectators.add(username);
 
