@@ -135,7 +135,7 @@ function username() {
 $(document).ready(function () {
   $('#username').val(localStorage.getItem('tlcv.net-username'));
 
-  const board = Chessboard('board');
+  const board = Chessboard('board', { pieceTheme: '/img/chesspieces/wikipedia/{piece}.png'});
   const socket = io({ autoConnect: false });
 
   $('#chat-area').height($('#board').height() - 318);
