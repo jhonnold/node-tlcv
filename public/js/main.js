@@ -126,8 +126,16 @@ function update(data, board) {
   });
 }
 
+function username() {
+  return $('#username').val() || 'Anonymous';
+}
+
 $(document).ready(function () {
+  $('#username').val(localStorage.getItem('tlcv.net-username'));
+
   const board = Chessboard('board');
+  const socket = io({ autoConnect: false });
+
   $('#chat-area').height($('#board').height() - 318);
 
   $(window).resize(() => {
@@ -141,7 +149,7 @@ $(document).ready(function () {
     const msg = $('#chat-msg').val();
     if (!msg) return;
 
-    socket.emit('chat', msg);
+    socket.emit('chat', `(${username()}) ${msg}`);
     $('#chat-msg').val('');
   });
 
@@ -149,8 +157,13 @@ $(document).ready(function () {
     const msg = $('#chat-msg').val();
     if (!msg) return;
 
-    socket.emit('chat', msg);
+    socket.emit('chat', `(${username()}) ${msg}`);
     $('#chat-msg').val('');
+  });
+
+  $('#username').blur(function () {
+    localStorage.setItem('tlcv.net-username', username());
+    socket.emit('nick', username());
   });
 
   $('input').keyup(function (e) {
@@ -159,8 +172,7 @@ $(document).ready(function () {
     }
   });
 
-  const socket = io({ autoConnect: false });
-  socket.on('connect', () => socket.emit('join', port));
+  socket.on('connect', () => socket.emit('join', { port, user: username() }));
   socket.on('update', (data) => {
     update(data, board);
 

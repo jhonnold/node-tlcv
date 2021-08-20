@@ -1,7 +1,7 @@
 import { Chess } from 'chess.js';
 import { ChessGame } from './chess-game';
 import { logger, splitOnCommand } from './util';
-import { Broadcast } from './broadcast';
+import { Broadcast, username } from './broadcast';
 import { io } from './io';
 
 type Color = 'white' | 'black';
@@ -196,7 +196,7 @@ class Handler {
   }
 
   private onAddUser(tokens: CommandTokens): boolean {
-    if (this._broadcast.spectators.has(tokens[1])) return false;
+    if (username == tokens[1] || this._broadcast.spectators.has(tokens[1])) return false;
 
     this._broadcast.spectators.add(tokens[1]);
     return true;

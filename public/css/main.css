@@ -90,14 +90,31 @@
   overflow: auto;
 }
 
-#spectator-box {
+.spectator-wrapper {
   height: 100%;
 
+  display: flex;
+  flex-direction: column;
+}
+
+#spectator-box {
+  width: 100%;
+  flex: 1;
+  margin: 0 var(--universal-margin);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   overflow: hidden;
   padding: 0;
+}
+
+.username-container {
+  border: none;
+  margin: 0 var(--universal-margin) var(--universal-margin) var(--universal-margin);
+}
+
+.username-container > input {
+  margin: 0;
 }
 
 @media screen and (max-width: 767px) {
