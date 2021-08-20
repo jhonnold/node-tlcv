@@ -27,16 +27,26 @@
         <div id="board-container">
           <div id="board"></div>
         </div>
-        <div id="fen-tooltip" class="tooltip" aria-label="Click to copy">
-          <pre id="fen"></pre>
+        <div class="below-board">
+          <div id="fen-tooltip" class="tooltip" aria-label="Click to copy">
+            <pre id="fen"></pre>
+          </div>
         </div>
-        <%- include('info-card', { color: 'white' }) %>
-        <%- include('chat') %>
+        <%- include('info-card', { color: 'white' }) %> <%- include('chat') %>
         <div id="button-container">
           <a href="<%= port %>/pgn" target="_blank" class="primary button">PGN</a>
           <a href="<%= port %>/result-table" target="_blank" class="primary button">Results</a>
         </div>
       </div>
+      <h6 class="credits">
+        <small>
+          Chessboard by <a href="https://chessboardjs.com/">chessboard.js</a>. Chess pieces by
+          <a href="https://en.wikipedia.org/wiki/User:Cburnett">Cburnett</a>. Broadcasts by
+          <a href="https://ccrl.chessdom.com/ccrl/4040/">Graham Banks, CCRL</a>. Hosting and Development by
+          <a href="https://github.com/jhonnold">Jay Honnold</a>. Have a question, recommendation, or concern? Reach
+          out <a href="https://github.com/jhonnold/node-tlcv/issues">here</a>.
+        </small>
+      </h6>
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
