@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>TLCV Admin Panel</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FGG2Y6TFLR"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        window.dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+
+      gtag('config', 'G-FGG2Y6TFLR');
+    </script>
+    <link rel="stylesheet" href="https://unpkg.com/reset-css/reset.css" />
+    <link rel="stylesheet" href="https://cdn.rawgit.com/Chalarangelo/mini.css/v3.0.1/dist/mini-default.min.css" />
+  </head>
+  <body>
+    <div class="container" style="max-width: 960px; padding: 1rem">
+      <table>
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Port</th>
+            <th>Reconnect</th>
+            <th>Close</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const broadcast of broadcasts) {%>
+          <tr>
+            <td data-label="Site"><%= broadcast.game.site %></td>
+            <td data-label="Port"><%= broadcast.port %></td>
+            <td data-label="Reconnect">
+              <button class="tertiary reconnect" data-port="<%= broadcast.port %>">Reconnect</button>
+            </td>
+            <td data-label="Close">
+              <button class="secondary close" data-port="<%= broadcast.port %>">Close</button>
+            </td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+      <form id="add-new">
+        <label for="port">Port</label>
+        <input id="port" name="port" type="number" required />
+        <button type="submit" class="primary">Add new</button>
+      </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+      function reconnect(port) {
+        $.ajax({
+          type: 'POST',
+          url: '/admin/reconnect',
+          data: JSON.stringify({ port }),
+          contentType: 'application/json',
+          complete: function () {
+            window.location.reload();
+          },
+        });
+      }
+
+      function close(port) {
+        $.ajax({
+          type: 'POST',
+          url: '/admin/close',
+          data: JSON.stringify({ port }),
+          contentType: 'application/json',
+          complete: function () {
+            window.location.reload();
+          },
+        });
+      }
+
+      function _new(port) {
+        $.ajax({
+          type: 'POST',
+          url: '/admin/new',
+          data: JSON.stringify({ port }),
+          contentType: 'application/json',
+          complete: function () {
+            window.location.reload();
+          },
+        });
+      }
+
+      $(document).ready(() => {
+        $('#add-new').on('submit', function (e) {
+          e.preventDefault();
+
+          const port = $('#port').val();
+          if (!port) return;
+
+          _new(port);
+        });
+
+        $('button.close').click(function () {
+          const port = $(this).data('port');
+          close(port);
+        });
+
+        $('button.reconnect').click(function () {
+          const port = $(this).data('port');
+          reconnect(port);
+        });
+      });
+    </script>
+  </body>
+</html>

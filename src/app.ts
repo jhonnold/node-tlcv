@@ -3,6 +3,7 @@ import cors from 'cors';
 import bp from 'body-parser';
 import compression from 'compression';
 import routes from './routes';
+import adminRoutes from './routes/admin';
 import { logging } from './util';
 
 export const app = express();
@@ -24,3 +25,6 @@ app.use(express.static('public'));
 // GET /:port/pgn
 // GET /:port/result-table
 app.use(routes);
+
+// GET /admin
+app.use('/admin', adminRoutes);

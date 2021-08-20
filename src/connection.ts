@@ -24,6 +24,7 @@ class Connection {
 
   private onError(err: Error): void {
     logger.error(err);
+
     this.socket.close();
   }
 
