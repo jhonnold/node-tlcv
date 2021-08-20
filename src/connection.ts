@@ -22,17 +22,17 @@ class Connection {
     this.socket.bind(port);
   }
 
-  private onError(err: Error) {
+  private onError(err: Error): void {
     logger.error(err);
     this.socket.close();
   }
 
-  private onListening() {
+  private onListening(): void {
     const address = this.socket.address();
     logger.info(`Listening @ ${address.address}:${address.port}`);
   }
 
-  private onMessage(msg: Buffer, rInfo: RemoteInfo) {
+  private onMessage(msg: Buffer, rInfo: RemoteInfo): void {
     logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`);
 
     const id = this.handler.onMessage(msg);

@@ -82,46 +82,48 @@ function updateInfo(data, color = 'white') {
 }
 
 function update(data, board) {
-  updateInfo(data);
-  updateInfo(data, 'black');
+  const { game, spectators, chat } = data;
 
-  if (data.stm == 'w') {
-    if (!timerIntervals['white']) startTimer(data);
+  updateInfo(game);
+  updateInfo(game, 'black');
 
-    if (data.white.lastMove) {
-      highlightSq(data.white.lastMove.from, false);
-      highlightSq(data.white.lastMove.to, false);
+  if (game.stm == 'w') {
+    if (!timerIntervals['white']) startTimer(game);
+
+    if (game.white.lastMove) {
+      highlightSq(game.white.lastMove.from, false);
+      highlightSq(game.white.lastMove.to, false);
     }
 
-    if (data.black.lastMove) {
-      highlightSq(data.black.lastMove.from);
-      highlightSq(data.black.lastMove.to);
+    if (game.black.lastMove) {
+      highlightSq(game.black.lastMove.from);
+      highlightSq(game.black.lastMove.to);
     }
   } else {
-    if (!timerIntervals['black']) startTimer(data, 'black');
+    if (!timerIntervals['black']) startTimer(game, 'black');
 
-    if (data.black.lastMove) {
-      highlightSq(data.black.lastMove.from, false);
-      highlightSq(data.black.lastMove.to, false);
+    if (game.black.lastMove) {
+      highlightSq(game.black.lastMove.from, false);
+      highlightSq(game.black.lastMove.to, false);
     }
 
-    if (data.white.lastMove) {
-      highlightSq(data.white.lastMove.from);
-      highlightSq(data.white.lastMove.to);
+    if (game.white.lastMove) {
+      highlightSq(game.white.lastMove.from);
+      highlightSq(game.white.lastMove.to);
     }
   }
 
-  $('#fen').text(data.fen);
-  board.position(data.fen);
+  $('#fen').text(game.fen);
+  board.position(game.fen);
 
   $('#spectator-box').children().remove();
 
-  data.spectators.sort().forEach((name) => {
+  spectators.sort().forEach((name) => {
     $('#spectator-box').append($('<li>').append($('<p>').text(name)));
   });
 
   $('#chat-box').children().remove();
-  data.chat.forEach((msg) => {
+  chat.forEach((msg) => {
     $('#chat-box').append($('<p>').text(msg));
   });
 }

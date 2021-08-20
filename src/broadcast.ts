@@ -1,10 +1,17 @@
 import Connection from './connection';
 import Handler from './handler';
-import { ChessGame } from './chess-game';
+import { ChessGame, SerializedGame } from './chess-game';
 
 export const defaultUrl = '125.237.41.141';
 export const defaultPort = 16001;
 export const username = 'tlcv.net';
+
+export type SerializedBroadcast = {
+  game: SerializedGame;
+  spectators: Array<string>;
+  browserCount: number;
+  chat: Array<string>;
+};
 
 export class Broadcast {
   private _url: string;
@@ -12,7 +19,7 @@ export class Broadcast {
   private _results: string;
   private _browserCount: number;
   private _spectators: Set<string>;
-  private _chat: string[];
+  private _chat: Array<string>;
   private _game: ChessGame;
   private _handler: Handler;
   private _connection: Connection;
@@ -53,9 +60,9 @@ export class Broadcast {
     setTimeout(this._connection.close, 250);
   }
 
-  toJSON(): any {
+  toJSON(): SerializedBroadcast {
     return {
-      ...this._game.toJSON(),
+      game: this.game.toJSON(),
       spectators: Array.from(this._spectators),
       browserCount: this._browserCount,
       chat: this._chat.slice(-100),
@@ -82,7 +89,7 @@ export class Broadcast {
     return this._spectators;
   }
 
-  public get chat(): string[] {
+  public get chat(): Array<string> {
     return this._chat;
   }
 
@@ -95,18 +102,17 @@ export class Broadcast {
   }
 }
 
-const broadcasts: { [name: number]: Broadcast } = {
-  16001: new Broadcast('125.237.41.141', 16001),
-  16002: new Broadcast('125.237.41.141', 16002),
-  16053: new Broadcast('125.237.41.141', 16053),
-  16063: new Broadcast('125.237.41.141', 16063),
-  16065: new Broadcast('125.237.41.141', 16065),
-  16066: new Broadcast('125.237.41.141', 16066),
-  16091: new Broadcast('125.237.41.141', 16091),
-  16092: new Broadcast('125.237.41.141', 16092),
-  16093: new Broadcast('125.237.41.141', 16093),
-  16083: new Broadcast('125.237.41.141', 16083),
-  16084: new Broadcast('125.237.41.141', 16084),
-};
+const broadcasts = new Map<number, Broadcast>();
+broadcasts.set(16001, new Broadcast(defaultUrl, 16001));
+broadcasts.set(16002, new Broadcast(defaultUrl, 16002));
+broadcasts.set(16053, new Broadcast(defaultUrl, 16053));
+broadcasts.set(16063, new Broadcast(defaultUrl, 16063));
+broadcasts.set(16065, new Broadcast(defaultUrl, 16065));
+broadcasts.set(16066, new Broadcast(defaultUrl, 16066));
+broadcasts.set(16083, new Broadcast(defaultUrl, 16083));
+broadcasts.set(16084, new Broadcast(defaultUrl, 16084));
+broadcasts.set(16091, new Broadcast(defaultUrl, 16091));
+broadcasts.set(16092, new Broadcast(defaultUrl, 16092));
+broadcasts.set(16093, new Broadcast(defaultUrl, 16093));
 
 export default broadcasts;

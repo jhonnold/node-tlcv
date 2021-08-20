@@ -1,31 +1,22 @@
 import { Server, Socket } from 'socket.io';
 import broadcasts, { Broadcast } from './broadcast';
-import { logger } from './util';
+import { logger, uniqueName } from './util';
 
 export const io = new Server();
 
 io.on('connection', (socket: Socket) => {
-  let broadcast: Broadcast | null = null;
-  let username: string | null = null;
+  let broadcast: Broadcast | undefined;
+  let username: string | undefined;
 
   socket.on('join', ({ port, user }: { port: number; user: string }) => {
-    broadcast = broadcasts[port];
+    broadcast = broadcasts.get(port);
     if (!broadcast) return;
 
-    if (broadcast.spectators.has(user)) {
-      let i = 1,
-        newUsername = user;
-      do {
-        newUsername = user + String(i++);
-      } while (broadcast.spectators.has(newUsername));
-
-      username = newUsername;
-    } else {
-      username = user;
-    }
-
-    if (username) broadcast.spectators.add(username);
     broadcast.browserCount++;
+
+    username = uniqueName(user, broadcast.spectators);
+    if (username) broadcast.spectators.add(username);
+
     logger.info(`${username} joined at port ${port}!`);
 
     socket.join(String(port));
@@ -39,34 +30,19 @@ io.on('connection', (socket: Socket) => {
   socket.on('nick', (user: string) => {
     if (!broadcast) return;
 
-    if (username)
-      broadcast.spectators.delete(username);
-
-    if (broadcast.spectators.has(user)) {
-      let i = 1,
-        newUsername = user;
-      do {
-        newUsername = user + String(i++);
-      } while (broadcast.spectators.has(newUsername));
-
-      username = newUsername;
-    } else {
-      username = user;
-    }
-
-    if (username)
-      broadcast.spectators.add(username);
+    username = uniqueName(user, broadcast.spectators);
+    if (username) broadcast.spectators.add(username);
 
     socket.emit('update', broadcast.toJSON());
   });
 
   socket.on('disconnect', () => {
-    if (broadcast) {
-      broadcast.browserCount--;
+    if (!broadcast) return;
 
-      if (username) broadcast.spectators.delete(username);
-    }
+    broadcast.browserCount--;
 
-    logger.info(`${username} has left from port ${broadcast ? broadcast.port : 0}!`);
+    if (username) broadcast.spectators.delete(username);
+
+    logger.info(`${username} has left from port ${broadcast.port}!`);
   });
 });

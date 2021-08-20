@@ -1,7 +1,7 @@
 import { Chess, ChessInstance, Move } from 'chess.js';
 import { logger } from './util';
 
-type SerializedGame = {
+export type SerializedGame = {
   name: string;
   site: string;
   white: SerializedPlayer;
@@ -11,7 +11,7 @@ type SerializedGame = {
   moveNumber: number;
 };
 
-type SerializedPlayer = {
+export type SerializedPlayer = {
   name: string;
   depth: number;
   score: number;
@@ -20,7 +20,7 @@ type SerializedPlayer = {
   clockTime: number;
   startTime: number;
   lastMove: Move | null;
-  pv: string[];
+  pv: Array<string>;
 };
 
 export class ChessGame {
@@ -143,7 +143,7 @@ export class Player {
   private _clockTime: number;
   private _startTime: number;
   private _lastMove: Move | null;
-  private _pv: string[]; // san representation
+  private _pv: Array<string>; // san representation
 
   constructor() {
     this._name = 'Unknown';
@@ -154,7 +154,7 @@ export class Player {
     this._clockTime = 0;
     this._startTime = 0;
     this._lastMove = null;
-    this._pv = [];
+    this._pv = new Array<string>();
   }
 
   reset(): void {
@@ -166,7 +166,7 @@ export class Player {
     this._clockTime = 0;
     this._startTime = 0;
     this._lastMove = null;
-    this._pv = [];
+    this._pv = new Array<string>();
   }
 
   toJSON(): SerializedPlayer {
@@ -247,11 +247,11 @@ export class Player {
     this._lastMove = v;
   }
 
-  public get pv(): string[] {
+  public get pv(): Array<string> {
     return this._pv;
   }
 
-  public set pv(v: string[]) {
+  public set pv(v: Array<string>) {
     this._pv = v;
   }
 }

@@ -13,7 +13,7 @@ router.get('/', (_: Request, res: Response): void => {
 
 router.use('/:port(160[0-9]{2})', (req: Request, res: Response, next: NextFunction): void => {
   const port: number = parseInt(req.params.port);
-  const broadcast: Broadcast | undefined = broadcasts[port];
+  const broadcast: Broadcast | undefined = broadcasts.get(port);
 
   if (!broadcast) {
     res.sendStatus(404);

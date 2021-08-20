@@ -34,7 +34,7 @@ type CommandConfig = {
   [key in Command]: ConfigItem;
 };
 
-type CommandTokens = [Command, ...string[]];
+type CommandTokens = [Command, ...Array<string>];
 
 class Handler {
   private _commandConfig: CommandConfig;
@@ -117,7 +117,7 @@ class Handler {
 
     const copy = new Chess(this._game.instance.fen());
     const pv = rest.slice(4);
-    const parsed: string[] = [];
+    const parsed = new Array<string>();
     for (const alg of pv) {
       const move = copy.move(alg, { sloppy: true });
       if (!move) break;

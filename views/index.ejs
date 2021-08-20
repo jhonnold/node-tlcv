@@ -31,19 +31,7 @@
           <pre id="fen"></pre>
         </div>
         <%- include('info-card', { color: 'white' }) %>
-        <div id="chat-area">
-          <div class="card fluid" id="chat-box"></div>
-          <div style="height: 100%">
-            <div class="spectator-wrapper">
-              <div class="card fluid username-container">
-                <input placeholder="Anonymous" id="username" />
-              </div>
-              <ul class="card fluid" id="spectator-box"></ul>
-            </div>
-          </div>
-          <input placeholder="Type your message here..." id="chat-msg" />
-          <button class="primary" id="chat-btn">Send</button>
-        </div>
+        <%- include('chat') %>
         <div id="button-container">
           <a href="<%= port %>/pgn" target="_blank" class="primary button">PGN</a>
           <a href="<%= port %>/result-table" target="_blank" class="primary button">Results</a>
