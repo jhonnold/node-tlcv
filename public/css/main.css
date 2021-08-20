@@ -1,5 +1,5 @@
 .container {
-  max-width: 1440px;
+  max-width: 150vh;
   padding: var(--universal-padding);
 }
 
