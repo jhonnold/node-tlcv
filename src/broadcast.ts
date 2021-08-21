@@ -116,16 +116,16 @@ export class Broadcast {
 }
 
 const broadcasts = new Map<number, Broadcast>();
-// broadcasts.set(16001, new Broadcast(defaultUrl, 16001));
-// broadcasts.set(16002, new Broadcast(defaultUrl, 16002));
-// broadcasts.set(16053, new Broadcast(defaultUrl, 16053));
-// broadcasts.set(16063, new Broadcast(defaultUrl, 16063));
-// broadcasts.set(16065, new Broadcast(defaultUrl, 16065));
-// broadcasts.set(16066, new Broadcast(defaultUrl, 16066));
-// broadcasts.set(16083, new Broadcast(defaultUrl, 16083));
-// broadcasts.set(16084, new Broadcast(defaultUrl, 16084));
-// broadcasts.set(16091, new Broadcast(defaultUrl, 16091));
+broadcasts.set(16001, new Broadcast(defaultUrl, 16001));
+broadcasts.set(16002, new Broadcast(defaultUrl, 16002));
+broadcasts.set(16053, new Broadcast(defaultUrl, 16053));
+broadcasts.set(16063, new Broadcast(defaultUrl, 16063));
+broadcasts.set(16065, new Broadcast(defaultUrl, 16065));
+broadcasts.set(16066, new Broadcast(defaultUrl, 16066));
+broadcasts.set(16083, new Broadcast(defaultUrl, 16083));
+broadcasts.set(16084, new Broadcast(defaultUrl, 16084));
+broadcasts.set(16091, new Broadcast(defaultUrl, 16091));
 broadcasts.set(16092, new Broadcast(defaultUrl, 16092));
-// broadcasts.set(16093, new Broadcast(defaultUrl, 16093));
+broadcasts.set(16093, new Broadcast(defaultUrl, 16093));
 
 export default broadcasts;
