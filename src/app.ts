@@ -18,7 +18,7 @@ app.use(compression());
 
 // TODO: Run static assets through a script for
 // production readiness
-app.use(express.static('public'));
+app.use(express.static('build/public'));
 
 // GET /
 // GET /:port
@@ -27,4 +27,7 @@ app.use(express.static('public'));
 app.use(routes);
 
 // GET /admin
+// POST /admin/new
+// POST /admin/reconnect
+// POST /admin/close
 app.use('/admin', adminRoutes);

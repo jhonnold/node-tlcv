@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import basic from 'express-basic-auth';
 import broadcasts, { Broadcast, defaultUrl } from '../broadcast';
+import { logger } from '../util';
 
 const router = Router();
 
@@ -20,20 +21,28 @@ router.post('/close', (req: Request, res: Response) => {
   const broadcast = broadcasts.get(port);
 
   if (broadcast) {
+    logger.info(`Closing broadcast ${broadcast.game.name} @ port ${broadcast.port}`);
+
     broadcast.close();
     broadcasts.delete(port);
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(400);
   }
-
-  res.redirect('/admin');
 });
 
 router.post('/reconnect', (req: Request, res: Response) => {
   const port: number = req.body.port;
   const broadcast = broadcasts.get(port);
 
-  if (broadcast) broadcast.reconnect();
+  if (broadcast) {
+    logger.info(`Reconnecting broadcast ${broadcast.game.name} @ port ${broadcast.port}`);
+    broadcast.reconnect();
 
-  res.redirect('/admin');
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(400);
+  }
 });
 
 router.post('/new', (req: Request, res: Response) => {
