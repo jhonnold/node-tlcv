@@ -21,6 +21,7 @@ export type SerializedPlayer = {
   startTime: number;
   lastMove: Move | null;
   pv: Array<string>;
+  pvMoveNumber: number;
 };
 
 export class ChessGame {
@@ -144,6 +145,7 @@ export class Player {
   private _startTime: number;
   private _lastMove: Move | null;
   private _pv: Array<string>; // san representation
+  private _pvMoveNumber: number;
 
   constructor() {
     this._name = 'Unknown';
@@ -155,6 +157,7 @@ export class Player {
     this._startTime = 0;
     this._lastMove = null;
     this._pv = new Array<string>();
+    this._pvMoveNumber = 0;
   }
 
   reset(): void {
@@ -167,6 +170,7 @@ export class Player {
     this._startTime = 0;
     this._lastMove = null;
     this._pv = new Array<string>();
+    this._pvMoveNumber = 0;
   }
 
   toJSON(): SerializedPlayer {
@@ -180,6 +184,7 @@ export class Player {
       startTime: this._startTime,
       lastMove: this._lastMove,
       pv: this._pv,
+      pvMoveNumber: this._pvMoveNumber,
     };
   }
 
@@ -253,5 +258,13 @@ export class Player {
 
   public set pv(v: Array<string>) {
     this._pv = v;
+  }
+
+  public get pvMoveNumber(): number {
+    return this._pvMoveNumber;
+  }
+
+  public set pvMoveNumber(v: number) {
+    this._pvMoveNumber = v;
   }
 }

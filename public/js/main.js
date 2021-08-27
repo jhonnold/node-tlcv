@@ -18,9 +18,7 @@ function updateInfo(game, color) {
   updateElText($(`#${color}-depth`), game[color].depth);
   updateElText($(`#${color}-nodes`), (game[color].nodes / 1000000).toFixed(2) + 'm');
   updateElText($(`#${color}-nps`), (game[color].nodes / game[color].usedTime / 1000).toFixed(2) + 'm');
-
-  // Only update PV if its STM
-  if (color.startsWith(game.stm)) $(`#${color}-pv`).html(pv(game, color));
+  $(`#${color}-pv`).html(pv(game, color));
 }
 
 function update(data, board) {
