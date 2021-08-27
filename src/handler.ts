@@ -115,9 +115,18 @@ class Handler {
     this._game[color].nodes = parseInt(rest[3]);
     this._game[color].usedTime = parseInt(rest[2]) * 10;
 
-    const copy = new Chess(this._game.instance.fen());
+    const copy = new Chess();
+    copy.load_pgn(this._game.instance.pgn());
+
     const pv = rest.slice(4);
     const parsed = new Array<string>();
+
+    // If the PV is not for the current STM then we undo the last move
+    // and attempt to parse the PV from that position. This will happen when
+    // the final pv is sent after the best move was sent. (See issue #9)
+    if (!color.startsWith(copy.turn()))
+      copy.undo();
+
     for (const alg of pv) {
       const move = copy.move(alg, { sloppy: true });
       if (!move) break;
@@ -157,6 +166,8 @@ class Handler {
     const notColor: Color = command == Command.WMOVE ? 'black' : 'white';
 
     this._game.moveNumber = parseInt(rest[0].replace('.', ''));
+    if (color == 'white') this._game.black.pvMoveNumber = this._game.moveNumber;
+    else this._game.white.pvMoveNumber = this._game.moveNumber + 1;
 
     const move = this._game.instance.move(rest[1]);
     if (move) {
@@ -233,8 +244,7 @@ class Handler {
     else {
       const updated = commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
 
-      if (updated)
-        io.to(String(this._broadcast.port)).emit('update', this._broadcast.toJSON());
+      if (updated) io.to(String(this._broadcast.port)).emit('update', this._broadcast.toJSON());
     }
 
     return messageId;
