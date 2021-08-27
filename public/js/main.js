@@ -72,6 +72,12 @@ $(function () {
     sendMsg(socket, $(this));
   });
 
+  // Nickname change
+  $('#username').on('blur', function() {
+    localStorage.setItem('tlcv.net-username', username());
+    socket.emit('nick', username());
+  });
+
   // connect
   socket.on('connect', () => socket.emit('join', { port, user: username() }));
   socket.on('update', (data) => {

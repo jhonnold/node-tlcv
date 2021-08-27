@@ -30,10 +30,13 @@ io.on('connection', (socket: Socket) => {
   socket.on('nick', (user: string) => {
     if (!broadcast) return;
 
-    if (username) broadcast.spectators.delete(username);
+    const originalUsername = username;
 
+    if (username) broadcast.spectators.delete(username);
     username = uniqueName(user, broadcast.spectators);
     if (username) broadcast.spectators.add(username);
+
+    logger.info(`${originalUsername} changed their name to ${username}!`);
 
     socket.emit('update', broadcast.toJSON());
   });
