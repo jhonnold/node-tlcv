@@ -22,7 +22,7 @@ function updateInfo(game, color) {
 }
 
 function update(data, board) {
-  const { game, spectators, chat } = data;
+  const { game, spectators, chat, menu } = data;
 
   updateInfo(game, 'white');
   updateInfo(game, 'black');
@@ -43,6 +43,39 @@ function update(data, board) {
   chat.forEach((msg) => {
     $('#chat-box').append($('<p>').text(msg));
   });
+
+  const $eventThreadButton = $('#event-thread');
+  const $scheduleButton = $('#schedule');
+
+  if (menu.schedule) {
+    if (!$scheduleButton[0])
+      $('#button-container').append(
+        $('<a>')
+          .attr('href', menu.schedule)
+          .attr('class', 'primary button')
+          .attr('id', 'schedule')
+          .attr('target', '_blank')
+          .text('Schedule'),
+      );
+    else if ($scheduleButton.attr('href') != menu.schedule) $scheduleButton.attr('href', menu.schedule);
+  } else {
+    $scheduleButton.remove();
+  }
+
+  if (menu.even) {
+    if (!$eventThreadButton[0])
+      $('#button-container').append(
+        $('<a>')
+          .attr('href', menu.even)
+          .attr('class', 'primary button')
+          .attr('id', 'event-thread')
+          .attr('target', '_blank')
+          .text('Event'),
+      );
+    else if ($eventThreadButton.attr('href') != menu.even) $eventThreadButton.attr('href', menu.even);
+  } else {
+    $eventThreadButton.remove();
+  }
 }
 
 function chatHeight() {
