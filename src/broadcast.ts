@@ -11,6 +11,7 @@ export type SerializedBroadcast = {
   spectators: Array<string>;
   browserCount: number;
   chat: Array<string>;
+  menu: { [key: string]: string };
 };
 
 export class Broadcast {
@@ -20,6 +21,7 @@ export class Broadcast {
   private _browserCount: number;
   private _spectators: Set<string>;
   private _chat: Array<string>;
+  private _menu: Map<string, string>;
   private _game: ChessGame;
   private _handler: Handler;
   private _connection: Connection;
@@ -40,6 +42,7 @@ export class Broadcast {
     this._results = '';
     this._spectators = new Set();
     this._chat = [];
+    this._menu = new Map<string, string>();
   }
 
   loadResults(): Promise<string> {
@@ -74,11 +77,15 @@ export class Broadcast {
   }
 
   toJSON(): SerializedBroadcast {
+    const menu: { [key: string]: string } = {};
+    for (const e of this._menu.entries()) menu[e[0]] = e[1];
+
     return {
       game: this.game.toJSON(),
       spectators: Array.from(this._spectators),
       browserCount: this._browserCount,
       chat: this._chat.slice(-100),
+      menu,
     };
   }
 
@@ -112,6 +119,10 @@ export class Broadcast {
 
   public set browserCount(v: number) {
     this._browserCount = v;
+  }
+
+  public get menu(): Map<string, string> {
+    return this._menu;
   }
 }
 

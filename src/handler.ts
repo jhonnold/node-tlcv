@@ -23,6 +23,7 @@ export enum Command {
   ADDUSER = 'ADDUSER',
   DELUSER = 'DELUSER',
   CHAT = 'CHAT',
+  MENU = 'MENU',
 }
 
 type ConfigItem = {
@@ -62,6 +63,7 @@ class Handler {
       [Command.ADDUSER]: { fn: this.onAddUser.bind(this), split: false },
       [Command.DELUSER]: { fn: this.onDelUser.bind(this), split: false },
       [Command.CHAT]: { fn: this.onChat.bind(this), split: false },
+      [Command.MENU]: { fn: this.onMenu.bind(this), split: true },
     };
   }
 
@@ -220,6 +222,26 @@ class Handler {
   private onChat(tokens: CommandTokens): boolean {
     this._broadcast.chat.push(tokens[1]);
 
+    return true;
+  }
+
+  private onMenu(tokens: CommandTokens): boolean {
+    let nameIdx = -1;
+    let valueIdx = -1;
+
+    tokens.forEach((v, i) => {
+      if (v.startsWith('NAME=')) nameIdx = i;
+      if (v.startsWith('URL=')) valueIdx = i;
+    });
+
+    if (nameIdx == -1 || valueIdx == -1) return false;
+
+    const name = tokens[nameIdx].slice(6, -1).toLowerCase(); // chop NAME="
+    const url = tokens[valueIdx].slice(5, -1); // chop URL="
+
+    this._broadcast.menu.set(name, url);
+
+    logger.info(`Updated broadcast ${this._broadcast.port} Menu - Name: ${name}, Value: ${url}`);
     return true;
   }
 

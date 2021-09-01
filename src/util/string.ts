@@ -1,7 +1,7 @@
 import { Command } from '../handler';
 
 export function splitOnCommand(line: string): [Command, string] {
-  const argSplit = line.indexOf(':');
+  const argSplit = Math.min(line.indexOf(':'), line.indexOf(' '));
 
   if (argSplit < 0) return [line as Command, ''];
 
