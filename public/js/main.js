@@ -45,6 +45,10 @@ function update(data, board) {
   });
 }
 
+function chatHeight() {
+  return $('#board').height() - 318;
+}
+
 $(function () {
   const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg' });
   const socket = io({ autoConnect: false });
@@ -53,11 +57,11 @@ $(function () {
   $('#username').val(localStorage.getItem('tlcv.net-username'));
 
   // We fix the chat-area height to match the board height
-  $('#chat-area').height($('#board').height() - 318);
+  $('#chat-area').height(chatHeight());
 
   $(window).on('resize', () => {
     board.resize();
-    $('#chat-area').height($('#board').height() - 318);
+    $('#chat-area').height(chatHeight());
   });
 
   // Setup FEN copy
@@ -73,7 +77,7 @@ $(function () {
   });
 
   // Nickname change
-  $('#username').on('blur', function() {
+  $('#username').on('blur', function () {
     localStorage.setItem('tlcv.net-username', username());
     socket.emit('nick', username());
   });
@@ -81,13 +85,14 @@ $(function () {
   // connect
   socket.on('connect', () => socket.emit('join', { port, user: username() }));
   socket.on('update', (data) => {
+    const notScrolled = $('#chat-box')[0].scrollTop + chatHeight() > $('#chat-box')[0].scrollHeight;
+
     update(data, board);
 
-    $('#chat-box')
-      .stop()
-      .animate({
-        scrollTop: $('#chat-box')[0].scrollHeight,
-      });
+    if (notScrolled) {
+      const scrollTop = $('#chat-box')[0].scrollHeight;
+      $('#chat-box').stop().animate({ scrollTop });
+    }
   });
   socket.connect();
 });
