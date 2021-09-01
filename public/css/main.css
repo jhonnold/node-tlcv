@@ -76,8 +76,8 @@
   grid-column-start: 2;
 
   display: grid;
-  grid-template-columns: auto minmax(120px, 160px);
-  grid-template-rows: auto min-content;
+  grid-template-columns: auto minmax(80px, 160px);
+  grid-template-rows: 40px auto 40px;
   gap: var(--universal-margin);
 }
 
@@ -96,6 +96,8 @@
   flex-direction: column;
   justify-content: flex-start;
   overflow: auto;
+  grid-row-start: 1;
+  grid-row-end: 3;
 }
 
 .spectator-wrapper {
@@ -107,18 +109,21 @@
 
 #spectator-box {
   width: 100%;
-  flex: 1;
-  margin: 0 var(--universal-margin);
+  height: 100%;
+  max-height: 100%;
+  grid-column: 2;
+  grid-row: 2;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  overflow: hidden;
+  overflow: auto;
   padding: 0;
 }
 
 .username-container {
   border: none;
-  margin: 0 var(--universal-margin) var(--universal-margin) var(--universal-margin);
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .username-container > input {
