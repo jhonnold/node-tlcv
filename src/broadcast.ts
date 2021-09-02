@@ -1,9 +1,8 @@
 import Connection from './connection';
 import Handler from './handler';
 import { ChessGame, SerializedGame } from './chess-game';
+import { config } from './config';
 
-export const defaultUrl = '125.237.41.141';
-export const defaultPort = 16001;
 export const username = 'tlcv.net';
 
 export type SerializedBroadcast = {
@@ -27,7 +26,7 @@ export class Broadcast {
   private _connection: Connection;
   private _pings: NodeJS.Timeout;
 
-  constructor(url = defaultUrl, port = defaultPort) {
+  constructor(url = config.url, port = config.ports[0]) {
     this._url = url;
     this._port = port;
 
@@ -127,16 +126,8 @@ export class Broadcast {
 }
 
 const broadcasts = new Map<number, Broadcast>();
-broadcasts.set(16001, new Broadcast(defaultUrl, 16001));
-broadcasts.set(16002, new Broadcast(defaultUrl, 16002));
-broadcasts.set(16053, new Broadcast(defaultUrl, 16053));
-broadcasts.set(16063, new Broadcast(defaultUrl, 16063));
-broadcasts.set(16065, new Broadcast(defaultUrl, 16065));
-broadcasts.set(16066, new Broadcast(defaultUrl, 16066));
-broadcasts.set(16083, new Broadcast(defaultUrl, 16083));
-broadcasts.set(16084, new Broadcast(defaultUrl, 16084));
-broadcasts.set(16091, new Broadcast(defaultUrl, 16091));
-broadcasts.set(16092, new Broadcast(defaultUrl, 16092));
-broadcasts.set(16093, new Broadcast(defaultUrl, 16093));
+config.ports.forEach(p => {
+  broadcasts.set(p, new Broadcast(config.url, p));
+});
 
 export default broadcasts;

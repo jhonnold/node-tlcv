@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import broadcasts, { Broadcast, defaultPort } from '../broadcast';
+import broadcasts, { Broadcast } from '../broadcast';
+import { config } from '../config';
 
 interface RequestWithBroadcast extends Request {
   broadcast: Broadcast;
@@ -8,10 +9,10 @@ interface RequestWithBroadcast extends Request {
 const router = Router();
 
 router.get('/', (_: Request, res: Response): void => {
-  res.redirect(`/${defaultPort}`);
+  res.redirect(`/${config.ports[0]}`);
 });
 
-router.use('/:port(160[0-9]{2})', (req: Request, res: Response, next: NextFunction): void => {
+router.use('/:port([0-9]+)', (req: Request, res: Response, next: NextFunction): void => {
   const port: number = parseInt(req.params.port);
   const broadcast: Broadcast | undefined = broadcasts.get(port);
 
@@ -24,17 +25,17 @@ router.use('/:port(160[0-9]{2})', (req: Request, res: Response, next: NextFuncti
   next();
 });
 
-router.get('/:port(160[0-9]{2})', (req: Request, res: Response): void => {
+router.get('/:port([0-9]+)', (req: Request, res: Response): void => {
   const { broadcast } = req as RequestWithBroadcast;
   res.render('index', { game: broadcast.game, port: broadcast.port });
 });
 
-router.get('/:port(160[0-9]{2})/pgn', (req: Request, res: Response): void => {
+router.get('/:port([0-9]+)/pgn', (req: Request, res: Response): void => {
   const { broadcast } = req as RequestWithBroadcast;
   res.status(200).contentType('text/plain').send(broadcast.game.instance.pgn());
 });
 
-router.get('/:port(160[0-9]{2})/result-table', async (req: Request, res: Response): Promise<void> => {
+router.get('/:port([0-9]+)/result-table', async (req: Request, res: Response): Promise<void> => {
   const { broadcast } = req as RequestWithBroadcast;
   const results = await broadcast.loadResults();
 
