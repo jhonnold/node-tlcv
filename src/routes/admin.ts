@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import basic from 'express-basic-auth';
-import broadcasts, { Broadcast, defaultUrl } from '../broadcast';
+import broadcasts, { Broadcast } from '../broadcast';
+import { config } from '../config';
 import { logger } from '../util';
 
 const router = Router();
@@ -48,8 +49,8 @@ router.post('/reconnect', (req: Request, res: Response) => {
 router.post('/new', (req: Request, res: Response) => {
   const port = parseInt(req.body.port);
 
-  if (!broadcasts.has(port) && port >= 16000 && port <= 16099) {
-    broadcasts.set(port, new Broadcast(defaultUrl, port));
+  if (!broadcasts.has(port)) {
+    broadcasts.set(port, new Broadcast(config.url, port));
     setTimeout(() => res.sendStatus(200), 500); // just let some data populate
   } else {
     res.sendStatus(400);
