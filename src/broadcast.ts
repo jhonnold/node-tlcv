@@ -131,14 +131,12 @@ const broadcasts = new Map<number, Broadcast>();
 const lookup = (hostname: string): Promise<string> =>
   new Promise((res, rej) => dns.lookup(hostname, (err, addr) => (err ? rej(err) : res(addr))));
 
-async function connect() {
+export async function connect(): Promise<void> {
   const url = await lookup(config.url);
 
   config.ports.forEach((p) => {
     broadcasts.set(p, new Broadcast(url, p));
   });
 }
-
-connect();
 
 export default broadcasts;
