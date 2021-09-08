@@ -1,3 +1,4 @@
+import dns from 'dns';
 import Connection from './connection';
 import Handler from './handler';
 import { ChessGame, SerializedGame } from './chess-game';
@@ -126,8 +127,18 @@ export class Broadcast {
 }
 
 const broadcasts = new Map<number, Broadcast>();
-config.ports.forEach(p => {
-  broadcasts.set(p, new Broadcast(config.url, p));
-});
+
+const lookup = (hostname: string): Promise<string> =>
+  new Promise((res, rej) => dns.lookup(hostname, (err, addr) => (err ? rej(err) : res(addr))));
+
+async function connect() {
+  const url = await lookup(config.url);
+
+  config.ports.forEach((p) => {
+    broadcasts.set(p, new Broadcast(url, p));
+  });
+}
+
+connect();
 
 export default broadcasts;
