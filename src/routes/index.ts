@@ -1,6 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import broadcasts, { Broadcast } from '../broadcast';
-import { config } from '../config';
 
 interface RequestWithBroadcast extends Request {
   broadcast: Broadcast;
@@ -9,7 +8,9 @@ interface RequestWithBroadcast extends Request {
 const router = Router();
 
 router.get('/', (_: Request, res: Response): void => {
-  res.redirect(`/${config.ports[0]}`);
+  const [first] = broadcasts.values();
+
+  res.redirect(`/${first.port}`);
 });
 
 router.use('/:port([0-9]+)', (req: Request, res: Response, next: NextFunction): void => {
