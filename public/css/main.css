@@ -18,8 +18,6 @@
 .pv {
   white-space: nowrap;
   overflow: auto hidden;
-  scrollbar-width: thin;
-  height: 24px;
 }
 
 .main-layout {
@@ -37,14 +35,14 @@
 #black-info {
   grid-row-start: 1;
   grid-column-start: 2;
-  min-height: 160px;
+  min-height: 155px;
 }
 
 #white-info {
   grid-row-start: 4;
   grid-column-start: 2;
   align-self: flex-end;
-  min-height: 160px;
+  min-height: 155px;
 }
 
 .below-board {
