@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Backend Server for viewing TLCV chess games.",
   "engines": {
-    "node": ">= 14.16 <15"
+    "node": ">= 12"
   },
   "dependencies": {
     "chalk": "^4.1.2",
