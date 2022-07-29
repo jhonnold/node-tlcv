@@ -16,8 +16,8 @@ function updateInfo(game, color) {
   updateElText($(`#${color}-name`), game[color].name);
   updateElText($(`#${color}-score`), game[color].score.toFixed(2));
   updateElText($(`#${color}-depth`), game[color].depth);
-  updateElText($(`#${color}-nodes`), (game[color].nodes / 1000000).toFixed(2) + 'm');
-  updateElText($(`#${color}-nps`), (game[color].nodes / game[color].usedTime / 1000).toFixed(2) + 'm');
+  updateElText($(`#${color}-nodes`), (game[color].nodes / 1000000).toFixed(2) + 'M');
+  updateElText($(`#${color}-nps`), (game[color].nodes / game[color].usedTime / 1000).toFixed(2) + 'M');
   $(`#${color}-pv`).html(pv(game, color));
 }
 
