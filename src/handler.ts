@@ -24,6 +24,7 @@ export enum Command {
   DELUSER = 'DELUSER',
   CHAT = 'CHAT',
   MENU = 'MENU',
+  RESULT = 'result',
 }
 
 type ConfigItem = {
@@ -64,6 +65,7 @@ class Handler {
       [Command.DELUSER]: { fn: this.onDelUser.bind(this), split: false },
       [Command.CHAT]: { fn: this.onChat.bind(this), split: false },
       [Command.MENU]: { fn: this.onMenu.bind(this), split: true },
+      [Command.RESULT]: { fn: this.onResult.bind(this), split: false },
     };
   }
 
@@ -245,6 +247,12 @@ class Handler {
     return true;
   }
 
+  private onResult(tokens: CommandTokens): boolean {
+    this._broadcast.chat.push(`[Server] - ${this._game.white.name} - ${this._game.black.name} (${tokens[1].trim()})`);
+
+    return true;
+  }
+
   onMessage(buff: Buffer): string | null {
     let messageId: string | null = null;
     let str = buff.toString().trim();
@@ -260,6 +268,7 @@ class Handler {
     }
 
     const [cmd, rest] = splitOnCommand(str);
+
     const commandConfig = this._commandConfig[cmd] as ConfigItem | undefined;
 
     if (!commandConfig) logger.warn(`Unable to process ${cmd}!`);
