@@ -79,7 +79,7 @@ function update(data, board) {
 }
 
 function chatHeight() {
-  return $('#board').height() - 318;
+  return $('#board').height() - 335;
 }
 
 $(function () {
