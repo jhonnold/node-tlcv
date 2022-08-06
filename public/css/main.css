@@ -17,7 +17,7 @@
 
 .pv {
   white-space: nowrap;
-  overflow: auto hidden;
+  overflow: hidden;
 }
 
 .main-layout {
