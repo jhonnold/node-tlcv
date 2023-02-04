@@ -41,7 +41,16 @@ function update(data, board) {
 
   $('#chat-box').children().remove();
   chat.forEach((msg) => {
-    $('#chat-box').append($('<p>').text(msg));
+    if (msg.startsWith('[tlcv.net')) {
+      const res = /\[(.*)\]\s+-\s+\((.*)\)\s+(.*)/i.exec(msg);
+      if (res) msg = `[${res[2]}] - ${res[3]}`;
+    }
+
+    const split = msg.split('-');
+    const name = split.shift();
+    const rest = split.join('-');
+
+    $('#chat-box').append($('<p>').text(rest).prepend($('<strong>').text(name)));
   });
 
   const $eventThreadButton = $('#event-thread');
@@ -83,7 +92,7 @@ function chatHeight() {
 }
 
 $(function () {
-  const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg' });
+  const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
   const socket = io({ autoConnect: false });
 
   // pull username from storage
@@ -128,4 +137,9 @@ $(function () {
     }
   });
   socket.connect();
+
+  $('#theme-btn').on('click', () => {
+    const curr = $('#theme').attr('href');
+    $('#theme').attr('href', curr == '/css/main.css' ? '/css/dark-theme.css' : '/css/main.css');
+  });
 });

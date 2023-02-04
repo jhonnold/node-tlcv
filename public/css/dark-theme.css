@@ -1,0 +1,274 @@
+@import url('https://fonts.googleapis.com/css2?family=Red+Hat+Text:wght@300;500;700&display=swap');
+
+body {
+  background-color: #272a2c;
+  color: #aaaaaa;
+  font-family: 'Red Hat Text', sans-serif;
+  font-weight: 500;
+}
+
+.white-1e1d7 {
+  background-color: #c7c7c7;
+}
+
+.black-3c85d {
+  background-color: #71828f;
+}
+
+.highlight {
+  box-shadow: inset 0 1000px #99d69e80;
+}
+
+.board-b72b1 {
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.card {
+  background-color: #333538;
+  border-color: #404246;
+  color: #f2f5f3;
+}
+
+.info {
+  border-right: 1px solid #404246;
+}
+
+.info:last-of-type {
+  border: none;
+}
+
+.info-header {
+  font-weight: 300;
+  text-align: center;
+  width: 100%;
+  display: inline-block;
+  color: #aaa;
+}
+
+.info-value {
+  text-align: center;
+  margin-top: 100px;
+}
+
+#chat-area input {
+  background-color: #333538;
+  border-color: #404246;
+  color: #f2f5f3;
+}
+
+#chat-area input:focus {
+  outline: 0 none;
+}
+
+#chat-box {
+  font-weight: 300;
+}
+
+#fen {
+  background-color: #333538;
+  border-color: #404246;
+  border-left-color: #f5c276;
+}
+
+button.primary {
+  background-color: #9fc0a2;
+  color: #f2f5f3;
+  font-family: 'Red Hat Text', sans-serif;
+  font-weight: 500;
+}
+
+button.primary:hover {
+  background-color: #9fc0a280;
+}
+
+a.primary.button {
+  background-color: #9fc0a2;
+  color: #f2f5f3;
+}
+
+a.primary.button:hover {
+  background-color: #9fc0a280;
+}
+
+h3 small,
+h6 small {
+  color: #aaaaaa;
+}
+
+a:link {
+  color: #9fc0a2;
+}
+
+a:visited {
+  color: #9fc0a2;
+}
+
+mark {
+  background-color: #9fc0a2;
+  color: #f2f5f3;
+}
+
+.pv {
+  color: #f2f5f3;
+  font-weight: 300;
+}
+
+strong {
+  color: #f5c276;
+  font-weight: 700;
+}
+
+.container {
+  max-width: 150vh;
+  padding: var(--universal-padding);
+}
+
+.small-margin {
+  margin: calc(var(--universal-margin) / 4);
+}
+
+.credits {
+  text-align: center;
+}
+
+.pv {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.main-layout {
+  display: grid;
+  grid-template-columns: 60% 40%;
+  grid-template-rows: auto 1fr 1fr auto auto;
+}
+
+#board-container {
+  grid-row-start: 1;
+  grid-row-end: 5;
+  grid-column-start: 1;
+}
+
+#black-info {
+  grid-row-start: 1;
+  grid-column-start: 2;
+  min-height: 155px;
+}
+
+#white-info {
+  grid-row-start: 4;
+  grid-column-start: 2;
+  align-self: flex-end;
+  min-height: 155px;
+}
+
+.below-board {
+  grid-row-start: 5;
+  grid-column-start: 1;
+}
+
+#fen-tooltip {
+  width: 100%;
+  cursor: pointer;
+}
+
+#fen {
+  padding: calc(var(--universal-padding) / 2);
+  text-align: center;
+}
+
+#button-container {
+  grid-row-start: 5;
+  grid-column-start: 2;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+#chat-area {
+  margin: var(--universal-margin);
+  grid-row-start: 2;
+  grid-row-end: 4;
+  grid-column-start: 2;
+
+  display: grid;
+  grid-template-columns: auto minmax(80px, 160px);
+  grid-template-rows: 40px auto 40px;
+  gap: var(--universal-margin);
+}
+
+#chat-area > * {
+  margin: 0 !important;
+}
+
+#chat-area * {
+  font-size: 0.875rem;
+}
+
+#chat-box {
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: auto;
+  grid-row-start: 1;
+  grid-row-end: 3;
+}
+
+.spectator-wrapper {
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+}
+
+#spectator-box {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: auto;
+  padding: 0;
+}
+
+.username-container {
+  border: none;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.username-container > input {
+  margin: 0;
+}
+
+@media screen and (max-width: 767px) {
+  .main-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #white-info {
+    align-self: auto;
+  }
+
+  #chat-area {
+    height: 400px !important;
+  }
+}
+
+.other {
+  display: flex;
+  justify-content: center;
+}
+
+#theme-btn {
+  padding: 2px;
+  font-size: 12px;
+}

@@ -1,3 +1,8 @@
+body {
+  background-color: #fafafa;
+  color: #090909;
+}
+
 .container {
   max-width: 150vh;
   padding: var(--universal-padding);
@@ -143,4 +148,14 @@
   #chat-area {
     height: 400px !important;
   }
+}
+
+.other {
+  display: flex;
+  justify-content: center;
+}
+
+#theme-btn {
+  padding: 2px;
+  font-size: 12px;
 }
