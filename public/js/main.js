@@ -14,7 +14,7 @@ function updateElText(el, val) {
 
 function updateInfo(game, color) {
   let score = game[color].score;
-  if (color === "black") score *= -1;
+  if (color === 'black') score *= -1;
   updateElText($(`#${color}-name`), game[color].name);
   updateElText($(`#${color}-score`), score.toFixed(2));
   updateElText($(`#${color}-depth`), game[color].depth);
@@ -101,17 +101,18 @@ const getPreferredTheme = () => {
 };
 
 const setTheme = (theme) => {
-  if (theme === "dark") {
-    $("#theme-light").show();
-    $("#theme-dark").hide();
-    const link = document.createElement("link");
-    link["rel"] = "stylesheet";
-    link["href"] = "/css/dark-theme.css";
-    $("head").append(link);
+  if (theme === 'dark') {
+    $('#theme-light').show();
+    $('#theme-dark').hide();
+    const link = document.createElement('link');
+    link['rel'] = 'stylesheet';
+    link['href'] = '/css/dark-theme.css';
+    $('head').append(link);
   } else {
-    $("#theme-light").hide();
-    $("#theme-dark").show();
-    $('head [href="/css/dark-theme.css"]')?.remove();
+    $('#theme-light').hide();
+    $('#theme-dark').show();
+    const darkTheme = $('head [href="/css/dark-theme.css"]');
+    if (darkTheme) darkTheme.remove();
   }
   localStorage.setItem('theme', theme);
 };
@@ -165,6 +166,6 @@ $(function () {
   });
   socket.connect();
 
-  $("#theme-light").on("click", () => setTheme("light"));
-  $("#theme-dark").on("click", () => setTheme("dark"));
+  $('#theme-light').on('click', () => setTheme('light'));
+  $('#theme-dark').on('click', () => setTheme('dark'));
 });
