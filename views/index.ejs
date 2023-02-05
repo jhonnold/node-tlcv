@@ -33,7 +33,7 @@
           </div>
         </div>
         <%- include('info-card', { color: 'white' }) %> <%- include('chat') %>
-        <div id="button-container">
+        <div id="button-container" class="row">
           <a href="/<%= port %>/pgn" target="_blank" class="primary button">PGN</a>
           <a href="/<%= port %>/result-table" target="_blank" class="primary button">Results</a>
         </div>
@@ -48,7 +48,8 @@
         </small>
       </h6>
       <h6 class="other">
-        <a id="theme-btn" class="primary button">Change theme</a>
+        <a id="theme-dark" class="primary button theme-btn" style="display: none">Switch to dark theme</a>
+        <a id="theme-light" class="primary button theme-btn" style="display: none">Switch to light theme</a>
       </h6>
     </div>
     <script src="/socket.io/socket.io.js"></script>
