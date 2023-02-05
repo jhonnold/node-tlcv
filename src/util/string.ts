@@ -8,11 +8,9 @@ export function splitOnCommand(line: string): [Command, string] {
   let argSplit = semiIdx;
 
   // If no semi-colon assign it to space
-  if (semiIdx < 0)
-    argSplit = spaceIdx;
+  if (semiIdx < 0) argSplit = spaceIdx;
   // If both, then choose the first one
-  else if (spaceIdx >= 0)
-    argSplit = Math.min(semiIdx, spaceIdx);
+  else if (spaceIdx >= 0) argSplit = Math.min(semiIdx, spaceIdx);
 
   if (argSplit < 0) return [line as Command, ''];
 

@@ -128,8 +128,7 @@ class Handler {
     // If the PV is not for the current STM then we undo the last move
     // and attempt to parse the PV from that position. This will happen when
     // the final pv is sent after the best move was sent. (See issue #9)
-    if (!color.startsWith(copy.turn()))
-      copy.undo();
+    if (!color.startsWith(copy.turn())) copy.undo();
 
     for (const alg of pv) {
       const move = copy.move(alg, { sloppy: true });
@@ -222,8 +221,10 @@ class Handler {
   }
 
   private onChat(tokens: CommandTokens): boolean {
-    this._broadcast.chat.push(tokens[1]);
+    // Disable connection messages. TODO: Make this configurable
+    if (tokens[0].endsWith('has arrived!') || tokens[0].endsWith('has left!')) return false;
 
+    this._broadcast.chat.push(tokens[1]);
     return true;
   }
 

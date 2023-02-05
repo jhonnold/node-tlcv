@@ -5,5 +5,5 @@ type NodeTLCVConfig = {
 
 export const config: NodeTLCVConfig = {
   url: 'GrahamCCRL.dyndns.org',
-  ports: [16092],
+  ports: [16067],
 };

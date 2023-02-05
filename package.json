@@ -67,7 +67,7 @@
     "lint": "eslint . --ext .ts,.tsx",
     "test": "jest --coverage --passWithNoTests",
     "test:watch": "jest --watch",
-    "format": "prettier --write src"
+    "format": "prettier --write {src,public}/**/*.{js,html,ts,css}"
   },
   "author": "Jay Honnold <jayhonnold@gmail.com>",
   "license": "MIT"
