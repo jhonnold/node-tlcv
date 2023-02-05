@@ -9,7 +9,7 @@ body {
 }
 
 .highlight {
-  box-shadow: inset 0 0 3px 3px #1565c0;
+  box-shadow: inset 0 0 0 1000px #ffff0080;
 }
 
 .small-margin {
@@ -155,7 +155,7 @@ body {
   justify-content: center;
 }
 
-#theme-btn {
-  padding: 2px;
+.theme-btn {
+  padding: 2px !important;
   font-size: 12px;
 }

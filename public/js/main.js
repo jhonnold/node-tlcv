@@ -13,8 +13,10 @@ function updateElText(el, val) {
 }
 
 function updateInfo(game, color) {
+  let score = game[color].score;
+  if (color === "black") score *= -1;
   updateElText($(`#${color}-name`), game[color].name);
-  updateElText($(`#${color}-score`), game[color].score.toFixed(2));
+  updateElText($(`#${color}-score`), score.toFixed(2));
   updateElText($(`#${color}-depth`), game[color].depth);
   updateElText($(`#${color}-nodes`), (game[color].nodes / 1000000).toFixed(2) + 'M');
   updateElText($(`#${color}-nps`), (game[color].nodes / game[color].usedTime / 1000).toFixed(2) + 'M');
@@ -91,6 +93,31 @@ function chatHeight() {
   return $('#board').height() - 318;
 }
 
+const storedTheme = localStorage.getItem('theme');
+
+const getPreferredTheme = () => {
+  if (storedTheme) return storedTheme;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const setTheme = (theme) => {
+  if (theme === "dark") {
+    $("#theme-light").show();
+    $("#theme-dark").hide();
+    const link = document.createElement("link");
+    link["rel"] = "stylesheet";
+    link["href"] = "/css/dark-theme.css";
+    $("head").append(link);
+  } else {
+    $("#theme-light").hide();
+    $("#theme-dark").show();
+    $('head [href="/css/dark-theme.css"]')?.remove();
+  }
+  localStorage.setItem('theme', theme);
+};
+
+setTheme(getPreferredTheme());
+
 $(function () {
   const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
   const socket = io({ autoConnect: false });
@@ -138,8 +165,6 @@ $(function () {
   });
   socket.connect();
 
-  $('#theme-btn').on('click', () => {
-    const curr = $('#theme').attr('href');
-    $('#theme').attr('href', curr == '/css/main.css' ? '/css/dark-theme.css' : '/css/main.css');
-  });
+  $("#theme-light").on("click", () => setTheme("light"));
+  $("#theme-dark").on("click", () => setTheme("dark"));
 });
