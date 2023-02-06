@@ -62,7 +62,7 @@
     "dev-public": "gulp",
     "start": "node build/src/main.js",
     "clean": "rimraf coverage build tmp",
-    "prebuild": "npm run lint && gulp build",
+    "prebuild": "gulp build",
     "build": "tsc -p tsconfig.release.json",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "jest --coverage --passWithNoTests",

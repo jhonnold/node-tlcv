@@ -76,7 +76,7 @@ export class Broadcast {
     setTimeout(() => this._connection.close(), 500);
   }
 
-  toJSON(includeChat: boolean = false): SerializedBroadcast {
+  toJSON(includeChat = false): SerializedBroadcast {
     const menu: { [key: string]: string } = {};
     for (const e of this._menu.entries()) menu[e[0]] = e[1];
 
