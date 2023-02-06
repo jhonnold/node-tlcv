@@ -6,6 +6,11 @@ import { io } from './io';
 
 type Color = 'white' | 'black';
 
+export enum EmitType {
+  UPDATE = 'update',
+  CHAT = 'new-chat',
+};
+
 export enum Command {
   FEN = 'FEN',
   WPLAYER = 'WPLAYER',
@@ -28,7 +33,7 @@ export enum Command {
 }
 
 type ConfigItem = {
-  fn: (tokens: CommandTokens) => boolean;
+  fn: (tokens: CommandTokens) => UpdateResult;
   split: boolean;
 };
 
@@ -37,6 +42,8 @@ type CommandConfig = {
 };
 
 type CommandTokens = [Command, ...Array<string>];
+
+type UpdateResult = [EmitType, boolean, ...Array<any>];
 
 class Handler {
   private _commandConfig: CommandConfig;
@@ -60,7 +67,7 @@ class Handler {
       [Command.SITE]: { fn: this.onSite.bind(this), split: false },
       [Command.CTRESET]: { fn: this.onCTReset.bind(this), split: false },
       [Command.CT]: { fn: this.onCT.bind(this), split: false },
-      [Command.PONG]: { fn: () => false, split: false },
+      [Command.PONG]: { fn: () => [EmitType.UPDATE, false], split: false },
       [Command.ADDUSER]: { fn: this.onAddUser.bind(this), split: false },
       [Command.DELUSER]: { fn: this.onDelUser.bind(this), split: false },
       [Command.CHAT]: { fn: this.onChat.bind(this), split: false },
@@ -69,7 +76,7 @@ class Handler {
     };
   }
 
-  private onFen(tokens: CommandTokens): boolean {
+  private onFen(tokens: CommandTokens): UpdateResult {
     const [, ...fenTokens] = tokens;
     const lastToken = fenTokens.slice(-1)[0];
 
@@ -84,14 +91,14 @@ class Handler {
     logger.info(`Updated game ${this._game.name} - FEN: ${this._game.fen}`);
 
     // Never update on the FEN since we maintain our own state
-    return false;
+    return [EmitType.UPDATE, false];
   }
 
-  private onPlayer(tokens: CommandTokens): boolean {
+  private onPlayer(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
     const name = rest.join(' ');
 
-    if (command != Command.WPLAYER && command != Command.BPLAYER) return false;
+    if (command != Command.WPLAYER && command != Command.BPLAYER)  return [EmitType.UPDATE, false];
 
     const color: Color = command == Command.WPLAYER ? 'white' : 'black';
 
@@ -101,16 +108,16 @@ class Handler {
       this._game.reset();
 
       logger.info(`Updated game ${this._game.name} - Color: ${color}, Name: ${this._game[color].name}`);
-      return true;
+      return [EmitType.UPDATE, true];
     }
 
-    return false;
+    return [EmitType.UPDATE, false];
   }
 
-  private onPV(tokens: CommandTokens): boolean {
+  private onPV(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WPV && command != Command.BPV) return false;
+    if (command != Command.WPV && command != Command.BPV) return [EmitType.UPDATE, false];
 
     const color: Color = command == Command.WPV ? 'white' : 'black';
 
@@ -145,25 +152,25 @@ class Handler {
     );
     logger.info(`Updated game ${this._game.name} - Color: ${color}, PV: ${this._game[color].pv.join(' ')}`);
 
-    return true;
+    return [EmitType.UPDATE, true];
   }
 
-  private onTime(tokens: CommandTokens): boolean {
+  private onTime(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WTIME && command != Command.BTIME) return false;
+    if (command != Command.WTIME && command != Command.BTIME) return [EmitType.UPDATE, false];
 
     const color: Color = command == Command.WTIME ? 'white' : 'black';
     this._game[color].clockTime = parseInt(rest[0]) * 10;
 
     logger.info(`Updated game ${this._game.name} - Color: ${color}, ClockTime: ${this._game[color].clockTime}`);
-    return true;
+    return [EmitType.UPDATE, true];
   }
 
-  private onMove(tokens: CommandTokens): boolean {
+  private onMove(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WMOVE && command != Command.BMOVE) return false;
+    if (command != Command.WMOVE && command != Command.BMOVE) return [EmitType.UPDATE, false];
 
     const color: Color = command == Command.WMOVE ? 'white' : 'black';
     const notColor: Color = command == Command.WMOVE ? 'black' : 'white';
@@ -185,50 +192,52 @@ class Handler {
 
     // start the timer for the other side
     this._game[notColor].startTime = new Date().getTime();
-    return true;
+    return [EmitType.UPDATE, true];
   }
 
-  private onSite(tokens: CommandTokens): boolean {
+  private onSite(tokens: CommandTokens): UpdateResult {
     const site = tokens.slice(1).join(' ');
 
     this._game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
 
     logger.info(`Updated game ${this._game.name} - Site: ${this._game.site}`);
-    return true;
+    return [EmitType.UPDATE, true];
   }
 
-  private onCTReset(): boolean {
+  private onCTReset(): UpdateResult {
     this._broadcast.results = '';
 
-    return false;
+    return [EmitType.UPDATE, false];
   }
 
-  private onCT(tokens: CommandTokens): boolean {
+  private onCT(tokens: CommandTokens): UpdateResult {
     this._broadcast.results += tokens[1] + '\n';
 
-    return false;
+    return [EmitType.UPDATE, false];
   }
 
-  private onAddUser(tokens: CommandTokens): boolean {
-    if (username == tokens[1] || this._broadcast.spectators.has(tokens[1])) return false;
+  private onAddUser(tokens: CommandTokens): UpdateResult {
+    if (username == tokens[1] || this._broadcast.spectators.has(tokens[1])) return [EmitType.UPDATE, false];
 
     this._broadcast.spectators.add(tokens[1]);
-    return true;
+    return [EmitType.UPDATE, true];
   }
 
-  private onDelUser(tokens: CommandTokens): boolean {
-    return this._broadcast.spectators.delete(tokens[1]);
+  private onDelUser(tokens: CommandTokens): UpdateResult {
+    const result = this._broadcast.spectators.delete(tokens[1]);
+
+    return [EmitType.UPDATE, result];
   }
 
-  private onChat(tokens: CommandTokens): boolean {
+  private onChat(tokens: CommandTokens): UpdateResult {
     // Disable connection messages. TODO: Make this configurable
-    if (tokens[0].endsWith('has arrived!') || tokens[0].endsWith('has left!')) return false;
+    if (tokens[0].endsWith('has arrived!') || tokens[0].endsWith('has left!')) return [EmitType.CHAT, false];
 
     this._broadcast.chat.push(tokens[1]);
-    return true;
+    return [EmitType.CHAT, true, tokens[1]];
   }
 
-  private onMenu(tokens: CommandTokens): boolean {
+  private onMenu(tokens: CommandTokens): UpdateResult {
     let nameIdx = -1;
     let valueIdx = -1;
 
@@ -237,7 +246,7 @@ class Handler {
       if (v.startsWith('URL=')) valueIdx = i;
     });
 
-    if (nameIdx == -1 || valueIdx == -1) return false;
+    if (nameIdx == -1 || valueIdx == -1) return [EmitType.UPDATE, false];
 
     const name = tokens[nameIdx].slice(6, -1).toLowerCase(); // chop NAME="
     const url = tokens[valueIdx].slice(5, -1); // chop URL="
@@ -245,13 +254,13 @@ class Handler {
     this._broadcast.menu.set(name, url);
 
     logger.info(`Updated broadcast ${this._broadcast.port} Menu - Name: ${name}, Value: ${url}`);
-    return true;
+    return [EmitType.UPDATE, true];
   }
 
-  private onResult(tokens: CommandTokens): boolean {
+  private onResult(tokens: CommandTokens): UpdateResult {
     this._broadcast.chat.push(`[Server] - ${this._game.white.name} - ${this._game.black.name} (${tokens[1].trim()})`);
 
-    return true;
+    return [EmitType.UPDATE, true];
   }
 
   onMessage(buff: Buffer): string | null {
@@ -274,9 +283,18 @@ class Handler {
 
     if (!commandConfig) logger.warn(`Unable to process ${cmd}!`);
     else {
-      const updated = commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
+      const [emit, updated, ...updateData] = commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
 
-      if (updated) io.to(String(this._broadcast.port)).emit('update', this._broadcast.toJSON());
+      if (updated) {
+        switch (emit) {
+          case EmitType.UPDATE:
+            io.to(String(this._broadcast.port)).emit(emit, this._broadcast.toJSON());
+            break;
+          case EmitType.CHAT:
+            io.to(String(this._broadcast.port)).emit(emit, updateData[0]);
+            break;
+        }
+      }
     }
 
     return messageId;

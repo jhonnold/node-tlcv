@@ -20,7 +20,7 @@ io.on('connection', (socket: Socket) => {
     logger.info(`${username} joined at port ${port}!`);
 
     socket.join(String(port));
-    socket.emit('update', broadcast.toJSON());
+    socket.emit('state', broadcast.toJSON(true));
   });
 
   socket.on('chat', (msg: string) => {

@@ -23,8 +23,29 @@ function updateInfo(game, color) {
   $(`#${color}-pv`).html(pv(game, color));
 }
 
+function addChat(msg) {
+  if (msg.startsWith('[tlcv.net')) {
+    const res = /\[(.*)\]\s+-\s+\((.*)\)\s+(.*)/i.exec(msg);
+    if (res) msg = `[${res[2]}] - ${res[3]}`;
+  }
+
+  const split = msg.split('-');
+  const name = split.shift();
+  const rest = split.join('-');
+
+  $('#chat-box').append($('<p>').text(rest).prepend($('<strong>').text(name)));
+}
+
+function setChat(msgs) {
+  $('#chat-box').children().remove();
+
+  msgs.forEach((msg) => {
+    addChat(msg);
+  });
+}
+
 function update(data, board) {
-  const { game, spectators, chat, menu } = data;
+  const { game, spectators, menu } = data;
 
   updateInfo(game, 'white');
   updateInfo(game, 'black');
@@ -39,20 +60,6 @@ function update(data, board) {
 
   spectators.sort().forEach((name) => {
     $('#spectator-box').append($('<li>').append($('<p>').text(name)));
-  });
-
-  $('#chat-box').children().remove();
-  chat.forEach((msg) => {
-    if (msg.startsWith('[tlcv.net')) {
-      const res = /\[(.*)\]\s+-\s+\((.*)\)\s+(.*)/i.exec(msg);
-      if (res) msg = `[${res[2]}] - ${res[3]}`;
-    }
-
-    const split = msg.split('-');
-    const name = split.shift();
-    const rest = split.join('-');
-
-    $('#chat-box').append($('<p>').text(rest).prepend($('<strong>').text(name)));
   });
 
   const $eventThreadButton = $('#event-thread');
@@ -154,16 +161,34 @@ $(function () {
 
   // connect
   socket.on('connect', () => socket.emit('join', { port, user: username() }));
+
+  // first time connection
+  socket.on('state', (data) => {
+    update(data, board);
+
+    setChat(data.chat);
+    const scrollTop = $('#chat-box')[0].scrollHeight;
+    $('#chat-box').stop().animate({ scrollTop });
+  });
+
+  // game updates
   socket.on('update', (data) => {
+    update(data, board);
+  });
+
+  // chat messages
+  socket.on('new-chat', (data) => {
     const notScrolled = $('#chat-box')[0].scrollTop + chatHeight() > $('#chat-box')[0].scrollHeight;
 
-    update(data, board);
+    addChat(data);
 
     if (notScrolled) {
       const scrollTop = $('#chat-box')[0].scrollHeight;
       $('#chat-box').stop().animate({ scrollTop });
     }
   });
+
+  // Enable the connection!
   socket.connect();
 
   $('#theme-light').on('click', () => setTheme('light'));

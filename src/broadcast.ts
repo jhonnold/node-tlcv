@@ -76,7 +76,7 @@ export class Broadcast {
     setTimeout(() => this._connection.close(), 500);
   }
 
-  toJSON(): SerializedBroadcast {
+  toJSON(includeChat: boolean = false): SerializedBroadcast {
     const menu: { [key: string]: string } = {};
     for (const e of this._menu.entries()) menu[e[0]] = e[1];
 
@@ -84,7 +84,7 @@ export class Broadcast {
       game: this.game.toJSON(),
       spectators: Array.from(this._spectators),
       browserCount: this._browserCount,
-      chat: this._chat.slice(-100),
+      chat: includeChat ? this._chat.slice(-1000) : [],
       menu,
     };
   }
