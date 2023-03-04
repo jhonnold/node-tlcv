@@ -25,7 +25,7 @@ function updateInfo(game, color) {
 
 function addChat(msg) {
   if (msg.startsWith('[tlcv.net')) {
-    const res = /\[(.*)\]\s+-\s+\((.*)\)\s+(.*)/i.exec(msg);
+    const res = /\[(.*)\]\s+-\s+\((.*?)\)\s+(.*)/i.exec(msg);
     if (res) msg = `[${res[2]}] - ${res[3]}`;
   }
 
