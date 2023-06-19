@@ -11,7 +11,7 @@ const colorMap: { [key: string]: Chalk } = {
 };
 
 const logger = createLogger({
-  transports: [new transports.Console({ level: 'debug' })],
+  transports: [new transports.Console({ level: 'warn' })],
   format: combine(
     timestamp(),
     printf(
