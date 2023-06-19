@@ -12,6 +12,12 @@ function updateElText(el, val) {
   if (curr != val) el.text(val);
 }
 
+function updateTitle(val) {
+  const curr = document.title;
+
+  if (curr != val) document.title = val;
+}
+
 function updateInfo(game, color) {
   let score = game[color].score;
   if (color === 'black') score *= -1;
@@ -46,6 +52,8 @@ function setChat(msgs) {
 
 function update(data, board) {
   const { game, spectators, menu } = data;
+
+  updateTitle(`${game.white.name} vs ${game.black.name} (${game.site})`);
 
   updateInfo(game, 'white');
   updateInfo(game, 'black');
