@@ -9,7 +9,7 @@ type Color = 'white' | 'black';
 export enum EmitType {
   UPDATE = 'update',
   CHAT = 'new-chat',
-};
+}
 
 export enum Command {
   FEN = 'FEN',
@@ -98,7 +98,7 @@ class Handler {
     const [command, ...rest] = tokens;
     const name = rest.join(' ');
 
-    if (command != Command.WPLAYER && command != Command.BPLAYER)  return [EmitType.UPDATE, false];
+    if (command != Command.WPLAYER && command != Command.BPLAYER) return [EmitType.UPDATE, false];
 
     const color: Color = command == Command.WPLAYER ? 'white' : 'black';
 
@@ -283,7 +283,9 @@ class Handler {
 
     if (!commandConfig) logger.warn(`Unable to process ${cmd}!`);
     else {
-      const [emit, updated, ...updateData] = commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
+      const [emit, updated, ...updateData] = commandConfig.fn(
+        commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
+      );
 
       if (updated) {
         switch (emit) {

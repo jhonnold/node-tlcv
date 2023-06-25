@@ -32,14 +32,19 @@ function updateInfo(game, color) {
 function addChat(msg) {
   if (msg.startsWith('[tlcv.net')) {
     const res = /\[(.*)\]\s+-\s+\((.*?)\)\s+(.*)/i.exec(msg);
-    if (res) msg = `[${res[2]}] - ${res[3]}`;
+    $('#chat-box').append(
+      $('<p>')
+        .text(res[3])
+        .prepend($('<strong>').text(`[${res[2]}] `)),
+    );
+  } else {
+    const res = /\[(.*)\]\s+-\s+(.*)/i.exec(msg);
+    $('#chat-box').append(
+      $('<p>')
+        .text(res[2])
+        .prepend($('<strong>').text(`[${res[1]}] `)),
+    );
   }
-
-  const split = msg.split('-');
-  const name = split.shift();
-  const rest = split.join('-');
-
-  $('#chat-box').append($('<p>').text(rest).prepend($('<strong>').text(name)));
 }
 
 function setChat(msgs) {
