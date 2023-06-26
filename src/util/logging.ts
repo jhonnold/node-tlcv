@@ -7,7 +7,7 @@ export default (req: Request, res: Response, next: NextFunction): void => {
 
   const print = (): void => {
     logger.log({
-      message: `${req.method} ${req.originalUrl || req.url} ${req.body.method || '--'} ${res.statusCode} - ${
+      message: `${req.method} ${req.originalUrl || req.url} ${req.body?.method || '--'} ${res.statusCode} - ${
         new Date().getTime() - start
       }ms`,
       level: res.statusCode >= 400 ? 'error' : 'info',
