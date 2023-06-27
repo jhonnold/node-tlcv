@@ -4,7 +4,7 @@ import Handler from './handler';
 import { ChessGame, SerializedGame } from './chess-game';
 import { config } from './config';
 
-export const username = 'tlcv.net';
+export const username = 'Lana - node-tlcv test';
 
 export type SerializedBroadcast = {
   game: SerializedGame;

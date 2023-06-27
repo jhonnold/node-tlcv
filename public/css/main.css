@@ -65,6 +65,12 @@ body {
   text-align: center;
 }
 
+#opening {
+  width: 100%;
+  padding: calc(var(--universal-padding) / 2);
+  text-align: center;
+}
+
 #button-container {
   grid-row-start: 5;
   grid-column-start: 2;

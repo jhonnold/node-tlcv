@@ -126,6 +126,10 @@ class Handler {
     this._game[color].nodes = parseInt(rest[3]);
     this._game[color].usedTime = parseInt(rest[2]) * 10;
 
+    if (!this._game.opening) {
+      this._game.setOpening();
+    }
+
     const copy = new Chess();
     copy.load_pgn(this._game.instance.pgn());
 
