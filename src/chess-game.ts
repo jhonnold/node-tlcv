@@ -7,6 +7,7 @@ export type SerializedGame = {
   white: SerializedPlayer;
   black: SerializedPlayer;
   fen: string;
+  opening: string;
   stm: 'w' | 'b';
   moveNumber: number;
 };
@@ -24,6 +25,10 @@ export type SerializedPlayer = {
   pvMoveNumber: number;
 };
 
+export type LichessResponse = {
+  opening: { eco: string; name: string; } | null;
+};
+
 export class ChessGame {
   private _name: string;
   private _site: string;
@@ -32,6 +37,7 @@ export class ChessGame {
   private _instance: ChessInstance;
   private _loaded: boolean;
   private _fen: string;
+  private _opening: string;
   private _moveNumber: number;
 
   constructor(name: string) {
@@ -44,6 +50,7 @@ export class ChessGame {
     this._loaded = false;
 
     this._fen = this._instance.fen();
+    this._opening = '';
     this._moveNumber = 1;
 
     this.setPGNHeaders();
@@ -61,6 +68,7 @@ export class ChessGame {
     this._loaded = true;
 
     this._fen = this._instance.fen();
+    this._opening = '';
 
     this.setPGNHeaders();
   }
@@ -78,6 +86,31 @@ export class ChessGame {
     }
   }
 
+  setOpening(): void {
+    fetch(`https://explorer.lichess.ovh/master?fen=${this._fen}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((response: Response) => response.json())
+      .then((data: LichessResponse) => {
+        logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
+
+        const { opening } = data;
+
+        if (!opening) {
+          logger.info(`Setting opening for game ${this._name} to Unknown`);
+          this._opening = "Unknown";
+        } else {
+          const { eco, name } = opening;
+  
+          logger.info(`Setting opening for game ${this._name} to ${eco} ${name}`);
+          this._opening = `${eco} ${name}`;
+        }
+      });
+  }
+
   toJSON(): SerializedGame {
     return {
       name: this._name,
@@ -85,6 +118,7 @@ export class ChessGame {
       white: this._white.toJSON(),
       black: this._black.toJSON(),
       fen: this._instance.fen(),
+      opening: this._opening,
       stm: this._instance.turn(),
       moveNumber: this._moveNumber,
     };
@@ -124,6 +158,10 @@ export class ChessGame {
 
   public set fen(v: string) {
     this._fen = v;
+  }
+
+  public get opening(): string {
+    return this._opening;
   }
 
   public get moveNumber(): number {

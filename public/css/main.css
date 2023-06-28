@@ -65,13 +65,18 @@ body {
   text-align: center;
 }
 
+#opening {
+  padding: calc(var(--universal-padding) / 2);
+  text-align: center;
+}
+
 #button-container {
   grid-row-start: 5;
   grid-column-start: 2;
 
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
 }
 
 #chat-area {
