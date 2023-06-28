@@ -38,7 +38,9 @@ class Connection {
         .then((messages) => {
           if (!messages.length) return;
 
-          this.handler.onMessages(messages).forEach((id) => this.send(`ACK: ${id}`));
+          this.lock
+            .acquire('processing', () => this.handler.onMessages(messages))
+            .then((ids) => ids.forEach((id) => this.send(`ACK: ${id}`)));
         });
     }, 10);
   }
