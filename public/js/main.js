@@ -69,7 +69,7 @@ function update(data, board) {
   updateTimers(data);
   updateLastMoves(data);
 
-  $('#opening').text(game.opening);
+  $('#opening').text(`Opening: ${game.opening}`);
   $('#fen').text(game.fen);
   board.position(game.fen);
 

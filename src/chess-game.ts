@@ -25,6 +25,10 @@ export type SerializedPlayer = {
   pvMoveNumber: number;
 };
 
+export type LichessResponse = {
+  opening: { eco: string; name: string; } | null;
+};
+
 export class ChessGame {
   private _name: string;
   private _site: string;
@@ -83,21 +87,27 @@ export class ChessGame {
   }
 
   setOpening(): void {
-    const response = fetch(`https://explorer.lichess.ovh/master?fen=${this._fen}`, {
+    fetch(`https://explorer.lichess.ovh/master?fen=${this._fen}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     })
-      .then((response) => response.json())
-      .then((data) => {
-        logger.info(`Received response for game ${this._name}: ${data}`);
-        logger.info(`Setting opening for game ${this._name} to ${data['opening']['eco']} ${data['opening']['name']}`);
+      .then((response: Response) => response.json())
+      .then((data: LichessResponse) => {
+        logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
 
-        const eco = data['opening']['eco'];
-        const name = data['opening']['name'];
+        const { opening } = data;
 
-        this._opening = `${eco} ${name}`;
+        if (!opening) {
+          logger.info(`Setting opening for game ${this._name} to Unknown`);
+          this._opening = "Unknown";
+        } else {
+          const { eco, name } = opening;
+  
+          logger.info(`Setting opening for game ${this._name} to ${eco} ${name}`);
+          this._opening = `${eco} ${name}`;
+        }
       });
   }
 
