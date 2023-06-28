@@ -26,7 +26,7 @@ export type SerializedPlayer = {
 };
 
 export type LichessResponse = {
-  opening: { eco: string; name: string; } | null;
+  opening: { eco: string; name: string } | null;
 };
 
 export class ChessGame {
@@ -87,7 +87,16 @@ export class ChessGame {
   }
 
   setOpening(): void {
-    fetch(`https://explorer.lichess.ovh/master?fen=${this._fen}`, {
+    const history = this._instance.history({ verbose: true });
+    if (!history.length) return;
+
+    const moves = history.map((move) => `${move.from}${move.to}`).join(',');
+
+    const url = `https://explorer.lichess.ovh/master?play=${moves}`;
+
+    logger.info(`Requesting opening for game ${this._name} from ${url}`);
+
+    fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -101,13 +110,19 @@ export class ChessGame {
 
         if (!opening) {
           logger.info(`Setting opening for game ${this._name} to Unknown`);
-          this._opening = "Unknown";
+          this._opening = 'Unknown';
         } else {
           const { eco, name } = opening;
-  
+
           logger.info(`Setting opening for game ${this._name} to ${eco} ${name}`);
           this._opening = `${eco} ${name}`;
         }
+      })
+      .catch((err: Error) => {
+        // We expect to error sometimes as part of normal operation
+        // One case is starting the viewer, in progress games won't have the full history from startpos
+        logger.warn(`Error requesting opening for game ${this._name}, setting opening to Unknown`);
+        this._opening = 'Unknown';
       });
   }
 
