@@ -1,17 +1,24 @@
 import { RemoteInfo, Socket, createSocket } from 'dgram';
 import { logger } from './util';
 import Handler from './handler';
+import { setInterval } from 'timers';
+import AsyncLock from 'async-lock';
 
 class Connection {
   private host: string;
   private port: number;
   private socket: Socket;
   private handler: Handler;
+  private unproccessed: string[];
+  private timer: NodeJS.Timeout;
+  private lock: AsyncLock;
 
   constructor(host: string, port: number, handler: Handler) {
     this.host = host;
     this.port = port;
     this.handler = handler;
+    this.unproccessed = [];
+    this.lock = new AsyncLock();
 
     this.socket = createSocket('udp4');
 
@@ -20,6 +27,20 @@ class Connection {
     this.socket.on('message', this.onMessage.bind(this));
 
     this.socket.bind(port);
+
+    this.timer = setInterval(() => {
+      this.lock
+        .acquire('messages', () => {
+          const messages = [...this.unproccessed];
+          this.unproccessed = [];
+          return messages;
+        })
+        .then((messages) => {
+          if (!messages.length) return;
+
+          this.handler.onMessages(messages).forEach((id) => this.send(`ACK: ${id}`));
+        });
+    }, 10);
   }
 
   private onError(err: Error): void {
@@ -36,9 +57,9 @@ class Connection {
   private onMessage(msg: Buffer, rInfo: RemoteInfo): void {
     logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`);
 
-    const id = this.handler.onMessage(msg);
-
-    if (id) this.send(`ACK: ${id}`);
+    this.lock.acquire('messages', () => {
+      this.unproccessed.push(msg.toString().trim());
+    });
   }
 
   send(msg: string): void {
@@ -47,6 +68,7 @@ class Connection {
   }
 
   close(): void {
+    clearInterval(this.timer);
     this.socket.close();
   }
 }

@@ -197,7 +197,7 @@ $(function () {
   socket.on('new-chat', (data) => {
     const notScrolled = $('#chat-box')[0].scrollTop + chatHeight() > $('#chat-box')[0].scrollHeight;
 
-    addChat(data);
+    data.forEach((msg) => addChat(msg));
 
     if (notScrolled) {
       const scrollTop = $('#chat-box')[0].scrollHeight;

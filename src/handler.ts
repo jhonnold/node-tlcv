@@ -1,7 +1,7 @@
 import { Chess } from 'chess.js';
 import { ChessGame } from './chess-game';
 import { logger, splitOnCommand } from './util';
-import { Broadcast, username } from './broadcast';
+import { Broadcast, SerializedBroadcast, username } from './broadcast';
 import { io } from './io';
 
 type Color = 'white' | 'black';
@@ -267,43 +267,57 @@ class Handler {
     return [EmitType.UPDATE, true];
   }
 
-  onMessage(buff: Buffer): string | null {
-    let messageId: string | null = null;
-    let str = buff.toString().trim();
+  onMessages(messages: string[]): string[] {
+    const messageIds: string[] = [];
 
-    const idMatch = /^<\s*(\d+)>/g.exec(str);
-    if (idMatch) {
-      messageId = idMatch[1];
-      logger.debug(`${messageId} parsed as Message Id for ${str}`);
+    // We emit after processing all messages.
+    // UpdateEmit is the board result after the last processed message
+    // ChatEmit is all the chats received across these messages
+    let updateEmit: SerializedBroadcast | null = null;
+    const chatEmit: string[] = [];
 
-      str = str.replace(/^<\s*(\d+)>/g, '');
-    } else {
-      logger.debug(`No Message Id found for ${str}`);
-    }
+    messages.forEach((msg) => {
+      let messageId: string | null = null;
+      const idMatch = /^<\s*(\d+)>/g.exec(msg);
+      if (idMatch) {
+        messageId = idMatch[1];
+        logger.debug(`${messageId} parsed as Message Id for ${msg}`);
 
-    const [cmd, rest] = splitOnCommand(str);
+        msg = msg.replace(/^<\s*(\d+)>/g, '');
+      } else {
+        logger.debug(`No Message Id found for ${msg}`);
+      }
 
-    const commandConfig = this._commandConfig[cmd] as ConfigItem | undefined;
+      const [cmd, rest] = splitOnCommand(msg);
 
-    if (!commandConfig) logger.warn(`Unable to process ${cmd}!`);
-    else {
-      const [emit, updated, ...updateData] = commandConfig.fn(
-        commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
-      );
+      const commandConfig = this._commandConfig[cmd] as ConfigItem | undefined;
 
-      if (updated) {
-        switch (emit) {
-          case EmitType.UPDATE:
-            io.to(String(this._broadcast.port)).emit(emit, this._broadcast.toJSON());
-            break;
-          case EmitType.CHAT:
-            io.to(String(this._broadcast.port)).emit(emit, updateData[0]);
-            break;
+      if (!commandConfig) logger.warn(`Unable to process ${cmd}!`);
+      else {
+        const [emit, updated, ...updateData] = commandConfig.fn(
+          commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
+        );
+
+        if (updated) {
+          switch (emit) {
+            case EmitType.UPDATE:
+              updateEmit = this._broadcast.toJSON();
+              break;
+            case EmitType.CHAT:
+              chatEmit.push(updateData[0]);
+              break;
+          }
         }
       }
-    }
 
-    return messageId;
+      if (messageId) messageIds.push(messageId);
+    });
+
+    if (updateEmit) io.to(String(this._broadcast.port)).emit(EmitType.UPDATE, updateEmit);
+    if (chatEmit.length) io.to(String(this._broadcast.port)).emit(EmitType.CHAT, chatEmit);
+
+    logger.info(`Successfully processed ${messages.length} message(s) with ids - ${messageIds.join(',')}`);
+    return messageIds;
   }
 }
 
