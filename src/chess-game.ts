@@ -88,12 +88,8 @@ export class ChessGame {
 
   setOpening(): void {
     const history = this._instance.history({ verbose: true });
+    if (!history.length) return;
 
-    if (history.length === 0) {
-      return;
-    }
-
-    // startpos
     const moves = history.map((move) => `${move.from}${move.to}`).join(',');
 
     const url = `https://explorer.lichess.ovh/master?play=${moves}`;
