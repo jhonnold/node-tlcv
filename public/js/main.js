@@ -160,7 +160,20 @@ $(function () {
 
   // resize the PV boards
   const setPvBoardSize = () => {
-    const pvBoardSize = Math.min($('#black-info').height(), $('#white-info').height()); // TODO find better size
+    const minWidthInfoBox = 350;
+    const minSizePVBoard = 90;
+
+    const idealPvBoardSize = Math.min($('#black-info').height(), $('#white-info').height());
+    var infoBoxWidth = Math.max(minWidthInfoBox, $('#chat-area').width() - idealPvBoardSize);
+    var pvBoardSize = Math.max(0, $('#chat-area').width() - infoBoxWidth);
+
+    // if the pv board is too small to see anything, we just don't have it at all
+    if(pvBoardSize < minSizePVBoard)
+    {
+      pvBoardSize = 0;
+      infoBoxWidth = "100%";
+    }
+
     $('#white-pvBoard-container').height(pvBoardSize);
     $('#white-pvBoard-container').width(pvBoardSize);
     $('#black-pvBoard-container').height(pvBoardSize);
@@ -168,8 +181,7 @@ $(function () {
     pvBoardBlack.resize();
     pvBoardWhite.resize();
 
-    // we also resize the info box area to leave appropiate space for the PV boards
-    const infoBoxWidth = $('#chat-area').width() - pvBoardSize;
+    // resize the info box area to leave appropiate space for the PV boards
     $('#white-info').width(infoBoxWidth);
     $('#black-info').width(infoBoxWidth);
   };
