@@ -37,6 +37,16 @@ body {
   grid-column-start: 1;
 }
 
+#black-pvBoard-container {
+  height: 100%;
+  width: 100%;
+}
+
+#white-pvBoard-container {
+  height: 100%;
+  width: 100%;
+}
+
 #black-info {
   grid-row-start: 1;
   grid-column-start: 2;

@@ -58,8 +58,8 @@ function setChat(msgs) {
   });
 }
 
-function update(data, board) {
-  const { game, spectators, menu } = data;
+function update(data, board, pvBoardBlack, pvBoardWhite) {
+  const { game, whitePvFen, blackPvFen, spectators, menu } = data;
 
   updateTitle(`${game.white.name} vs ${game.black.name} (${game.site})`);
 
@@ -72,6 +72,9 @@ function update(data, board) {
   $('#opening').text(`Opening: ${game.opening}`);
   $('#fen').text(game.fen);
   board.position(game.fen);
+  pvBoardWhite.position(whitePvFen);
+  pvBoardBlack.position(blackPvFen);
+
 
   $('#spectator-box').children().remove();
 
@@ -145,6 +148,8 @@ setTheme(getPreferredTheme());
 
 $(function () {
   const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
+  const pvBoardBlack = Chessboard('black-pvBoard', { pieceTheme: '/img/{piece}.svg', showNotation: false });
+  const pvBoardWhite = Chessboard('white-pvBoard', { pieceTheme: '/img/{piece}.svg', showNotation: false });
   const socket = io({ autoConnect: false });
 
   // pull username from storage
@@ -153,8 +158,27 @@ $(function () {
   // We fix the chat-area height to match the board height
   $('#chat-area').height(chatHeight());
 
+  // resize the PV boards
+  const setPvBoardSize = () => {
+    const pvBoardSize = ($('#board').height() - chatHeight()) / 2 - 24; // TODO find better size
+    $('#white-pvBoard-container').height(pvBoardSize);
+    $('#white-pvBoard-container').width(pvBoardSize);
+    $('#black-pvBoard-container').height(pvBoardSize);
+    $('#black-pvBoard-container').width(pvBoardSize);
+    pvBoardBlack.resize();
+    pvBoardWhite.resize();
+
+    // we also resize the info box area to leave appropiate space for the PV boards
+    const infoBoxWidth = $('#chat-area').width() - pvBoardSize;
+    $('#white-info').width(infoBoxWidth);
+    $('#black-info').width(infoBoxWidth);
+  };
+
+  setPvBoardSize();
+
   $(window).on('resize', () => {
     board.resize();
+    setPvBoardSize();
     $('#chat-area').height(chatHeight());
   });
 
@@ -181,7 +205,7 @@ $(function () {
 
   // first time connection
   socket.on('state', (data) => {
-    update(data, board);
+    update(data, board, pvBoardBlack, pvBoardWhite);
 
     setChat(data.chat);
     const scrollTop = $('#chat-box')[0].scrollHeight;
@@ -190,7 +214,7 @@ $(function () {
 
   // game updates
   socket.on('update', (data) => {
-    update(data, board);
+    update(data, board, pvBoardBlack, pvBoardWhite);
   });
 
   // chat messages

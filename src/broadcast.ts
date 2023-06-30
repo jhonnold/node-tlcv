@@ -8,6 +8,8 @@ export const username = 'tlcv.net';
 
 export type SerializedBroadcast = {
   game: SerializedGame;
+  whitePvFen: string;
+  blackPvFen: string;
   spectators: Array<string>;
   browserCount: number;
   chat: Array<string>;
@@ -82,6 +84,8 @@ export class Broadcast {
 
     return {
       game: this.game.toJSON(),
+      whitePvFen: this.game.getResultingFEN(this.game.white.pv),
+      blackPvFen: this.game.getResultingFEN(this.game.black.pv),
       spectators: Array.from(this._spectators),
       browserCount: this._browserCount,
       chat: includeChat ? this._chat.slice(-1000) : [],

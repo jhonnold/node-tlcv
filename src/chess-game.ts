@@ -126,6 +126,14 @@ export class ChessGame {
       });
   }
 
+  public getResultingFEN(moveList: Array<string>): string {
+    let chess = new Chess(this._fen);
+    for (let move of moveList) {
+      chess.move(move);
+    }
+    return chess.fen();
+  }
+
   toJSON(): SerializedGame {
     return {
       name: this._name,
