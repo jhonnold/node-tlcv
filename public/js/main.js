@@ -160,7 +160,7 @@ $(function () {
 
   // resize the PV boards
   const setPvBoardSize = () => {
-    const pvBoardSize = ($('#board').height() - chatHeight()) / 2 - 24; // TODO find better size
+    const pvBoardSize = Math.min($('#black-info').height(), $('#white-info').height()); // TODO find better size
     $('#white-pvBoard-container').height(pvBoardSize);
     $('#white-pvBoard-container').width(pvBoardSize);
     $('#black-pvBoard-container').height(pvBoardSize);
