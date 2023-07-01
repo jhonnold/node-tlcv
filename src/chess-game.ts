@@ -126,9 +126,12 @@ export class ChessGame {
       });
   }
 
-  public getResultingFEN(moveList: Array<string>): string {
+  public getPvFen(color: "w" | "b"): string {
+    const moveList = color == "w" ? this._white.pv : this._black.pv;
     let chess = new Chess(this._fen);
-    for (let move of moveList) {
+    // if it's not our turn, we assume that we played the first move of our last PV already
+    const startIndex = chess.turn() == color ? 0 : 1;
+    for (let move of moveList.slice(startIndex)) {
       chess.move(move);
     }
     return chess.fen();

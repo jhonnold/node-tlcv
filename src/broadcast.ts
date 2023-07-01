@@ -84,8 +84,8 @@ export class Broadcast {
 
     return {
       game: this.game.toJSON(),
-      whitePvFen: this.game.getResultingFEN(this.game.white.pv),
-      blackPvFen: this.game.getResultingFEN(this.game.black.pv),
+      whitePvFen: this.game.getPvFen("w"),
+      blackPvFen: this.game.getPvFen("b"),
       spectators: Array.from(this._spectators),
       browserCount: this._browserCount,
       chat: includeChat ? this._chat.slice(-1000) : [],
