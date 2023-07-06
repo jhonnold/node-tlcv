@@ -200,6 +200,8 @@ class Handler {
     if (move) {
       this._game[color].lastMove = move;
       logger.info(`Updated game ${this._game.name} - Color: ${color}, Last Move: ${this._game[color].lastMove?.san}`);
+
+      this._game.setTablebase();
     } else {
       logger.warn(
         `Failed to parse ${rest[1]} for game ${this._game.name}, fen ${this._game.instance.fen()}! Loading from FEN...`,

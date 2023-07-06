@@ -9,6 +9,7 @@ export type SerializedGame = {
   black: SerializedPlayer;
   fen: string;
   opening: string;
+  tablebase: string;
   stm: 'w' | 'b';
   moveNumber: number;
 };
@@ -30,6 +31,7 @@ export type SerializedPlayer = {
 
 export type LichessResponse = {
   opening: { eco: string; name: string } | null;
+  category: string | null;
 };
 
 export class ChessGame {
@@ -41,6 +43,7 @@ export class ChessGame {
   private _loaded: boolean;
   private _fen: string;
   private _opening: string;
+  private _tablebase: string;
   private _moveNumber: number;
 
   constructor(name: string) {
@@ -54,6 +57,7 @@ export class ChessGame {
 
     this._fen = this._instance.fen();
     this._opening = 'Unknown';
+    this._tablebase = '';
     this._moveNumber = 1;
 
     this.setPGNHeaders();
@@ -122,6 +126,71 @@ export class ChessGame {
     }
   }
 
+  setTablebase(): void {
+    let pieceCount = 0;
+
+    const board = this._instance.board();
+
+    for (let i = 0; i < board.length; i++) {
+      for (let j = 0; j < board[i].length; j++) {
+        if (board[i][j] != null) {
+          pieceCount++;
+        }
+      }
+    }
+
+    if (pieceCount > 7) {
+      this._tablebase = '';
+      return;
+    }
+
+    const url = `https://tablebase.lichess.ovh/standard?fen=${this._fen}`;
+
+    logger.info(`Requesting tablebase for game ${this._name} from ${url}`);
+
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((response: Response) => response.json())
+      .then((data: LichessResponse) => {
+        logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
+
+        const { category } = data;
+
+        if (!category) {
+          logger.info(`Setting tablebase for game ${this._name} to blank`);
+          this._tablebase = '';
+        } else {
+          switch (category) {
+            case 'win':
+            case 'maybe-win':
+              this._tablebase = this._instance.turn() === 'w' ? 'White Win' : 'Black Win';
+              break;
+            case 'cursed-win':
+            case 'draw':
+            case 'cursed-loss':
+              this._tablebase = 'Draw';
+              break;
+            case 'loss':
+            case 'maybe-loss':
+              this._tablebase = this._instance.turn() === 'w' ? 'Black Win' : 'White Win';
+              break;
+            default:
+              logger.warn(`Unknown tablebase category ${category} for game ${this._name}, setting tablebase to blank`);
+              this._tablebase = '';
+          }
+          logger.info(`Set tablebase for game ${this._name} to ${this._tablebase}`);
+        }
+      })
+      .catch((err: Error) => {
+        logger.error(`Error requesting tablebase for game ${this._name}, setting tablebase to blank`);
+        this._tablebase = '';
+      });
+  }
+
   toJSON(): SerializedGame {
     return {
       name: this._name,
@@ -130,6 +199,7 @@ export class ChessGame {
       black: this._black.toJSON(),
       fen: this._instance.fen(),
       opening: this._opening,
+      tablebase: this._tablebase,
       stm: this._instance.turn(),
       moveNumber: this._moveNumber,
     };
