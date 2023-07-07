@@ -115,7 +115,7 @@ export class ChessGame {
         this._opening = `${eco} ${name}`;
       }
     } catch {
-      logger.warn(`Error requesting opening for game ${this._name} @ ${url}`)
+      logger.warn(`Error requesting opening for game ${this._name} @ ${url}`);
     }
   }
 

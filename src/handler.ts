@@ -262,9 +262,10 @@ class Handler {
   }
 
   private onResult(tokens: CommandTokens): UpdateResult {
-    this._broadcast.chat.push(`[Server] - ${this._game.white.name} - ${this._game.black.name} (${tokens[1].trim()})`);
+    const message = `[Server] - ${this._game.white.name} - ${this._game.black.name} (${tokens[1].trim()})`;
+    this._broadcast.chat.push(message);
 
-    return [EmitType.UPDATE, true];
+    return [EmitType.CHAT, true, message];
   }
 
   async onMessages(messages: string[]): Promise<string[]> {
