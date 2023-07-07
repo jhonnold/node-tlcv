@@ -148,8 +148,9 @@ setTheme(getPreferredTheme());
 
 $(function () {
   const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
-  const pvBoardBlack = Chessboard('black-pvBoard', { pieceTheme: '/img/{piece}.svg', showNotation: false });
-  const pvBoardWhite = Chessboard('white-pvBoard', { pieceTheme: '/img/{piece}.svg', showNotation: false });
+  const pvBoardSettings = { pieceTheme: '/img/{piece}.svg', showNotation: false, appearSpeed: 0, moveSpeed: 0, trashSpeed: 0 }
+  const pvBoardBlack = Chessboard('black-pvBoard', pvBoardSettings);
+  const pvBoardWhite = Chessboard('white-pvBoard', pvBoardSettings);
   const socket = io({ autoConnect: false });
 
   // pull username from storage
