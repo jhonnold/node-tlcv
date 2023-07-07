@@ -30,6 +30,7 @@ export enum Command {
   CHAT = 'CHAT',
   MENU = 'MENU',
   RESULT = 'result',
+  FMR = 'FMR',
 }
 
 type ConfigItem = {
@@ -73,6 +74,7 @@ class Handler {
       [Command.CHAT]: { fn: this.onChat.bind(this), split: false },
       [Command.MENU]: { fn: this.onMenu.bind(this), split: true },
       [Command.RESULT]: { fn: this.onResult.bind(this), split: false },
+      [Command.FMR]: { fn: () => [EmitType.UPDATE, false], split: false },
     };
   }
 
