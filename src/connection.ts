@@ -42,7 +42,7 @@ class Connection {
             .acquire('processing', () => this.handler.onMessages(messages))
             .then((ids) => ids.forEach((id) => this.send(`ACK: ${id}`)));
         });
-    }, 10);
+    }, 100);
   }
 
   private onError(err: Error): void {

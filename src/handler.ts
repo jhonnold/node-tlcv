@@ -33,7 +33,7 @@ export enum Command {
 }
 
 type ConfigItem = {
-  fn: (tokens: CommandTokens) => UpdateResult;
+  fn: (tokens: CommandTokens) => Promise<UpdateResult> | UpdateResult;
   split: boolean;
 };
 
@@ -126,10 +126,6 @@ class Handler {
     this._game[color].nodes = parseInt(rest[3]);
     this._game[color].usedTime = parseInt(rest[2]) * 10;
 
-    if (!this._game.opening) {
-      this._game.setOpening();
-    }
-
     const copy = new Chess();
     copy.load_pgn(this._game.instance.pgn());
 
@@ -171,7 +167,7 @@ class Handler {
     return [EmitType.UPDATE, true];
   }
 
-  private onMove(tokens: CommandTokens): UpdateResult {
+  private async onMove(tokens: CommandTokens): Promise<UpdateResult> {
     const [command, ...rest] = tokens;
 
     if (command != Command.WMOVE && command != Command.BMOVE) return [EmitType.UPDATE, false];
@@ -196,6 +192,8 @@ class Handler {
 
     // start the timer for the other side
     this._game[notColor].startTime = new Date().getTime();
+    await this._game.setOpening();
+
     return [EmitType.UPDATE, true];
   }
 
@@ -267,7 +265,7 @@ class Handler {
     return [EmitType.UPDATE, true];
   }
 
-  onMessages(messages: string[]): string[] {
+  async onMessages(messages: string[]): Promise<string[]> {
     const messageIds: string[] = [];
 
     // We emit after processing all messages.
@@ -276,7 +274,7 @@ class Handler {
     let updateEmit: SerializedBroadcast | null = null;
     const chatEmit: string[] = [];
 
-    messages.forEach((msg) => {
+    for (let msg of messages) {
       let messageId: string | null = null;
       const idMatch = /^<\s*(\d+)>/g.exec(msg);
       if (idMatch) {
@@ -294,7 +292,7 @@ class Handler {
 
       if (!commandConfig) logger.warn(`Unable to process ${cmd}!`);
       else {
-        const [emit, updated, ...updateData] = commandConfig.fn(
+        const [emit, updated, ...updateData] = await commandConfig.fn(
           commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
         );
 
@@ -311,7 +309,7 @@ class Handler {
       }
 
       if (messageId) messageIds.push(messageId);
-    });
+    }
 
     if (updateEmit) io.to(String(this._broadcast.port)).emit(EmitType.UPDATE, updateEmit);
     if (chatEmit.length) io.to(String(this._broadcast.port)).emit(EmitType.CHAT, chatEmit);

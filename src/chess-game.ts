@@ -50,7 +50,7 @@ export class ChessGame {
     this._loaded = false;
 
     this._fen = this._instance.fen();
-    this._opening = '';
+    this._opening = 'Unknown';
     this._moveNumber = 1;
 
     this.setPGNHeaders();
@@ -68,7 +68,7 @@ export class ChessGame {
     this._loaded = true;
 
     this._fen = this._instance.fen();
-    this._opening = '';
+    this._opening = 'Unknown';
 
     this.setPGNHeaders();
   }
@@ -86,44 +86,37 @@ export class ChessGame {
     }
   }
 
-  setOpening(): void {
+  async setOpening(): Promise<void> {
     const history = this._instance.history({ verbose: true });
     if (!history.length) return;
 
     const moves = history.map((move) => `${move.from}${move.to}`).join(',');
-
     const url = `https://explorer.lichess.ovh/master?play=${moves}`;
 
     logger.info(`Requesting opening for game ${this._name} from ${url}`);
 
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response: Response) => response.json())
-      .then((data: LichessResponse) => {
-        logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
-
-        const { opening } = data;
-
-        if (!opening) {
-          logger.info(`Setting opening for game ${this._name} to Unknown`);
-          this._opening = 'Unknown';
-        } else {
-          const { eco, name } = opening;
-
-          logger.info(`Setting opening for game ${this._name} to ${eco} ${name}`);
-          this._opening = `${eco} ${name}`;
-        }
-      })
-      .catch((err: Error) => {
-        // We expect to error sometimes as part of normal operation
-        // One case is starting the viewer, in progress games won't have the full history from startpos
-        logger.warn(`Error requesting opening for game ${this._name}, setting opening to Unknown`);
-        this._opening = 'Unknown';
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      const data: LichessResponse = await response.json();
+
+      logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
+
+      const { opening } = data;
+
+      if (opening) {
+        const { eco, name } = opening;
+
+        logger.info(`Setting opening for game ${this._name} to ${eco} ${name}`);
+        this._opening = `${eco} ${name}`;
+      }
+    } catch {
+      logger.warn(`Error requesting opening for game ${this._name} @ ${url}`)
+    }
   }
 
   toJSON(): SerializedGame {
