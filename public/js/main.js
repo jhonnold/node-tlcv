@@ -59,7 +59,7 @@ function setChat(msgs) {
 }
 
 function update(data, board, pvBoardBlack, pvBoardWhite) {
-  const { game, whitePvFen, blackPvFen, spectators, menu } = data;
+  const { game, spectators, menu } = data;
 
   updateTitle(`${game.white.name} vs ${game.black.name} (${game.site})`);
 
@@ -72,8 +72,8 @@ function update(data, board, pvBoardBlack, pvBoardWhite) {
   $('#opening').text(`Opening: ${game.opening}`);
   $('#fen').text(game.fen);
   board.position(game.fen);
-  pvBoardWhite.position(whitePvFen);
-  pvBoardBlack.position(blackPvFen);
+  pvBoardWhite.position(game.white.pvFen);
+  pvBoardBlack.position(game.black.pvFen);
 
 
   $('#spectator-box').children().remove();

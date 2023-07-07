@@ -22,6 +22,7 @@ export type SerializedPlayer = {
   startTime: number;
   lastMove: Move | null;
   pv: Array<string>;
+  pvFen: string;
   pvMoveNumber: number;
 };
 
@@ -126,17 +127,6 @@ export class ChessGame {
       });
   }
 
-  public getPvFen(color: "w" | "b"): string {
-    const moveList = color == "w" ? this._white.pv : this._black.pv;
-    let chess = new Chess(this._fen);
-    // if it's not our turn, we assume that we played the first move of our last PV already
-    const startIndex = chess.turn() == color ? 0 : 1;
-    for (let move of moveList.slice(startIndex)) {
-      chess.move(move);
-    }
-    return chess.fen();
-  }
-
   toJSON(): SerializedGame {
     return {
       name: this._name,
@@ -209,6 +199,7 @@ export class Player {
   private _startTime: number;
   private _lastMove: Move | null;
   private _pv: Array<string>; // san representation
+  private _pvFen: string;
   private _pvMoveNumber: number;
 
   constructor() {
@@ -221,6 +212,7 @@ export class Player {
     this._startTime = 0;
     this._lastMove = null;
     this._pv = new Array<string>();
+    this._pvFen = '8/8/8/8/8/8/8/8 w - - 0 1';
     this._pvMoveNumber = 0;
   }
 
@@ -248,6 +240,7 @@ export class Player {
       startTime: this._startTime,
       lastMove: this._lastMove,
       pv: this._pv,
+      pvFen: this._pvFen,
       pvMoveNumber: this._pvMoveNumber,
     };
   }
@@ -318,6 +311,14 @@ export class Player {
 
   public get pv(): Array<string> {
     return this._pv;
+  }
+
+  public set pvFen(fen: string) {
+    this._pvFen = fen;
+  }
+
+  public get pvFen(): string {
+    return this._pvFen;
   }
 
   public set pv(v: Array<string>) {
