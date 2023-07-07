@@ -317,10 +317,6 @@ export class Player {
     this._pvFen = fen;
   }
 
-  public get pvFen(): string {
-    return this._pvFen;
-  }
-
   public set pv(v: Array<string>) {
     this._pv = v;
   }
