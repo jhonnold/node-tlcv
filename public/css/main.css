@@ -181,16 +181,13 @@ pre {
     flex-direction: column;
   }
 
-  #white-info {
-    align-self: auto;
-  }
-
   #chat-area {
     height: 400px !important;
   }
 
   .info-area {
     grid-template-columns: auto;
+    grid-template-rows: 46.5px 101.5px;
   }
 
   .info-board {
