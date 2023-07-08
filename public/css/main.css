@@ -1,7 +1,6 @@
 body {
   background-color: #fafafa;
   color: #090909;
-  overflow-x: hidden;
 }
 
 pre {
@@ -51,11 +50,7 @@ pre {
 
 #arrow-board {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 2400px;
-  height: 2400px;
-  z-index: 1000;
+  z-index: 1;
   pointer-events: none;
 }
 

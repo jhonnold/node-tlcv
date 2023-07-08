@@ -159,6 +159,10 @@ setTheme(globalTheme);
 
 $(function () {
   const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
+  clearArrows();
+  const b = $('#board');
+  $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
+
   const pvBoardSettings = {
     pieceTheme: '/img/{piece}.svg',
     showNotation: false,
@@ -182,7 +186,10 @@ $(function () {
     pvBoardBlack.resize();
 
     $('#chat-area').height(chatHeight());
+
     clearArrows();
+    const b = $('#board');
+    $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
   });
 
   // Setup FEN copy

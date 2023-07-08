@@ -80,12 +80,14 @@ export function drawMove(move, theme) {
   const toY = Number(move.charAt(3));
 
   // compute width, center of the board and arrow start and end points
+  const maxY = $('#arrow-board').height();
+
   const b = breite / 8;
   const c = b / 2;
   const sx = fromX * b - c;
-  const sy = 2400 - (fromY * b - c);
+  const sy = maxY - (fromY * b - c);
   const ex = toX * b - c;
-  const ey = 2400 - (toY * b - c);
+  const ey = maxY - (toY * b - c);
   const w = (b / 3.5) * 0.5;
 
   ctx.fillStyle = theme == 'light' ? `rgba(25, 118, 210, 0.9)` : `rgba(105, 179, 126, 0.9)`;
