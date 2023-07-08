@@ -2,7 +2,7 @@
 
 A server implementation of Tom's live chess viewer. Designed to work with Graham Bank's [CCRL](https://ccrl.chessdom.com/ccrl/4040/) broadcasts. Watch live at [http://tlcv.net](http://tlcv.net)!
 
-![screenshot](./.github/screenshot.png)
+![screenshot](./.github/screenshot.jpg)
 
 ## Running your own
 
