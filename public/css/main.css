@@ -183,6 +183,7 @@ pre {
 
   #chat-area {
     height: 400px !important;
+    grid-template-columns: auto 100px;
   }
 
   .info-area {
