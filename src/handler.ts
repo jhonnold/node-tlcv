@@ -139,16 +139,19 @@ class Handler {
     // the final pv is sent after the best move was sent. (See issue #9)
     if (!color.startsWith(copy.turn())) copy.undo();
 
-    for (const alg of pv) {
+    for (let i = 0; i < pv.length; i++) {
+      const alg = pv[i];
       const move = copy.move(alg, { sloppy: true });
       if (!move) break;
 
+      if (i == 0) this._game[color].pvAlg = `${move.from}${move.to}`;
       parsed.push(move.san);
     }
 
     // Only if we could parse at least 1 do
     if (parsed.length) {
       this._game[color].pv = parsed;
+
       this._game[color].pvFen = this._game[color].pv
         .reduce((board, move) => {
           board.move(move);

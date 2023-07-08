@@ -1,6 +1,7 @@
 body {
   background-color: #fafafa;
   color: #090909;
+  overflow-x: hidden;
 }
 
 pre {
@@ -40,9 +41,22 @@ pre {
   grid-row-start: 1;
   grid-row-end: 5;
   grid-column-start: 1;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
+
+  position: relative;
+}
+
+#arrow-board {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 2400px;
+  height: 2400px;
+  z-index: 1000;
+  pointer-events: none;
 }
 
 #black-info {
