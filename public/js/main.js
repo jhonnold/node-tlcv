@@ -58,7 +58,7 @@ function setChat(msgs) {
   });
 }
 
-function update(data, board) {
+function update(data, board, pvBoardWhite, pvBoardBlack) {
   const { game, spectators, menu } = data;
 
   updateTitle(`${game.white.name} vs ${game.black.name} (${game.site})`);
@@ -72,6 +72,8 @@ function update(data, board) {
   $('#opening').text(`Opening: ${game.opening}`);
   $('#fen').text(game.fen);
   board.position(game.fen);
+  pvBoardWhite.position(game.white.pvFen);
+  pvBoardBlack.position(game.black.pvFen);
 
   $('#spectator-box').children().remove();
 
@@ -113,10 +115,6 @@ function update(data, board) {
   }
 }
 
-function chatHeight() {
-  return $('#board').height() - 318;
-}
-
 const storedTheme = localStorage.getItem('theme');
 
 const getPreferredTheme = () => {
@@ -145,17 +143,25 @@ setTheme(getPreferredTheme());
 
 $(function () {
   const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
+  const pvBoardSettings = {
+    pieceTheme: '/img/{piece}.svg',
+    showNotation: false,
+    appearSpeed: 0,
+    moveSpeed: 0,
+    trashSpeed: 0,
+  };
+  const pvBoardWhite = Chessboard('white-pv-board', pvBoardSettings);
+  const pvBoardBlack = Chessboard('black-pv-board', pvBoardSettings);
+
   const socket = io({ autoConnect: false });
 
   // pull username from storage
   $('#username').val(localStorage.getItem('tlcv.net-username'));
 
-  // We fix the chat-area height to match the board height
-  $('#chat-area').height(chatHeight());
-
   $(window).on('resize', () => {
     board.resize();
-    $('#chat-area').height(chatHeight());
+    pvBoardWhite.resize();
+    pvBoardBlack.resize();
   });
 
   // Setup FEN copy
@@ -181,7 +187,7 @@ $(function () {
 
   // first time connection
   socket.on('state', (data) => {
-    update(data, board);
+    update(data, board, pvBoardWhite, pvBoardBlack);
 
     setChat(data.chat);
     const scrollTop = $('#chat-box')[0].scrollHeight;
@@ -190,19 +196,12 @@ $(function () {
 
   // game updates
   socket.on('update', (data) => {
-    update(data, board);
+    update(data, board, pvBoardWhite, pvBoardBlack);
   });
 
   // chat messages
   socket.on('new-chat', (data) => {
-    const notScrolled = $('#chat-box')[0].scrollTop + chatHeight() > $('#chat-box')[0].scrollHeight;
-
     data.forEach((msg) => addChat(msg));
-
-    if (notScrolled) {
-      const scrollTop = $('#chat-box')[0].scrollHeight;
-      $('#chat-box').stop().animate({ scrollTop });
-    }
   });
 
   // Enable the connection!

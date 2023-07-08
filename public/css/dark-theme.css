@@ -32,9 +32,12 @@ body {
 }
 
 .board-b72b1 {
-  border: none;
   border-radius: 8px;
   overflow: hidden;
+}
+
+.info-board .board-b72b1 {
+  border-radius: 2px;
 }
 
 .card {

@@ -3,8 +3,12 @@ body {
   color: #090909;
 }
 
+pre {
+  margin: var(--universal-margin) 0;
+}
+
 .container {
-  max-width: 150vh;
+  max-width: 135vh;
   padding: var(--universal-padding);
 }
 
@@ -27,27 +31,58 @@ body {
 
 .main-layout {
   display: grid;
-  grid-template-columns: 60% 40%;
-  grid-template-rows: auto 1fr 1fr auto auto;
+  grid-template-columns: minmax(238px, 60%) minmax(530px, 40%);
+  grid-template-rows: 155px minmax(50px, 1fr) minmax(50px, 1fr) 155px auto;
+  gap: calc(2 * var(--universal-margin));
 }
 
 #board-container {
   grid-row-start: 1;
   grid-row-end: 5;
   grid-column-start: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 #black-info {
   grid-row-start: 1;
   grid-column-start: 2;
-  min-height: 155px;
 }
 
 #white-info {
   grid-row-start: 4;
   grid-column-start: 2;
-  align-self: flex-end;
-  min-height: 155px;
+}
+
+.info-area {
+  display: grid;
+  grid-template-columns: auto 155px;
+  grid-template-rows: auto 101.5px;
+  gap: var(--universal-margin);
+}
+
+.info-area .card {
+  margin: 0;
+}
+
+.info-name {
+  grid-row: 1;
+  grid-column: 1;
+  margin: 0;
+}
+
+.info-card {
+  grid-row: 2;
+  grid-column: 1;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.info-board {
+  grid-row-start: 1;
+  grid-row-end: 3;
+  grid-column: 2;
 }
 
 .below-board {
@@ -80,13 +115,12 @@ body {
 }
 
 #chat-area {
-  margin: var(--universal-margin);
   grid-row-start: 2;
   grid-row-end: 4;
   grid-column-start: 2;
 
   display: grid;
-  grid-template-columns: auto minmax(80px, 160px);
+  grid-template-columns: auto 155px;
   grid-template-rows: 40px auto 40px;
   gap: var(--universal-margin);
 }
@@ -108,6 +142,7 @@ body {
   overflow: auto;
   grid-row-start: 1;
   grid-row-end: 3;
+  box-sizing: border-box;
 }
 
 .spectator-wrapper {
@@ -128,16 +163,7 @@ body {
   justify-content: flex-start;
   overflow: auto;
   padding: 0;
-}
-
-.username-container {
-  border: none;
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.username-container > input {
-  margin: 0;
+  box-sizing: border-box;
 }
 
 @media screen and (max-width: 767px) {
@@ -152,6 +178,14 @@ body {
 
   #chat-area {
     height: 400px !important;
+  }
+
+  .info-area {
+    grid-template-columns: auto;
+  }
+
+  .info-board {
+    display: none;
   }
 }
 
