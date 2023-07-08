@@ -313,12 +313,16 @@ export class Player {
     return this._pv;
   }
 
+  public set pv(v: Array<string>) {
+    this._pv = v;
+  }
+
   public set pvFen(fen: string) {
     this._pvFen = fen;
   }
 
-  public set pv(v: Array<string>) {
-    this._pv = v;
+  public get pvFen(): string {
+    return this._pvFen;
   }
 
   public get pvMoveNumber(): number {

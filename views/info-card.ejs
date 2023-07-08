@@ -1,39 +1,34 @@
-<div class="row">
-  <div id="<%= color %>-info">
-    <h3 id="<%= color %>-name"></h3>
-    <div class="card fluid">
-      <div class="row">
-        <div class="col-sm">
-          <div class="row">
-            <div class="col-sm info">
-              <p class="small-margin"><small class="info-header">Score</small></p>
-              <p class="small-margin info-value" id="<%= color %>-score"></p>
-            </div>
-            <div class="col-sm info">
-              <p class="small-margin"><small class="info-header">Depth</small></p>
-              <p class="small-margin info-value" id="<%= color %>-depth"></p>
-            </div>
-            <div class="col-sm info">
-              <p class="small-margin"><small class="info-header">Nodes</small></p>
-              <p class="small-margin info-value" id="<%= color %>-nodes"></p>
-            </div>
-            <div class="col-sm info">
-              <p class="small-margin"><small class="info-header">Nps</small></p>
-              <p class="small-margin info-value" id="<%= color %>-nps"></p>
-            </div>
+<div id="<%= color %>-info">
+  <h3 id="<%= color %>-name"></h3>
+  <div class="card fluid">
+    <div class="row">
+      <div class="col-sm">
+        <div class="row">
+          <div class="col-sm info">
+            <p class="small-margin"><small class="info-header">Score</small></p>
+            <p class="small-margin info-value" id="<%= color %>-score"></p>
+          </div>
+          <div class="col-sm info">
+            <p class="small-margin"><small class="info-header">Depth</small></p>
+            <p class="small-margin info-value" id="<%= color %>-depth"></p>
+          </div>
+          <div class="col-sm info">
+            <p class="small-margin"><small class="info-header">Nodes</small></p>
+            <p class="small-margin info-value" id="<%= color %>-nodes"></p>
+          </div>
+          <div class="col-sm info">
+            <p class="small-margin"><small class="info-header">Nps</small></p>
+            <p class="small-margin info-value" id="<%= color %>-nps"></p>
           </div>
         </div>
-        <div class="col-sm-3" style="text-align: right">
-          <h3><small id="<%= color %>-time"></small></h3>
-          <h6><small id="<%= color %>-think"></small></h6>
-        </div>
-        <div class="col-sm-12">
-          <p class="pv"><small id="<%= color %>-pv"></small></p>
-        </div>
+      </div>
+      <div class="col-sm-3" style="text-align: right">
+        <h3><small id="<%= color %>-time"></small></h3>
+        <h6><small id="<%= color %>-think"></small></h6>
+      </div>
+      <div class="col-sm-12">
+        <p class="pv"><small id="<%= color %>-pv"></small></p>
       </div>
     </div>
-  </div>
-  <div id="<%= color %>-pvBoard-container">
-    <div class="pvBoard" id="<%= color %>-pvBoard"></div>
   </div>
 </div>

@@ -151,12 +151,12 @@ class Handler {
     // Only if we could parse at least 1 do
     if (parsed.length) {
       this._game[color].pv = parsed;
-
-      let chess = new Chess(this._game.fen);
-      for (let move of this._game[color].pv) {
-        chess.move(move);
-      }
-      this._game[color].pvFen = chess.fen();
+      this._game[color].pvFen = this._game[color].pv
+        .reduce((board, move) => {
+          board.move(move);
+          return board;
+        }, new Chess(this._game.fen))
+        .fen();
     }
 
     logger.info(

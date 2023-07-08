@@ -58,7 +58,7 @@ function setChat(msgs) {
   });
 }
 
-function update(data, board, pvBoardBlack, pvBoardWhite) {
+function update(data, board) {
   const { game, spectators, menu } = data;
 
   updateTitle(`${game.white.name} vs ${game.black.name} (${game.site})`);
@@ -72,9 +72,6 @@ function update(data, board, pvBoardBlack, pvBoardWhite) {
   $('#opening').text(`Opening: ${game.opening}`);
   $('#fen').text(game.fen);
   board.position(game.fen);
-  pvBoardWhite.position(game.white.pvFen);
-  pvBoardBlack.position(game.black.pvFen);
-
 
   $('#spectator-box').children().remove();
 
@@ -148,9 +145,6 @@ setTheme(getPreferredTheme());
 
 $(function () {
   const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
-  const pvBoardSettings = { pieceTheme: '/img/{piece}.svg', showNotation: false, appearSpeed: 0, moveSpeed: 0, trashSpeed: 0 }
-  const pvBoardBlack = Chessboard('black-pvBoard', pvBoardSettings);
-  const pvBoardWhite = Chessboard('white-pvBoard', pvBoardSettings);
   const socket = io({ autoConnect: false });
 
   // pull username from storage
@@ -159,39 +153,8 @@ $(function () {
   // We fix the chat-area height to match the board height
   $('#chat-area').height(chatHeight());
 
-  // resize the PV boards
-  const setPvBoardSize = () => {
-    const minWidthInfoBox = 350;
-    const minSizePVBoard = 90;
-
-    const idealPvBoardSize = Math.min($('#black-info').height(), $('#white-info').height());
-    var infoBoxWidth = Math.max(minWidthInfoBox, $('#chat-area').width() - idealPvBoardSize);
-    var pvBoardSize = Math.max(0, $('#chat-area').width() - infoBoxWidth);
-
-    // if the pv board is too small to see anything, we just don't have it at all
-    if(pvBoardSize < minSizePVBoard)
-    {
-      pvBoardSize = 0;
-      infoBoxWidth = "100%";
-    }
-
-    $('#white-pvBoard-container').height(pvBoardSize);
-    $('#white-pvBoard-container').width(pvBoardSize);
-    $('#black-pvBoard-container').height(pvBoardSize);
-    $('#black-pvBoard-container').width(pvBoardSize);
-    pvBoardBlack.resize();
-    pvBoardWhite.resize();
-
-    // resize the info box area to leave appropiate space for the PV boards
-    $('#white-info').width(infoBoxWidth);
-    $('#black-info').width(infoBoxWidth);
-  };
-
-  setPvBoardSize();
-
   $(window).on('resize', () => {
     board.resize();
-    setPvBoardSize();
     $('#chat-area').height(chatHeight());
   });
 
@@ -218,7 +181,7 @@ $(function () {
 
   // first time connection
   socket.on('state', (data) => {
-    update(data, board, pvBoardBlack, pvBoardWhite);
+    update(data, board);
 
     setChat(data.chat);
     const scrollTop = $('#chat-box')[0].scrollHeight;
@@ -227,7 +190,7 @@ $(function () {
 
   // game updates
   socket.on('update', (data) => {
-    update(data, board, pvBoardBlack, pvBoardWhite);
+    update(data, board);
   });
 
   // chat messages
