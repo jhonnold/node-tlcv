@@ -147,7 +147,15 @@ class Handler {
     }
 
     // Only if we could parse at least 1 do
-    if (parsed.length) this._game[color].pv = parsed;
+    if (parsed.length) {
+      this._game[color].pv = parsed;
+      this._game[color].pvFen = this._game[color].pv
+        .reduce((board, move) => {
+          board.move(move);
+          return board;
+        }, new Chess(this._game.fen))
+        .fen();
+    }
 
     logger.info(
       `Updated game ${this._game.name} - Color: ${color}, Depth: ${this._game[color].depth}, Score: ${this._game[color].score}, Nodes: ${this._game[color].nodes}, UsedTime: ${this._game[color].usedTime}`,
