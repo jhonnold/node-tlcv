@@ -61,7 +61,7 @@ export class ChessGame {
 
   private setPGNHeaders(): void {
     this._instance.header('Site', this._site);
-    this._instance.header('Date', dayjs().toISOString());
+    this._instance.header('Date', dayjs().format('YYYY.MM.DD'));
     this._instance.header('White', this._white.name);
     this._instance.header('Black', this._black.name);
   }
