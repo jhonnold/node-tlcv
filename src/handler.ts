@@ -1,4 +1,6 @@
 import { Chess } from 'chess.js';
+import fs from 'fs';
+import shortid from 'shortid';
 import { ChessGame } from './chess-game';
 import { logger, splitOnCommand } from './util';
 import { Broadcast, SerializedBroadcast, username } from './broadcast';
@@ -275,6 +277,19 @@ class Handler {
   private onResult(tokens: CommandTokens): UpdateResult {
     const message = `[Server] - ${this._game.white.name} - ${this._game.black.name} (${tokens[1].trim()})`;
     this._broadcast.chat.push(message);
+
+    this._game.instance.header('Result', tokens[1].trim());
+
+    // TODO: Put these in S3 or something no on local fs
+    const id = shortid.generate();
+    const { white, black, site } = this._game;
+    const pgn = this._game.instance.pgn();
+
+    const filename = `pgns/[${site}] ${white.name} vs ${black.name}.${id}.pgn`;
+
+    fs.writeFile(filename, pgn, (err) => {
+      if (err) logger.error(`Unable to write to ${filename}! - ${JSON.stringify(err)}`);
+    });
 
     return [EmitType.CHAT, true, message];
   }

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bp from 'body-parser';
 import compression from 'compression';
+import serveIndex from 'serve-index';
 import routes from './routes';
 import adminRoutes from './routes/admin';
 import { logging } from './util';
@@ -31,3 +32,6 @@ app.use(routes);
 // POST /admin/reconnect
 // POST /admin/close
 app.use('/admin', adminRoutes);
+
+// Serve a folder of PGNs
+app.use('/pgns', express.static('pgns'), serveIndex('pgns', { icons: true }));
