@@ -1,5 +1,6 @@
 import { Chess, ChessInstance, Move } from 'chess.js';
 import { logger } from './util';
+import dayjs from 'dayjs';
 
 export type SerializedGame = {
   name: string;
@@ -60,7 +61,7 @@ export class ChessGame {
 
   private setPGNHeaders(): void {
     this._instance.header('Site', this._site);
-    this._instance.header('Date', new Date().toDateString());
+    this._instance.header('Date', dayjs().toISOString());
     this._instance.header('White', this._white.name);
     this._instance.header('Black', this._black.name);
   }

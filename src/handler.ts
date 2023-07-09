@@ -1,6 +1,8 @@
 import { Chess } from 'chess.js';
-import fs from 'fs';
-import shortid from 'shortid';
+import fs from 'fs/promises';
+import { mkdirp } from 'mkdirp';
+import dayjs from 'dayjs';
+import slugify from 'slugify';
 import { ChessGame } from './chess-game';
 import { logger, splitOnCommand } from './util';
 import { Broadcast, SerializedBroadcast, username } from './broadcast';
@@ -274,22 +276,28 @@ class Handler {
     return [EmitType.UPDATE, true];
   }
 
-  private onResult(tokens: CommandTokens): UpdateResult {
+  private async onResult(tokens: CommandTokens): Promise<UpdateResult> {
     const message = `[Server] - ${this._game.white.name} - ${this._game.black.name} (${tokens[1].trim()})`;
     this._broadcast.chat.push(message);
 
     this._game.instance.header('Result', tokens[1].trim());
 
-    // TODO: Put these in S3 or something no on local fs
-    const id = shortid.generate();
     const { white, black, site } = this._game;
     const pgn = this._game.instance.pgn();
 
-    const filename = `pgns/[${site}] ${white.name} vs ${black.name}.${id}.pgn`;
+    const siteSlug = slugify(site, '_');
+    const dirname = `pgns/${siteSlug}`;
 
-    fs.writeFile(filename, pgn, (err) => {
-      if (err) logger.error(`Unable to write to ${filename}! - ${JSON.stringify(err)}`);
-    });
+    const date = dayjs().format('YYYYMMDD_HHmm');
+    const filename = slugify(`${date}_${white.name}_vs_${black.name}`, '_');
+    const filepath = `${dirname}/${filename}.pgn`;
+
+    try {
+      await mkdirp(dirname);
+      await fs.writeFile(filepath, pgn);
+    } catch (err) {
+      logger.error(`Unable to write to ${filepath}! - ${JSON.stringify(err)}`);
+    }
 
     return [EmitType.CHAT, true, message];
   }
