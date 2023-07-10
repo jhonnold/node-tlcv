@@ -82,7 +82,7 @@ body {
 }
 
 #fen,
-#opening {
+#caption {
   background-color: rgb(var(--surfaceColor));
   border-color: rgb(var(--surfaceColorHover));
   border-left-color: rgb(var(--secondaryColor));

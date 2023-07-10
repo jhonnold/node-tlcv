@@ -210,6 +210,7 @@ class Handler {
     // start the timer for the other side
     this._game[notColor].startTime = new Date().getTime();
     await this._game.setOpening();
+    await this._game.setTablebase();
 
     return [EmitType.UPDATE, true];
   }

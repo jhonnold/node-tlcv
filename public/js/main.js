@@ -70,7 +70,12 @@ function update(data, board, pvBoardWhite, pvBoardBlack) {
   updateTimers(data);
   updateLastMoves(data);
 
-  $('#opening').text(`Opening: ${game.opening}`);
+  if (game.tablebase) {
+    $('#caption').text(`Tablebase: ${game.tablebase}`);
+  } else {
+    $('#caption').text(`Opening: ${game.opening}`);
+  }
+
   $('#fen').text(game.fen);
   board.position(game.fen);
   pvBoardWhite.position(game.white.pvFen);
