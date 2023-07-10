@@ -203,7 +203,7 @@ class Handler {
     if (color == 'white') this._game.black.pvMoveNumber = this._game.moveNumber;
     else this._game.white.pvMoveNumber = this._game.moveNumber + 1;
 
-    const move = this._game.instance.move(rest[1]);
+    const move = this._game.instance.move(rest[1], { sloppy: true });
     if (move) {
       this._game[color].lastMove = move;
       logger.info(`Updated game ${this._game.name} - Color: ${color}, Last Move: ${this._game[color].lastMove?.san}`, {
