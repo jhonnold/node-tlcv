@@ -17,7 +17,7 @@ io.on('connection', (socket: Socket) => {
     username = uniqueName(user, broadcast.spectators);
     if (username) broadcast.spectators.add(username);
 
-    logger.info(`${username} joined at port ${port}!`);
+    logger.info(`${username} joined at port ${port}!`, { port: broadcast.port });
 
     socket.join(String(port));
     socket.emit('state', broadcast.toJSON(true));
@@ -36,7 +36,7 @@ io.on('connection', (socket: Socket) => {
     username = uniqueName(user, broadcast.spectators);
     if (username) broadcast.spectators.add(username);
 
-    logger.info(`${originalUsername} changed their name to ${username}!`);
+    logger.info(`${originalUsername} changed their name to ${username}!`, { port: broadcast.port });
 
     socket.emit('update', broadcast.toJSON());
   });
@@ -48,6 +48,6 @@ io.on('connection', (socket: Socket) => {
 
     if (username) broadcast.spectators.delete(username);
 
-    logger.info(`${username} has left from port ${broadcast.port}!`);
+    logger.info(`${username} has left from port ${broadcast.port}!`, { port: broadcast.port });
   });
 });

@@ -19,9 +19,8 @@ const logger = createLogger({
     timestamp(),
     printf(
       (info) =>
-        `${info.timestamp} ${colorMap[info.level.toUpperCase()](`[${info.level.toUpperCase().padStart(5)}]`)} ${
-          info.message
-        }`,
+        `${info.timestamp} ${colorMap[info.level.toUpperCase()](`[${info.level.toUpperCase().padStart(5)}]`)} ` +
+        `${info.port ? `[P${info.port}] ` : ''}${info.message}`,
     ),
   ),
 });

@@ -87,12 +87,11 @@ export class ChessGame {
     const { valid, ...err } = this._instance.validate_fen(this._fen);
 
     if (valid) {
-      logger.info(`Setting fen for game ${this._name} to ${this._fen}`);
+      logger.info(`Setting fen for game ${this._name} to ${this._fen}`, { port: this.name });
       this._loaded = this._instance.load(this._fen);
       this.setPGNHeaders();
     } else {
-      logger.error(`Unable to load fen ${this._fen} for game ${this._name}`);
-      logger.error(err.error);
+      logger.error(`Unable to load fen ${this._fen} for game ${this._name} - ${err.error}`, { port: this.name });
     }
   }
 
@@ -103,7 +102,7 @@ export class ChessGame {
     const moves = history.map((move) => `${move.from}${move.to}`).join(',');
     const url = `https://explorer.lichess.ovh/master?play=${moves}`;
 
-    logger.info(`Requesting opening for game ${this._name} from ${url}`);
+    logger.info(`Requesting opening for game ${this._name} from ${url}`, { port: this.name });
 
     try {
       const response = await fetch(url, {
@@ -114,25 +113,25 @@ export class ChessGame {
       });
       const data: LichessExplorerResponse = await response.json();
 
-      logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
+      logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`, { port: this.name });
 
       const { opening } = data;
 
       if (opening) {
         const { eco, name } = opening;
 
-        logger.info(`Setting opening for game ${this._name} to ${eco} ${name}`);
+        logger.info(`Setting opening for game ${this._name} to ${eco} ${name}`, { port: this.name });
         this._opening = `${eco} ${name}`;
       }
     } catch {
-      logger.warn(`Error requesting opening for game ${this._name} @ ${url}`);
+      logger.warn(`Error requesting opening for game ${this._name} @ ${url}`, { port: this.name });
     }
   }
 
   async setTablebase(): Promise<void> {
     const url = `https://tablebase.lichess.ovh/standard?fen=${this._fen}`;
 
-    logger.info(`Requesting tablebase for game ${this._name} from ${url}`);
+    logger.info(`Requesting tablebase for game ${this._name} from ${url}`, { port: this.name });
 
     try {
       const response = await fetch(url, {
@@ -144,7 +143,7 @@ export class ChessGame {
 
       const data: LichessTablebaseResponse = await response.json();
 
-      logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
+      logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`, { port: this.name });
 
       const { category } = data;
 
@@ -167,16 +166,18 @@ export class ChessGame {
             this._tablebase = '';
             break;
           default:
-            logger.warn(`Unknown tablebase category ${category} for game ${this._name}, setting tablebase to blank`);
+            logger.warn(`Unknown tablebase category ${category} for game ${this._name}, setting tablebase to blank`, {
+              port: this.name,
+            });
             this._tablebase = '';
         }
-        logger.info(`Set tablebase for game ${this._name} to ${this._tablebase}`);
+        logger.info(`Set tablebase for game ${this._name} to ${this._tablebase}`, { port: this.name });
       } else {
-        logger.info(`Setting tablebase for game ${this._name} to blank`);
+        logger.info(`Setting tablebase for game ${this._name} to blank`, { port: this.name });
         this._tablebase = '';
       }
     } catch {
-      logger.warn(`Error requesting tablebase for game ${this._name} @ ${url}`);
+      logger.warn(`Error requesting tablebase for game ${this._name} @ ${url}`, { port: this.name });
       this._tablebase = '';
     }
   }

@@ -94,7 +94,7 @@ class Handler {
     this._game.fen = fenTokens.join(' '); // build the fen
     if (!this._game.loaded) this._game.resetFromFen();
 
-    logger.info(`Updated game ${this._game.name} - FEN: ${this._game.fen}`);
+    logger.info(`Updated game ${this._game.name} - FEN: ${this._game.fen}`, { port: this._broadcast.port });
 
     // Never update on the FEN since we maintain our own state
     return [EmitType.UPDATE, false];
@@ -113,7 +113,9 @@ class Handler {
       this._game[color].name = name;
       this._game.reset();
 
-      logger.info(`Updated game ${this._game.name} - Color: ${color}, Name: ${this._game[color].name}`);
+      logger.info(`Updated game ${this._game.name} - Color: ${color}, Name: ${this._game[color].name}`, {
+        port: this._broadcast.port,
+      });
       return [EmitType.UPDATE, true];
     }
 
@@ -166,8 +168,11 @@ class Handler {
 
     logger.info(
       `Updated game ${this._game.name} - Color: ${color}, Depth: ${this._game[color].depth}, Score: ${this._game[color].score}, Nodes: ${this._game[color].nodes}, UsedTime: ${this._game[color].usedTime}`,
+      { port: this._broadcast.port },
     );
-    logger.info(`Updated game ${this._game.name} - Color: ${color}, PV: ${this._game[color].pv.join(' ')}`);
+    logger.info(`Updated game ${this._game.name} - Color: ${color}, PV: ${this._game[color].pv.join(' ')}`, {
+      port: this._broadcast.port,
+    });
 
     return [EmitType.UPDATE, true];
   }
@@ -180,7 +185,9 @@ class Handler {
     const color: Color = command == Command.WTIME ? 'white' : 'black';
     this._game[color].clockTime = parseInt(rest[0]) * 10;
 
-    logger.info(`Updated game ${this._game.name} - Color: ${color}, ClockTime: ${this._game[color].clockTime}`);
+    logger.info(`Updated game ${this._game.name} - Color: ${color}, ClockTime: ${this._game[color].clockTime}`, {
+      port: this._broadcast.port,
+    });
     return [EmitType.UPDATE, true];
   }
 
@@ -199,10 +206,13 @@ class Handler {
     const move = this._game.instance.move(rest[1]);
     if (move) {
       this._game[color].lastMove = move;
-      logger.info(`Updated game ${this._game.name} - Color: ${color}, Last Move: ${this._game[color].lastMove?.san}`);
+      logger.info(`Updated game ${this._game.name} - Color: ${color}, Last Move: ${this._game[color].lastMove?.san}`, {
+        port: this._broadcast.port,
+      });
     } else {
       logger.warn(
         `Failed to parse ${rest[1]} for game ${this._game.name}, fen ${this._game.instance.fen()}! Loading from FEN...`,
+        { port: this._broadcast.port },
       );
       this._game.resetFromFen();
     }
@@ -220,7 +230,7 @@ class Handler {
 
     this._game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
 
-    logger.info(`Updated game ${this._game.name} - Site: ${this._game.site}`);
+    logger.info(`Updated game ${this._game.name} - Site: ${this._game.site}`, { port: this._broadcast.port });
     return [EmitType.UPDATE, true];
   }
 
@@ -273,7 +283,9 @@ class Handler {
 
     this._broadcast.menu.set(name, url);
 
-    logger.info(`Updated broadcast ${this._broadcast.port} Menu - Name: ${name}, Value: ${url}`);
+    logger.info(`Updated broadcast ${this._broadcast.port} Menu - Name: ${name}, Value: ${url}`, {
+      port: this._broadcast.port,
+    });
     return [EmitType.UPDATE, true];
   }
 
@@ -297,38 +309,25 @@ class Handler {
       await mkdirp(dirname);
       await fs.writeFile(filepath, pgn);
     } catch (err) {
-      logger.error(`Unable to write to ${filepath}! - ${JSON.stringify(err)}`);
+      logger.error(`Unable to write to ${filepath}! - ${err}`, { port: this._broadcast.port });
     }
 
     return [EmitType.CHAT, true, message];
   }
 
-  async onMessages(messages: string[]): Promise<string[]> {
-    const messageIds: string[] = [];
-
+  async onMessages(messages: string[]): Promise<void> {
     // We emit after processing all messages.
     // UpdateEmit is the board result after the last processed message
     // ChatEmit is all the chats received across these messages
     let updateEmit: SerializedBroadcast | null = null;
     const chatEmit: string[] = [];
 
-    for (let msg of messages) {
-      let messageId: string | null = null;
-      const idMatch = /^<\s*(\d+)>/g.exec(msg);
-      if (idMatch) {
-        messageId = idMatch[1];
-        logger.debug(`${messageId} parsed as Message Id for ${msg}`);
-
-        msg = msg.replace(/^<\s*(\d+)>/g, '');
-      } else {
-        logger.debug(`No Message Id found for ${msg}`);
-      }
-
+    for (const msg of messages) {
       const [cmd, rest] = splitOnCommand(msg);
 
       const commandConfig = this._commandConfig[cmd] as ConfigItem | undefined;
 
-      if (!commandConfig) logger.warn(`Unable to process ${cmd}!`);
+      if (!commandConfig) logger.warn(`Unable to process ${cmd}!`, { port: this._broadcast.port });
       else {
         const [emit, updated, ...updateData] = await commandConfig.fn(
           commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
@@ -345,15 +344,12 @@ class Handler {
           }
         }
       }
-
-      if (messageId) messageIds.push(messageId);
     }
 
     if (updateEmit) io.to(String(this._broadcast.port)).emit(EmitType.UPDATE, updateEmit);
     if (chatEmit.length) io.to(String(this._broadcast.port)).emit(EmitType.CHAT, chatEmit);
 
-    logger.info(`Successfully processed ${messages.length} message(s) with ids - ${messageIds.join(',')}`);
-    return messageIds;
+    logger.info(`Successfully processed ${messages.length} message(s)`, { port: this._broadcast.port });
   }
 }
 

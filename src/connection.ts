@@ -4,9 +4,12 @@ import Handler from './handler';
 import { setInterval } from 'timers';
 import AsyncLock from 'async-lock';
 
+const PROCESSING_INTERVAL = 100;
+
 class Connection {
   private host: string;
   private port: number;
+  private lastMessage: number | undefined;
   private socket: Socket;
   private handler: Handler;
   private unproccessed: string[];
@@ -30,42 +33,73 @@ class Connection {
 
     this.timer = setInterval(() => {
       this.lock
-        .acquire('messages', () => {
-          const messages = [...this.unproccessed];
-          this.unproccessed = [];
-          return messages;
-        })
-        .then((messages) => {
-          if (!messages.length) return;
+        .acquire(
+          'processing',
+          async () => {
+            const messages = await this.lock.acquire(
+              'messages',
+              () => {
+                const messages = [...this.unproccessed];
+                this.unproccessed = [];
+                return messages;
+              },
+              { skipQueue: true },
+            );
 
-          this.lock
-            .acquire('processing', () => this.handler.onMessages(messages))
-            .then((ids) => ids.forEach((id) => this.send(`ACK: ${id}`)));
+            if (!messages.length) return;
+
+            logger.debug(`Processing a total of ${messages.length} message(s)`, { port: this.port });
+            await this.handler.onMessages(messages);
+          },
+          { timeout: PROCESSING_INTERVAL },
+        )
+        .catch((err: Error) => {
+          if (!err.message.startsWith('async-lock timed out'))
+            logger.error(`Error processing messages - ${err}`, { port: this.port });
         });
-    }, 100);
+    }, PROCESSING_INTERVAL);
   }
 
   private onError(err: Error): void {
-    logger.error(err);
+    logger.error(`Unexpected socket error - ${err}`, { port: this.port });
 
     this.socket.close();
   }
 
   private onListening(): void {
     const address = this.socket.address();
-    logger.info(`Listening @ ${address.address}:${address.port}`);
+    logger.info(`Listening @ ${address.address}:${address.port}`, { port: this.port });
   }
 
   private onMessage(msg: Buffer, rInfo: RemoteInfo): void {
-    logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`);
+    logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`, { port: this.port });
+
+    let message = msg.toString().trim();
+    const idMatch = /^<\s*(\d+)>/g.exec(message);
+
+    if (idMatch) {
+      this.send(`ACK: ${idMatch[1]}`);
+
+      const id = parseInt(idMatch[1]);
+      if (this.lastMessage && this.lastMessage + 1 != id)
+        logger.warn(`Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}`, {
+          port: this.port,
+        });
+
+      this.lastMessage = id;
+
+      message = message.replace(/^<\s*(\d+)>/g, '');
+    } else {
+      logger.debug(`No message id found for ${message}`, { port: this.port });
+    }
 
     this.lock.acquire('messages', () => {
-      this.unproccessed.push(msg.toString().trim());
+      this.unproccessed.push(message);
     });
   }
 
   send(msg: string): void {
-    logger.debug(`Sending message ${msg} to ${this.host}:${this.port}`);
+    logger.debug(`Sending message ${msg} to ${this.host}:${this.port}`, { port: this.port });
     this.socket.send(msg, this.port, this.host);
   }
 
