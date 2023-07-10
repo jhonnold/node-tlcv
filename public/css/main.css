@@ -194,14 +194,6 @@ pre {
   .info-board {
     display: none;
   }
-
-  .info-area {
-    grid-template-columns: auto;
-  }
-
-  .info-board {
-    display: none;
-  }
 }
 
 .other {

@@ -125,15 +125,12 @@ function update(data, board, pvBoardWhite, pvBoardBlack) {
   }
 }
 
-<<<<<<< HEAD
 function chatHeight() {
   const height = $('#board').height() - (155 + 155 + 32);
 
   return height > 116 ? height : 116;
 }
 
-=======
->>>>>>> 702334f (Add PV boards into UI)
 const storedTheme = localStorage.getItem('theme');
 
 const getPreferredTheme = () => {
@@ -167,13 +164,10 @@ setTheme(globalTheme);
 
 $(function () {
   const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
-<<<<<<< HEAD
   clearArrows();
   const b = $('#board');
   $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
 
-=======
->>>>>>> 702334f (Add PV boards into UI)
   const pvBoardSettings = {
     pieceTheme: '/img/{piece}.svg',
     showNotation: false,
@@ -189,24 +183,18 @@ $(function () {
   // pull username from storage
   $('#username').val(localStorage.getItem('tlcv.net-username'));
 
-<<<<<<< HEAD
   // We fix the chat-area height to match the board height
   $('#chat-area').height(chatHeight());
-=======
->>>>>>> 702334f (Add PV boards into UI)
   $(window).on('resize', () => {
     board.resize();
     pvBoardWhite.resize();
     pvBoardBlack.resize();
-<<<<<<< HEAD
 
     $('#chat-area').height(chatHeight());
 
     clearArrows();
     const b = $('#board');
     $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
-=======
->>>>>>> 702334f (Add PV boards into UI)
   });
 
   // Setup FEN copy
@@ -246,7 +234,14 @@ $(function () {
 
   // chat messages
   socket.on('new-chat', (data) => {
+    const notScrolled = $('#chat-box')[0].scrollTop + chatHeight() > $('#chat-box')[0].scrollHeight;
+
     data.forEach((msg) => addChat(msg));
+
+    if (notScrolled) {
+      const scrollTop = $('#chat-box')[0].scrollHeight;
+      $('#chat-box').stop().animate({ scrollTop });
+    }
   });
 
   // Enable the connection!

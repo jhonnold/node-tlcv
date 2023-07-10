@@ -29,8 +29,11 @@ export type SerializedPlayer = {
   pvMoveNumber: number;
 };
 
-export type LichessResponse = {
+export type LichessExplorerResponse = {
   opening: { eco: string; name: string } | null;
+};
+
+export type LichessTablebaseResponse = {
   category: string | null;
 };
 
@@ -109,7 +112,7 @@ export class ChessGame {
           'Content-Type': 'application/json',
         },
       });
-      const data: LichessResponse = await response.json();
+      const data: LichessExplorerResponse = await response.json();
 
       logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
 
@@ -122,77 +125,60 @@ export class ChessGame {
         this._opening = `${eco} ${name}`;
       }
     } catch {
-<<<<<<< HEAD
       logger.warn(`Error requesting opening for game ${this._name} @ ${url}`);
-=======
-      logger.warn(`Error requesting opening for game ${this._name} @ ${url}`)
->>>>>>> b9fd4c2 (Proper async for API requests)
     }
   }
 
-  setTablebase(): void {
-    let pieceCount = 0;
-
-    const board = this._instance.board();
-
-    for (let i = 0; i < board.length; i++) {
-      for (let j = 0; j < board[i].length; j++) {
-        if (board[i][j] != null) {
-          pieceCount++;
-        }
-      }
-    }
-
-    if (pieceCount > 7) {
-      this._tablebase = '';
-      return;
-    }
-
+  async setTablebase(): Promise<void> {
     const url = `https://tablebase.lichess.ovh/standard?fen=${this._fen}`;
 
     logger.info(`Requesting tablebase for game ${this._name} from ${url}`);
 
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response: Response) => response.json())
-      .then((data: LichessResponse) => {
-        logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
-
-        const { category } = data;
-
-        if (!category) {
-          logger.info(`Setting tablebase for game ${this._name} to blank`);
-          this._tablebase = '';
-        } else {
-          switch (category) {
-            case 'win':
-            case 'maybe-win':
-              this._tablebase = this._instance.turn() === 'w' ? 'White Win' : 'Black Win';
-              break;
-            case 'cursed-win':
-            case 'draw':
-            case 'cursed-loss':
-              this._tablebase = 'Draw';
-              break;
-            case 'loss':
-            case 'maybe-loss':
-              this._tablebase = this._instance.turn() === 'w' ? 'Black Win' : 'White Win';
-              break;
-            default:
-              logger.warn(`Unknown tablebase category ${category} for game ${this._name}, setting tablebase to blank`);
-              this._tablebase = '';
-          }
-          logger.info(`Set tablebase for game ${this._name} to ${this._tablebase}`);
-        }
-      })
-      .catch((err: Error) => {
-        logger.error(`Error requesting tablebase for game ${this._name}, setting tablebase to blank`);
-        this._tablebase = '';
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+
+      const data: LichessTablebaseResponse = await response.json();
+
+      logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`);
+
+      const { category } = data;
+
+      if (category) {
+        switch (category) {
+          case 'win':
+          case 'maybe-win':
+            this._tablebase = this._instance.turn() === 'w' ? 'White Win' : 'Black Win';
+            break;
+          case 'cursed-win':
+          case 'draw':
+          case 'cursed-loss':
+            this._tablebase = 'Draw';
+            break;
+          case 'loss':
+          case 'maybe-loss':
+            this._tablebase = this._instance.turn() === 'w' ? 'Black Win' : 'White Win';
+            break;
+          case 'unknown':
+            this._tablebase = '';
+            break;
+          default:
+            logger.warn(`Unknown tablebase category ${category} for game ${this._name}, setting tablebase to blank`);
+            this._tablebase = '';
+        }
+        logger.info(`Set tablebase for game ${this._name} to ${this._tablebase}`);
+      } else {
+        logger.info(`Setting tablebase for game ${this._name} to blank`);
+        this._tablebase = '';
+      }
+    } catch {
+      logger.warn(`Error requesting tablebase for game ${this._name} @ ${url}`);
+      this._tablebase = '';
+    }
   }
 
   toJSON(): SerializedGame {

@@ -200,8 +200,6 @@ class Handler {
     if (move) {
       this._game[color].lastMove = move;
       logger.info(`Updated game ${this._game.name} - Color: ${color}, Last Move: ${this._game[color].lastMove?.san}`);
-
-      this._game.setTablebase();
     } else {
       logger.warn(
         `Failed to parse ${rest[1]} for game ${this._game.name}, fen ${this._game.instance.fen()}! Loading from FEN...`,
@@ -212,6 +210,7 @@ class Handler {
     // start the timer for the other side
     this._game[notColor].startTime = new Date().getTime();
     await this._game.setOpening();
+    await this._game.setTablebase();
 
     return [EmitType.UPDATE, true];
   }
