@@ -81,7 +81,7 @@ class Connection {
       this.send(`ACK: ${idMatch[1]}`);
 
       const id = parseInt(idMatch[1]);
-      if (this.lastMessage && this.lastMessage + 1 != id)
+      if (this.lastMessage && id < this.lastMessage)
         logger.warn(`Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}`, {
           port: this.port,
         });
