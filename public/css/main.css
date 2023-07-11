@@ -84,10 +84,6 @@ pre {
   background-size: contain;
 }
 
-.info-logo {
-  float: right;
-}
-
 .info-card {
   grid-row: 2;
   grid-column: 1;
