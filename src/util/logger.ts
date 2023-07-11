@@ -1,9 +1,10 @@
 import { createLogger, transports, format } from 'winston';
-import { blue, green, yellow, red, Chalk } from 'chalk';
+import chalk from 'chalk';
 
+const { blue, green, yellow, red } = chalk;
 const { combine, timestamp, printf } = format;
 
-const colorMap: { [key: string]: Chalk } = {
+const colorMap: { [key: string]: chalk.Chalk } = {
   DEBUG: blue,
   INFO: green,
   WARN: yellow,

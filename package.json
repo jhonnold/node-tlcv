@@ -8,7 +8,7 @@
   "dependencies": {
     "async-lock": "^1.4.0",
     "chalk": "^4.1.2",
-    "chess.js": "^0.12.0",
+    "chess.js": "^1.0.0-beta.6",
     "chessboardjs": "^0.0.1",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -30,7 +30,6 @@
     "@babel/core": "^7.15.0",
     "@babel/preset-env": "^7.15.0",
     "@types/async-lock": "^1.4.0",
-    "@types/chess.js": "^0.11.2",
     "@types/compression": "^1.7.1",
     "@types/cors": "^2.8.12",
     "@types/ejs": "^3.0.7",
@@ -47,8 +46,8 @@
     "gulp": "^4.0.2",
     "gulp-babel": "^8.0.0",
     "gulp-clean-css": "^4.3.0",
-    "gulp-imagemin": "^7.0.1",
-    "gulp-load-plugins": "^2.0.7",
+    "gulp-imagemin": "^8.0.0",
+    "gulp-load-plugins": "^2.0.8",
     "gulp-sourcemaps": "^3.0.0",
     "nodemon": "^2.0.12",
     "prettier": "~2.3.2",
@@ -62,7 +61,7 @@
   },
   "scripts": {
     "dev": "concurrently 'npm:dev-*'",
-    "dev-server": "nodemon --watch 'src/**/*.ts' src/main.ts",
+    "dev-server": "nodemon --watch 'src/**/*.ts' -x ts-node-esm src/main.ts",
     "dev-public": "gulp",
     "start": "node build/src/main.js",
     "clean": "rimraf coverage build tmp",
@@ -72,5 +71,6 @@
     "format": "prettier --write {src,public}/**/*.{js,html,ts,css}"
   },
   "author": "Jay Honnold <jayhonnold@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "type": "module"
 }

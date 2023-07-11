@@ -1,4 +1,4 @@
-import { Command } from '../handler';
+import { Command } from '../handler.js';
 
 export function splitOnCommand(line: string): [Command, string] {
   const semiIdx = line.indexOf(':');

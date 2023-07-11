@@ -1,8 +1,8 @@
 import dns from 'dns';
-import Connection from './connection';
-import Handler from './handler';
-import { ChessGame, SerializedGame } from './chess-game';
-import { config } from './config';
+import Connection from './connection.js';
+import Handler from './handler.js';
+import { ChessGame, SerializedGame } from './chess-game.js';
+import { config } from './config.js';
 
 export const username = 'tlcv.net';
 

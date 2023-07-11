@@ -3,10 +3,10 @@ import fs from 'fs/promises';
 import { mkdirp } from 'mkdirp';
 import dayjs from 'dayjs';
 import slugify from 'slugify';
-import { ChessGame } from './chess-game';
-import { logger, splitOnCommand } from './util';
-import { Broadcast, SerializedBroadcast, username } from './broadcast';
-import { io } from './io';
+import { ChessGame } from './chess-game.js';
+import { logger, splitOnCommand } from './util/index.js';
+import { Broadcast, SerializedBroadcast, username } from './broadcast.js';
+import { io } from './io.js';
 
 type Color = 'white' | 'black';
 
@@ -135,7 +135,7 @@ class Handler {
     this._game[color].usedTime = parseInt(rest[2]) * 10;
 
     const copy = new Chess();
-    copy.load_pgn(this._game.instance.pgn());
+    copy.loadPgn(this._game.instance.pgn());
 
     const pv = rest.slice(4);
     const parsed = new Array<string>();
@@ -148,11 +148,14 @@ class Handler {
 
     for (let i = 0; i < pv.length; i++) {
       const alg = pv[i];
-      const move = copy.move(alg, { sloppy: true });
-      if (!move) break;
+      try {
+        const move = copy.move(alg, { strict: false });
 
-      parsed.push(move.san);
-      pvAlg.push(`${move.from}${move.to}`);
+        parsed.push(move.san);
+        pvAlg.push(`${move.from}${move.to}`);
+      } catch (err) {
+        break; // failed to parse a move
+      }
     }
 
     // Only if we could parse at least 1 do
@@ -162,7 +165,12 @@ class Handler {
 
       this._game[color].pvFen = this._game[color].pv
         .reduce((board, move) => {
-          board.move(move);
+          try {
+            board.move(move, { strict: false });
+          } catch (err) {
+            logger.warn(`Unable to parse a previously parsed move: ${move} - ${board.fen()}`);
+          }
+
           return board;
         }, new Chess(this._game.fen))
         .fen();
@@ -205,13 +213,13 @@ class Handler {
     if (color == 'white') this._game.black.pvMoveNumber = this._game.moveNumber;
     else this._game.white.pvMoveNumber = this._game.moveNumber + 1;
 
-    const move = this._game.instance.move(rest[1], { sloppy: true });
-    if (move) {
+    try {
+      const move = this._game.instance.move(rest[1], { strict: false });
       this._game[color].lastMove = move;
       logger.info(`Updated game ${this._game.name} - Color: ${color}, Last Move: ${this._game[color].lastMove?.san}`, {
         port: this._broadcast.port,
       });
-    } else {
+    } catch (err) {
       logger.warn(
         `Failed to parse ${rest[1]} for game ${this._game.name}, fen ${this._game.instance.fen()}! Loading from FEN...`,
         { port: this._broadcast.port },

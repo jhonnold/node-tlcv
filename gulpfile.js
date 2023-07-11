@@ -1,11 +1,14 @@
-const gulp = require('gulp');
-const plugins = require('gulp-load-plugins');
-const rimraf = require('rimraf');
-const webpack = require('webpack');
-const webpackStream = require('webpack-stream');
-const named = require('vinyl-named');
+import gulp from 'gulp';
+import plugins from 'gulp-load-plugins';
+import rimraf from 'rimraf';
+import webpack from 'webpack';
+import webpackStream from 'webpack-stream';
+import named from 'vinyl-named';
+import imagemin from 'gulp-imagemin';
 
-const $ = plugins();
+const $ = plugins({
+  config: process.env.npm_package_json,
+});
 
 function clean(done) {
   rimraf('./build/public', done);
@@ -14,7 +17,7 @@ function clean(done) {
 function images() {
   return gulp
     .src('./public/img/**/*')
-    .pipe($.imagemin({ progressive: true }))
+    .pipe(imagemin({ progressive: true })) // can't use imagemin with load plugins
     .pipe(gulp.dest('./build/public/img'));
 }
 
@@ -33,6 +36,16 @@ function js() {
     .pipe(
       webpackStream({
         mode: 'production',
+        module: {
+          rules: [
+            {
+              test: /\.m?js/,
+              resolve: {
+                fullySpecified: false,
+              },
+            },
+          ],
+        },
         plugins: [new webpack.ProvidePlugin({ $: 'jquery' })],
       }),
     )

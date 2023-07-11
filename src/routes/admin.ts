@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import basic from 'express-basic-auth';
-import broadcasts, { Broadcast } from '../broadcast';
-import { config } from '../config';
-import { logger } from '../util';
+import broadcasts, { Broadcast } from '../broadcast.js';
+import { config } from '../config.js';
+import { logger } from '../util/index.js';
 
 const router = Router();
 

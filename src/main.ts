@@ -2,10 +2,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import http from 'http';
-import { app } from './app';
-import { io } from './io';
-import { connect } from './broadcast';
-import { logger } from './util';
+import { app } from './app.js';
+import { io } from './io.js';
+import { connect } from './broadcast.js';
+import { logger } from './util/index.js';
 
 const server = http.createServer(app);
 io.attach(server);

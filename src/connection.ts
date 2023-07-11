@@ -1,6 +1,6 @@
 import { RemoteInfo, Socket, createSocket } from 'dgram';
-import { logger } from './util';
-import Handler from './handler';
+import { logger } from './util/index.js';
+import Handler from './handler.js';
 import { setInterval } from 'timers';
 import AsyncLock from 'async-lock';
 

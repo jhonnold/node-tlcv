@@ -1,5 +1,5 @@
-import { Chess, ChessInstance, Move } from 'chess.js';
-import { logger } from './util';
+import { Chess, Move, validateFen } from 'chess.js';
+import { logger } from './util/index.js';
 import dayjs from 'dayjs';
 
 export type SerializedGame = {
@@ -42,7 +42,7 @@ export class ChessGame {
   private _site: string;
   private _white: Player;
   private _black: Player;
-  private _instance: ChessInstance;
+  private _instance: Chess;
   private _loaded: boolean;
   private _fen: string;
   private _opening: string;
@@ -84,11 +84,12 @@ export class ChessGame {
   }
 
   resetFromFen(): void {
-    const { valid, ...err } = this._instance.validate_fen(this._fen);
+    const { ok: valid, ...err } = validateFen(this._fen);
 
     if (valid) {
       logger.info(`Setting fen for game ${this._name} to ${this._fen}`, { port: this.name });
-      this._loaded = this._instance.load(this._fen);
+      this._instance.load(this._fen);
+      this._loaded = true;
       this.setPGNHeaders();
     } else {
       logger.error(`Unable to load fen ${this._fen} for game ${this._name} - ${err.error}`, { port: this.name });
@@ -216,7 +217,7 @@ export class ChessGame {
     return this._black;
   }
 
-  public get instance(): ChessInstance {
+  public get instance(): Chess {
     return this._instance;
   }
 

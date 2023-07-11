@@ -3,9 +3,9 @@ import cors from 'cors';
 import bp from 'body-parser';
 import compression from 'compression';
 import serveIndex from 'serve-index';
-import routes from './routes';
-import adminRoutes from './routes/admin';
-import { logging } from './util';
+import routes from './routes/index.js';
+import adminRoutes from './routes/admin.js';
+import { logging } from './util/index.js';
 
 export const app = express();
 
