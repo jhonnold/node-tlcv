@@ -65,7 +65,7 @@ function drawArrow(context, x0, y0, x1, y1, width, head_width, head_length) {
   context.fill();
 }
 
-export function drawMove(move, theme) {
+export function drawMove(move, color, shift = 0) {
   const board = $('#board');
   const breite = board.height();
 
@@ -84,13 +84,13 @@ export function drawMove(move, theme) {
 
   const b = breite / 8;
   const c = b / 2;
-  const sx = fromX * b - c;
+  const sx = fromX * b - c + shift * (c / 8);
   const sy = maxY - (fromY * b - c);
-  const ex = toX * b - c;
+  const ex = toX * b - c + shift * (c / 8);
   const ey = maxY - (toY * b - c);
   const w = (b / 3.5) * 0.5;
 
-  ctx.fillStyle = theme == 'light' ? `rgba(25, 118, 210, 0.9)` : `rgba(105, 179, 126, 0.9)`;
+  ctx.fillStyle = color;
   drawArrow(ctx, sx, sy, ex, ey, w, 3.5 * w, b / 3);
 }
 

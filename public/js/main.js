@@ -82,8 +82,16 @@ function update(data, board, pvBoardWhite, pvBoardBlack) {
   pvBoardBlack.position(game.black.pvFen);
 
   clearArrows();
-  const { pvAlg } = game[game.stm == 'w' ? 'white' : 'black'];
-  if (pvAlg) drawMove(pvAlg, globalTheme);
+
+  const { pvAlg: stmPvAlg = [] } = game[game.stm == 'w' ? 'white' : 'black'];
+  const { pvAlg: xstmPvAlg = [] } = game[game.stm == 'w' ? 'black' : 'white'];
+
+  const mainArrowColor = globalTheme == 'dark' ? 'rgba(105, 179, 126, 0.9)' : 'rgba(25, 118, 210, 0.9)';
+  const secondaryArrowColor = globalTheme == 'dark' ? 'rgba(245, 194, 118, 0.9)' : 'rgba(255, 255, 0, 0.9)';
+
+  const sameMove = stmPvAlg[0] == xstmPvAlg[1] ? 1 : 0;
+  if (xstmPvAlg[1]) drawMove(xstmPvAlg[1], secondaryArrowColor, 1 * sameMove);
+  if (stmPvAlg[0]) drawMove(stmPvAlg[0], mainArrowColor, -1 * sameMove);
 
   $('#spectator-box').children().remove();
 

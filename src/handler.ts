@@ -139,6 +139,7 @@ class Handler {
 
     const pv = rest.slice(4);
     const parsed = new Array<string>();
+    const pvAlg = new Array<string>();
 
     // If the PV is not for the current STM then we undo the last move
     // and attempt to parse the PV from that position. This will happen when
@@ -150,13 +151,14 @@ class Handler {
       const move = copy.move(alg, { sloppy: true });
       if (!move) break;
 
-      if (i == 0) this._game[color].pvAlg = `${move.from}${move.to}`;
       parsed.push(move.san);
+      pvAlg.push(`${move.from}${move.to}`);
     }
 
     // Only if we could parse at least 1 do
     if (parsed.length) {
       this._game[color].pv = parsed;
+      this._game[color].pvAlg = pvAlg;
 
       this._game[color].pvFen = this._game[color].pv
         .reduce((board, move) => {
