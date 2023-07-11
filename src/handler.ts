@@ -163,16 +163,22 @@ class Handler {
       this._game[color].pv = parsed;
       this._game[color].pvAlg = pvAlg;
 
-      this._game[color].pvFen = this._game[color].pv
+      const copy2 = new Chess();
+      copy2.loadPgn(this._game.instance.pgn());
+      if (!color.startsWith(copy2.turn())) copy2.undo();
+
+      this._game[color].pvFen = parsed
         .reduce((board, move) => {
           try {
             board.move(move, { strict: false });
           } catch (err) {
-            logger.warn(`Unable to parse a previously parsed move: ${move} - ${board.fen()}`);
+            logger.warn(`Unable to parse a previously parsed move: ${move} - ${board.fen()}`, {
+              port: this._broadcast.port,
+            });
           }
 
           return board;
-        }, new Chess(this._game.fen))
+        }, copy2)
         .fen();
     }
 

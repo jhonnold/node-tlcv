@@ -84,14 +84,16 @@ export function drawMove(move, color, shift = 0) {
 
   const b = breite / 8;
   const c = b / 2;
-  const sx = fromX * b - c + shift * (c / 8);
+  const sx = fromX * b - c;
   const sy = maxY - (fromY * b - c);
-  const ex = toX * b - c + shift * (c / 8);
+  const ex = toX * b - c;
   const ey = maxY - (toY * b - c);
   const w = (b / 3.5) * 0.5;
+  const l = Math.sqrt((ex - sx) ** 2 + (ey - sy) ** 2);
+  const offset = transform([((ex - sx) * shift * w) / 4 / l, ((ey - sy) * shift * w) / 4 / l], 3.1415926 / 2, [0, 0]);
 
   ctx.fillStyle = color;
-  drawArrow(ctx, sx, sy, ex, ey, w, 3.5 * w, b / 3);
+  drawArrow(ctx, sx + offset[0], sy + offset[1], ex + offset[0], ey + offset[1], w, 3.5 * w, b / 3);
 }
 
 export function clearArrows() {

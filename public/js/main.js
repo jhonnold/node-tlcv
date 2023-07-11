@@ -87,7 +87,7 @@ function update(data, board, pvBoardWhite, pvBoardBlack) {
   const { pvAlg: xstmPvAlg = [] } = game[game.stm == 'w' ? 'black' : 'white'];
 
   const mainArrowColor = globalTheme == 'dark' ? 'rgba(105, 179, 126, 0.9)' : 'rgba(25, 118, 210, 0.9)';
-  const secondaryArrowColor = globalTheme == 'dark' ? 'rgba(245, 194, 118, 0.9)' : 'rgba(255, 255, 0, 0.9)';
+  const secondaryArrowColor = globalTheme == 'dark' ? 'rgba(245, 194, 118, 0.5)' : 'rgba(255, 255, 0, 0.5)';
 
   const sameMove = stmPvAlg[0] == xstmPvAlg[1] ? 1 : 0;
   if (xstmPvAlg[1]) drawMove(xstmPvAlg[1], secondaryArrowColor, 1 * sameMove);
