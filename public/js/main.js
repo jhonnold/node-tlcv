@@ -19,6 +19,17 @@ function updateTitle(val) {
   if (curr != val) document.title = val;
 }
 
+function updateLogos(white, black) {
+  const white_url = `url('logo/${white}')`;
+  const black_url = `url('logo/${black}')`;
+
+  const white_curr = $('#white-name').css('background-image');
+  const black_curr = $('#black-name').css('background-image');
+
+  if (white_curr != white_url) $('#white-name').css('background-image', white_url);
+  if (black_curr != black_url) $('#black-name').css('background-image', black_url);
+}
+
 function updateInfo(game, color) {
   let score = game[color].score;
   if (color === 'black') score *= -1;
@@ -63,6 +74,7 @@ function update(data, board, pvBoardWhite, pvBoardBlack) {
   const { game, spectators, menu } = data;
 
   updateTitle(`${game.white.name} vs ${game.black.name} (${game.site})`);
+  updateLogos(game.white.name, game.black.name);
 
   updateInfo(game, 'white');
   updateInfo(game, 'black');

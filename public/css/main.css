@@ -79,6 +79,13 @@ pre {
   grid-row: 1;
   grid-column: 1;
   margin: 0;
+  background-repeat: no-repeat;
+  background-position: right;
+  background-size: contain;
+}
+
+.info-logo {
+  float: right;
 }
 
 .info-card {
