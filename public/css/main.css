@@ -21,15 +21,16 @@
 }
 
 .board-b72b1 {
-  border-radius: 8px;
   overflow: hidden;
+
   border-color: var(--surfaceColorHover);
+  border-radius: 8px;
 }
 
 .card {
-  background-color: var(--surfaceColor);
-  border-color: var(--surfaceColorHover);
   color: var(--textColor);
+  border-color: var(--surfaceColorHover);
+  background-color: var(--surfaceColor);
 }
 
 .container {
@@ -55,6 +56,7 @@
 
 .info-area {
   display: grid;
+
   grid-template-columns: auto 155px;
   grid-template-rows: auto 101.5px;
   gap: var(--universal-margin);
@@ -71,24 +73,30 @@
 }
 
 .info-card {
+  box-sizing: border-box;
+  height: 100%;
+
   grid-row: 2;
   grid-column: 1;
-  height: 100%;
-  box-sizing: border-box;
 }
 
 .info-header {
   font-weight: 300;
-  text-align: center;
-  width: 100%;
+
   display: inline-block;
+
+  width: 100%;
+
+  text-align: center;
+
   color: rgb(var(--textColor));
 }
 
 .info-name {
+  margin: 0;
+
   grid-row: 1;
   grid-column: 1;
-  margin: 0;
 }
 
 .info-value {
@@ -101,6 +109,7 @@
 
 .main-layout {
   display: grid;
+
   grid-template-columns: minmax(238px, 60%) minmax(530px, 40%);
   grid-template-rows: 155px minmax(50px, 1fr) minmax(50px, 1fr) 155px auto;
   gap: calc(2 * var(--universal-margin));
@@ -112,8 +121,9 @@
 }
 
 .pv {
-  white-space: nowrap;
   overflow: hidden;
+
+  white-space: nowrap;
 }
 
 .small-margin {
@@ -121,15 +131,16 @@
 }
 
 .spectator-wrapper {
-  height: 100%;
-
   display: flex;
   flex-direction: column;
+
+  height: 100%;
 }
 
 .theme-btn {
-  padding: 2px !important;
   font-size: 12px;
+
+  padding: 2px !important;
 }
 .white-1e1d7 {
   background-color: var(--boardLight);
@@ -138,6 +149,7 @@
 #arrow-board {
   position: absolute;
   z-index: 1;
+
   pointer-events: none;
 }
 
@@ -147,28 +159,29 @@
 }
 
 #board-container {
-  grid-row-start: 1;
-  grid-row-end: 5;
-  grid-column-start: 1;
+  position: relative;
 
   display: flex;
   flex-direction: column;
   justify-content: center;
 
-  position: relative;
+  grid-row-start: 1;
+  grid-row-end: 5;
+  grid-column-start: 1;
 }
 
 #button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   grid-row-start: 5;
   grid-column-start: 2;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 #caption {
   padding: calc(var(--universal-padding) / 2);
+
   text-align: center;
 }
 
@@ -181,8 +194,8 @@
 }
 
 #chat-area input {
-  background-color: var(--surfaceColor);
   border-color: var(--surfaceColorHover);
+  background-color: var(--surfaceColor);
 }
 
 #chat-area input:focus {
@@ -190,50 +203,55 @@
 }
 
 #chat-area {
+  display: grid;
+
   grid-row-start: 2;
   grid-row-end: 4;
   grid-column-start: 2;
-
-  display: grid;
   grid-template-columns: auto 155px;
   grid-template-rows: 40px auto 40px;
   gap: var(--universal-margin);
 }
 
 #chat-box {
-  height: 100%;
-
   display: flex;
+  overflow: auto;
   flex-direction: column;
   justify-content: flex-start;
-  overflow: auto;
+
+  box-sizing: border-box;
+  height: 100%;
+
   grid-row-start: 1;
   grid-row-end: 3;
-  box-sizing: border-box;
 }
 
 #fen {
   padding: calc(var(--universal-padding) / 2);
+
   text-align: center;
 }
 
 #fen-tooltip {
   width: 100%;
+
   cursor: pointer;
 }
 
 #spectator-box {
+  display: flex;
+  overflow: auto;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   max-height: 100%;
+  padding: 0;
+
   grid-column: 2;
   grid-row: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  overflow: auto;
-  padding: 0;
-  box-sizing: border-box;
 }
 
 #white-info {
@@ -242,8 +260,8 @@
 }
 
 a.primary.button {
-  background-color: var(--primaryColor);
   color: var(--backgroundColor);
+  background-color: var(--primaryColor);
 }
 
 a.primary.button:hover {
@@ -259,17 +277,19 @@ a:visited {
 }
 
 body {
-  background-color: var(--backgroundColor);
-  color: var(--textColor);
   font-family: 'Red Hat Text', sans-serif;
   font-weight: 500;
+
+  color: var(--textColor);
+  background-color: var(--backgroundColor);
 }
 
 button.primary {
-  background-color: var(--primaryColor);
-  color: var(--backgroundColor);
   font-family: 'Red Hat Text', sans-serif;
   font-weight: 500;
+
+  color: var(--backgroundColor);
+  background-color: var(--primaryColor);
 }
 
 button.primary:hover {
@@ -277,18 +297,20 @@ button.primary:hover {
 }
 
 mark {
-  background-color: var(--primaryColor);
   color: var(--backgroundColor);
+  background-color: var(--primaryColor);
 }
 
 pre {
   margin: var(--universal-margin) 0;
+
   border-left-color: var(--primaryColor);
 }
 
 @media screen and (max-width: 767px) {
   #chat-area {
     height: 400px !important;
+
     grid-template-columns: auto 100px;
   }
 

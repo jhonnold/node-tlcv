@@ -11,8 +11,8 @@
 }
 
 a.primary.button {
-  background-color: var(--primaryColor);
   color: var(--backgroundColor);
+  background-color: var(--primaryColor);
 }
 
 a.primary.button:hover {
@@ -28,17 +28,19 @@ a:visited {
 }
 
 body {
-  background-color: var(--backgroundColor);
-  color: var(--textColor);
   font-family: 'Red Hat Text', sans-serif;
   font-weight: 500;
+
+  color: var(--textColor);
+  background-color: var(--backgroundColor);
 }
 
 button.primary {
-  background-color: var(--primaryColor);
-  color: var(--backgroundColor);
   font-family: 'Red Hat Text', sans-serif;
   font-weight: 500;
+
+  color: var(--backgroundColor);
+  background-color: var(--primaryColor);
 }
 
 button.primary:hover {
@@ -51,13 +53,14 @@ h6 small {
 }
 
 mark {
-  background-color: var(--primaryColor);
   color: var(--backgroundColor);
+  background-color: var(--primaryColor);
 }
 
 strong {
-  color: var(--secondaryColor);
   font-weight: 700;
+
+  color: var(--secondaryColor);
 }
 
 .black-3c85d {
@@ -65,15 +68,16 @@ strong {
 }
 
 .board-b72b1 {
-  border-radius: 8px;
   overflow: hidden;
+
   border-color: var(--surfaceColor);
+  border-radius: 8px;
 }
 
 .card {
-  background-color: var(--surfaceColor);
-  border-color: var(--surfaceColorHover);
   color: var(--defaultWhite);
+  border-color: var(--surfaceColorHover);
+  background-color: var(--surfaceColor);
 }
 
 .highlight {
@@ -93,8 +97,9 @@ strong {
 }
 
 .pv {
-  color: var(--defaultWhite);
   font-weight: 300;
+
+  color: var(--defaultWhite);
 }
 
 .small-margin {
@@ -105,9 +110,9 @@ strong {
 }
 
 #chat-area input {
-  background-color: var(--surfaceColor);
-  border-color: var(--surfaceColorHover);
   color: var(--defaultWhite);
+  border-color: var(--surfaceColorHover);
+  background-color: var(--surfaceColor);
 }
 
 #chat-area input:focus {
@@ -120,7 +125,7 @@ strong {
 
 #fen,
 #caption {
-  background-color: var(--surfaceColor);
   border-color: var(--surfaceColorHover);
   border-left-color: var(--primaryColor);
+  background-color: var(--surfaceColor);
 }
