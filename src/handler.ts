@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import { mkdirp } from 'mkdirp';
 import dayjs from 'dayjs';
 import slugify from 'slugify';
-import { ChessGame } from './chess-game.js';
+import { ChessGame, MoveMetaData } from './chess-game.js';
 import { logger, splitOnCommand } from './util/index.js';
 import { Broadcast, SerializedBroadcast, username } from './broadcast.js';
 import { io } from './io.js';
@@ -78,8 +78,19 @@ class Handler {
       [Command.CHAT]: { fn: this.onChat.bind(this), split: false },
       [Command.MENU]: { fn: this.onMenu.bind(this), split: true },
       [Command.RESULT]: { fn: this.onResult.bind(this), split: false },
-      [Command.FMR]: { fn: () => [EmitType.UPDATE, false], split: false },
+      [Command.FMR]: { fn: this.onFmr.bind(this), split: false },
     };
+  }
+
+  private onFmr(tokens: CommandTokens): UpdateResult {
+    const [, fmr] = tokens;
+
+    this._game.fmr = parseInt(fmr);
+    logger.info(`Updated game ${this._game.name} - FMR: ${this._game.fmr}`, {
+      port: this._broadcast.port,
+    });
+
+    return [EmitType.UPDATE, false];
   }
 
   private onFen(tokens: CommandTokens): UpdateResult {
@@ -89,12 +100,23 @@ class Handler {
     // Sometimes we don't get castling info
     if (lastToken == 'w' || lastToken == 'b') fenTokens.push('-');
 
-    fenTokens.push('-', '0', '1');
+    // Always push on ep square
+    fenTokens.push('-');
 
     this._game.fen = fenTokens.join(' '); // build the fen
-    if (!this._game.loaded) this._game.resetFromFen();
 
-    logger.info(`Updated game ${this._game.name} - FEN: ${this._game.fen}`, { port: this._broadcast.port });
+    if (!this._game.loaded) {
+      this._game.resetFromFen();
+      logger.info(`Unloaded game ${this._game.name}, setting to FEN: ${this._game.instance.fen()}`, {
+        port: this._broadcast.port,
+      });
+    } else if (this._game.fen.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq')) {
+      // Reset everything on startpos
+      this._game.reset();
+      logger.info(`Received startpos for game ${this._game.name}, reseting the game.`, { port: this._broadcast.port });
+    } else {
+      logger.info(`Set backup FEN for ${this._game.name}: ${this._game.fen}`, { port: this._broadcast.port });
+    }
 
     // Never update on the FEN since we maintain our own state
     return [EmitType.UPDATE, false];
@@ -104,28 +126,18 @@ class Handler {
     const [command, ...rest] = tokens;
     const name = rest.join(' ');
 
-    if (command != Command.WPLAYER && command != Command.BPLAYER) return [EmitType.UPDATE, false];
-
     const color: Color = command == Command.WPLAYER ? 'white' : 'black';
+    this._game[color].reset();
+    this._game[color].name = name;
+    logger.info(`Updated game ${this._game.name} - Color: ${color}, Name: ${this._game[color].name}`, {
+      port: this._broadcast.port,
+    });
 
-    if (this._game[color].name != name) {
-      this._game[color].reset();
-      this._game[color].name = name;
-      this._game.reset();
-
-      logger.info(`Updated game ${this._game.name} - Color: ${color}, Name: ${this._game[color].name}`, {
-        port: this._broadcast.port,
-      });
-      return [EmitType.UPDATE, true];
-    }
-
-    return [EmitType.UPDATE, false];
+    return [EmitType.UPDATE, true];
   }
 
   private onPV(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
-
-    if (command != Command.WPV && command != Command.BPV) return [EmitType.UPDATE, false];
 
     const color: Color = command == Command.WPV ? 'white' : 'black';
 
@@ -196,8 +208,6 @@ class Handler {
   private onTime(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WTIME && command != Command.BTIME) return [EmitType.UPDATE, false];
-
     const color: Color = command == Command.WTIME ? 'white' : 'black';
     this._game[color].clockTime = parseInt(rest[0]) * 10;
 
@@ -210,8 +220,6 @@ class Handler {
   private async onMove(tokens: CommandTokens): Promise<UpdateResult> {
     const [command, ...rest] = tokens;
 
-    if (command != Command.WMOVE && command != Command.BMOVE) return [EmitType.UPDATE, false];
-
     const color: Color = command == Command.WMOVE ? 'white' : 'black';
     const notColor: Color = command == Command.WMOVE ? 'black' : 'white';
 
@@ -221,10 +229,31 @@ class Handler {
 
     try {
       const move = this._game.instance.move(rest[1], { strict: false });
+
       this._game[color].lastMove = move;
       logger.info(`Updated game ${this._game.name} - Color: ${color}, Last Move: ${this._game[color].lastMove?.san}`, {
         port: this._broadcast.port,
       });
+
+      if (this._game[color].depth > 0) {
+        // Setup metadata
+        const moveMeta: MoveMetaData = {
+          number: this._game.moveNumber,
+          move: move.san,
+          depth: this._game[color].depth,
+          score: this._game[color].score,
+          nodes: this._game[color].nodes,
+        };
+        this._game[color]._moves.push(moveMeta);
+
+        // Set the PGN comment for this move
+        const comment = `(${this._game[color].pv.join(' ')}) ${this._game[color].score.toFixed(2)}/${
+          this._game[color].depth
+        } ${Math.round((new Date().getTime() - this._game[color].startTime) / 1000)}`;
+        this._game.instance.setComment(comment);
+      } else {
+        this._game.instance.setComment('(Book)');
+      }
     } catch (err) {
       logger.warn(
         `Failed to parse ${rest[1]} for game ${this._game.name}, fen ${this._game.instance.fen()}! Loading from FEN...`,
@@ -235,8 +264,7 @@ class Handler {
 
     // start the timer for the other side
     this._game[notColor].startTime = new Date().getTime();
-    await this._game.setOpening();
-    await this._game.setTablebase();
+    await Promise.all([this._game.setOpening(), this._game.setTablebase()]);
 
     return [EmitType.UPDATE, true];
   }

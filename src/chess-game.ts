@@ -29,6 +29,14 @@ export type SerializedPlayer = {
   pvMoveNumber: number;
 };
 
+export type MoveMetaData = {
+  number: number;
+  move: string;
+  depth: number;
+  score: number;
+  nodes: number;
+};
+
 export type LichessExplorerResponse = {
   opening: { eco: string; name: string } | null;
 };
@@ -48,6 +56,7 @@ export class ChessGame {
   private _opening: string;
   private _tablebase: string;
   private _moveNumber: number;
+  private _fmr: number;
 
   constructor(name: string) {
     this._name = name;
@@ -62,6 +71,7 @@ export class ChessGame {
     this._opening = 'Unknown';
     this._tablebase = '';
     this._moveNumber = 1;
+    this._fmr = 0;
 
     this.setPGNHeaders();
   }
@@ -79,20 +89,25 @@ export class ChessGame {
 
     this._fen = this._instance.fen();
     this._opening = 'Unknown';
+    this._tablebase = '';
+    this._moveNumber = this._instance.moveNumber();
+    this._fmr = 0;
 
     this.setPGNHeaders();
   }
 
   resetFromFen(): void {
-    const { ok: valid, ...err } = validateFen(this._fen);
+    const fen = [this._fen, this._fmr, this._moveNumber].join(' ');
+
+    const { ok: valid, ...err } = validateFen(fen);
 
     if (valid) {
-      logger.info(`Setting fen for game ${this._name} to ${this._fen}`, { port: this.name });
-      this._instance.load(this._fen);
+      logger.info(`Setting fen for game ${this._name} to ${fen}`, { port: this.name });
+      this._instance.load(fen);
       this._loaded = true;
       this.setPGNHeaders();
     } else {
-      logger.error(`Unable to load fen ${this._fen} for game ${this._name} - ${err.error}`, { port: this.name });
+      logger.error(`Unable to load fen ${fen} for game ${this._name} - ${err.error}`, { port: this.name });
     }
   }
 
@@ -113,10 +128,9 @@ export class ChessGame {
         },
       });
       const data: LichessExplorerResponse = await response.json();
-
-      logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`, { port: this.name });
-
       const { opening } = data;
+
+      logger.info(`Received opening response for game ${this._name} - ${opening}`, { port: this.name });
 
       if (opening) {
         const { eco, name } = opening;
@@ -143,10 +157,9 @@ export class ChessGame {
       });
 
       const data: LichessTablebaseResponse = await response.json();
-
-      logger.info(`Received response for game ${this._name}: ${JSON.stringify(data)}`, { port: this.name });
-
       const { category } = data;
+
+      logger.info(`Received tb category response for game ${this._name}: ${category}`, { port: this.name });
 
       if (category) {
         switch (category) {
@@ -244,6 +257,14 @@ export class ChessGame {
   public set moveNumber(v: number) {
     this._moveNumber = v;
   }
+
+  public get fmr(): number {
+    return this._fmr;
+  }
+
+  public set fmr(v: number) {
+    this._fmr = v;
+  }
 }
 
 export class Player {
@@ -260,6 +281,8 @@ export class Player {
   private _pvMoveNumber: number;
   private _pvAlg: Array<string>;
 
+  _moves: Array<MoveMetaData>;
+
   constructor() {
     this._name = 'Unknown';
     this._depth = 0;
@@ -273,6 +296,7 @@ export class Player {
     this._pvFen = '8/8/8/8/8/8/8/8 w - - 0 1';
     this._pvMoveNumber = 0;
     this._pvAlg = [];
+    this._moves = [];
   }
 
   reset(): void {
@@ -287,6 +311,7 @@ export class Player {
     this._pv = new Array<string>();
     this._pvMoveNumber = 0;
     this._pvAlg = [];
+    this._moves = [];
   }
 
   toJSON(): SerializedPlayer {
