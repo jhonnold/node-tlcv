@@ -1,6 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import broadcasts, { Broadcast } from '../broadcast.js';
-import getLogo from '../logos.js';
 
 interface RequestWithBroadcast extends Request {
   broadcast: Broadcast;
@@ -42,18 +41,6 @@ router.get('/:port([0-9]+)/result-table', async (req: Request, res: Response): P
   const results = await broadcast.loadResults();
 
   res.status(200).contentType('text/plain').send(results);
-});
-
-router.get('/logo/:engine', (req: Request, res: Response): void => {
-  const { engine } = req.params;
-  const logo = getLogo(engine);
-
-  if (logo) {
-    const { contentType, data } = logo;
-    res.status(200).contentType(contentType).send(data);
-  } else {
-    res.status(404).send('Not found');
-  }
 });
 
 export default router;

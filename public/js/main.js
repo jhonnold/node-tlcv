@@ -19,9 +19,29 @@ function updateTitle(val) {
   if (curr != val) document.title = val;
 }
 
+// Get the url for the logo of an engine.
+// We make our best attempt to split the name from the version by:
+//   * Splitting the string into words based upon non-alphanumeric characters
+//   * Taking all words before the first word that contains a digit
+//   * Joining the words with underscores
+function getLogoUrl(engine) {
+  const words = engine.toLowerCase().split(/[^a-z0-9]+/);
+  const name = [];
+
+  for (const word of words) {
+    if (/\d/.test(word)) {
+      break;
+    }
+
+    name.push(word);
+  }
+
+  return `url('logos/${name.join('_')}.webp`;
+}
+
 function updateLogos(white, black) {
-  const white_url = `url('logo/${white}')`;
-  const black_url = `url('logo/${black}')`;
+  const white_url = getLogoUrl(white);
+  const black_url = getLogoUrl(black);
 
   const white_curr = $('#white-name').css('background-image');
   const black_curr = $('#black-name').css('background-image');
