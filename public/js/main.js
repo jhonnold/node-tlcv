@@ -29,7 +29,7 @@ function getLogoUrl(engine) {
   const name = [];
 
   for (const word of words) {
-    if (/\d/.test(word)) {
+    if (name.length > 0 && /\d/.test(word)) {
       break;
     }
 
