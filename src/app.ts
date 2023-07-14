@@ -35,6 +35,3 @@ app.use('/admin', adminRoutes);
 
 // Serve a folder of PGNs
 app.use('/pgns', express.static('pgns'), serveIndex('pgns', { icons: true }));
-
-// Serve a folder of logos
-app.use('/logos', express.static('logos'));

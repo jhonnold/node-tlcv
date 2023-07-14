@@ -36,7 +36,7 @@ function getLogoUrl(engine) {
     name.push(word);
   }
 
-  return `url('logos/${name.join('_')}.webp`;
+  return `url('img/logos/${name.join('_')}.webp`;
 }
 
 function updateLogos(white, black) {
