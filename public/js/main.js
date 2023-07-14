@@ -19,6 +19,37 @@ function updateTitle(val) {
   if (curr != val) document.title = val;
 }
 
+// Get the url for the logo of an engine.
+// We make our best attempt to split the name from the version by:
+//   * Splitting the string into words based upon non-alphanumeric characters
+//   * Taking all words before the first word that contains a digit
+//   * Joining the words with underscores
+function getLogoUrl(engine) {
+  const words = engine.toLowerCase().split(/[^a-z0-9]+/);
+  const name = [];
+
+  for (const word of words) {
+    if (name.length > 0 && /\d/.test(word)) {
+      break;
+    }
+
+    name.push(word);
+  }
+
+  return `url('img/logos/${name.join('_')}.webp`;
+}
+
+function updateLogos(white, black) {
+  const white_url = getLogoUrl(white);
+  const black_url = getLogoUrl(black);
+
+  const white_curr = $('#white-name').css('background-image');
+  const black_curr = $('#black-name').css('background-image');
+
+  if (white_curr != white_url) $('#white-name').css('background-image', white_url);
+  if (black_curr != black_url) $('#black-name').css('background-image', black_url);
+}
+
 function updateInfo(game, color) {
   let score = game[color].score;
   if (color === 'black') score *= -1;
@@ -63,6 +94,7 @@ function update(data, board, pvBoardWhite, pvBoardBlack) {
   const { game, spectators, menu } = data;
 
   updateTitle(`${game.white.name} vs ${game.black.name} (${game.site})`);
+  updateLogos(game.white.name, game.black.name);
 
   updateInfo(game, 'white');
   updateInfo(game, 'black');

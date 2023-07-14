@@ -97,6 +97,10 @@
 
   grid-row: 1;
   grid-column: 1;
+  
+  background-repeat: no-repeat;
+  background-position: right;
+  background-size: contain;
 }
 
 .info-value {
