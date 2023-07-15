@@ -7,10 +7,11 @@ import path from 'path';
 import paths from './paths.js';
 
 export default {
-  entry: [path.join(paths.src, 'index.jsx')],
+  context: paths.src,
+  entry: ['./index.jsx'],
   output: {
     path: paths.build,
-    filename: '[name].bundle.js',
+    filename: '[name].[contenthash].bundle.js',
   },
   resolve: {
     extensions: ['.js', '.jsx'],
@@ -20,12 +21,10 @@ export default {
       {
         test: /\.(js|jsx)$/,
         exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-        },
+        use: { loader: 'babel-loader' },
       },
       {
-        test: /\.css$/i,
+        test: /\.(sc|sa|c)ss$/i,
         use: [
           { loader: MiniCssExtractPlugin.loader },
           { loader: 'css-loader' },
@@ -38,6 +37,7 @@ export default {
               },
             },
           },
+          { loader: 'sass-loader' },
         ],
       },
     ],
@@ -53,9 +53,7 @@ export default {
       favicon: path.join(paths.public, 'favicon.ico'),
     }),
     new CopyWebpackPlugin({
-      patterns: [
-        { from: path.join(paths.public, 'img'), to: 'img' },
-      ],
+      patterns: [{ from: path.join(paths.public, 'img'), to: 'img' }],
     }),
   ],
 };

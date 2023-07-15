@@ -5,7 +5,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default {
-  src: path.resolve(__dirname, '../client'),
-  build: path.resolve(__dirname, '../build/public'),
-  public: path.resolve(__dirname, '../public'),
+  src: path.resolve(__dirname, path.join('..', 'client')),
+  build: path.resolve(__dirname, path.join('..', 'build', 'public')),
+  public: path.resolve(__dirname, path.join('..', 'public')),
 };
