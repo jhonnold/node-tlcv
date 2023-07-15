@@ -1,11 +1,11 @@
 import $ from 'jquery';
 import Chessboard from 'chessboardjs';
-import { updateTimers } from './time';
-import { updateLastMoves } from './move';
-import { pv } from './pv';
-import { username, sendMsg } from './chat';
-import { copyFen } from './fen';
-import { clearArrows, drawMove } from './arrows';
+import { updateTimers } from './time.js';
+import { updateLastMoves } from './move.js';
+import { pv } from './pv.js';
+import { username, sendMsg } from './chat.js';
+import { copyFen } from './fen.js';
+import { clearArrows, drawMove } from './arrows.js';
 
 function updateElText(el, val) {
   const curr = el.text();

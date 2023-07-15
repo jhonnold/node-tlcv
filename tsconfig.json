@@ -8,10 +8,9 @@
     "sourceMap": true,
     "strict": true,
     "esModuleInterop": true,
-    "typeRoots": ["./src/@types", "./node_modules/@types"]
+    "typeRoots": ["./server/@types", "./node_modules/@types"]
   },
   "include": [
-    "src/**/*",
-    "__tests__/**/*"
+    "server/**/*"
   ]
 }
