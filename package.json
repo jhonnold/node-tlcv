@@ -53,7 +53,7 @@
     "eslint-config-standard": "^17.1.0",
     "html-webpack-plugin": "^5.5.3",
     "mini-css-extract-plugin": "^2.7.6",
-    "nodemon": "^2.0.12",
+    "nodemon": "^3.0.1",
     "postcss-loader": "^7.3.3",
     "prettier": "~2.3.2",
     "raw-loader": "^4.0.2",
@@ -69,11 +69,12 @@
     "build": "tsc -p tsconfig.release.json",
     "clean": "rimraf build",
     "dev-public": "webpack --watch --progress --config webpack/webpack.dev.js",
-    "dev-server": "nodemon --legacy-watch -x ts-node-esm src/main.ts",
+    "dev-server": "nodemon --legacy-watch -x 'node --loader ts-node/esm src/main.ts'",
     "format": "prettier --write {src,public}/**/*.{js,html,ts,css}",
     "prebuild": "webpack --config webpack/webpack.prod.js",
     "lint": "eslint --fix src public",
-    "start": "node build/src/main.js"
+    "start": "node build/src/main.js",
+    "test": "echo OK"
   },
   "author": "Jay Honnold <jayhonnold@gmail.com>",
   "license": "MIT",

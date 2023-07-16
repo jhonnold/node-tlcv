@@ -79,6 +79,7 @@ export default {
         new HtmlWebpackPlugin({
           template: `!!raw-loader!./views/pages/${page}`,
           filename: `../views/pages/${page}`,
+          favicon: './public/favicon.ico',
           chunks,
         }),
     ),
