@@ -18,7 +18,7 @@ router.use('/:port([0-9]+)', (req: Request, res: Response, next: NextFunction): 
   const broadcast: Broadcast | undefined = broadcasts.get(port);
 
   if (!broadcast) {
-    res.sendStatus(404);
+    res.redirect('/');
     return;
   }
 
@@ -28,7 +28,7 @@ router.use('/:port([0-9]+)', (req: Request, res: Response, next: NextFunction): 
 
 router.get('/:port([0-9]+)', (req: Request, res: Response): void => {
   const { broadcast } = req as RequestWithBroadcast;
-  res.render('index', { game: broadcast.game, port: broadcast.port });
+  res.render('pages/index', { game: broadcast.game, port: broadcast.port });
 });
 
 router.get('/:port([0-9]+)/pgn', (req: Request, res: Response): void => {

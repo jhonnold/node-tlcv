@@ -1,0 +1,18 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "es6": true,
+    "jquery": true,
+    "node": false
+  },
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": [],
+  "extends": ["airbnb", "eslint:recommended", "prettier"],
+  "rules": {
+    "import/extensions": 0
+  }
+}

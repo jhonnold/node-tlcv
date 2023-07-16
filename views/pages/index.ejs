@@ -15,15 +15,11 @@
 
       gtag('config', 'G-FGG2Y6TFLR');
     </script>
-    <link rel="stylesheet" href="https://unpkg.com/reset-css/reset.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-default.min.css" />
-    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" />
-    <link rel="stylesheet" href="/css/main.css" id="theme" />
   </head>
   <body>
     <div class="container">
       <div class="main-layout">
-        <%- include('info-card', { color: 'black' }) %>
+        <%- include('../partials/info-card', { color: 'black' }) %>
         <div id="board-container">
           <canvas id="arrow-board" height="2400" width="2400"></canvas>
           <div id="board"></div>
@@ -34,7 +30,7 @@
           </div>
           <pre id="caption"></pre>
         </div>
-        <%- include('info-card', { color: 'white' }) %> <%- include('chat') %>
+        <%- include('../partials/info-card', { color: 'white' }) %> <%- include('../partials/chat') %>
         <div id="button-container" class="row">
           <a href="/pgns" target="_blank" class="primary button">PGNS</a>
           <a href="/<%= port %>/pgn" target="_blank" class="primary button">PGN</a>
@@ -55,10 +51,5 @@
         <a id="theme-light" class="primary button theme-btn" style="display: none">Switch to light theme</a>
       </h6>
     </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-      const port = <%= port %>;
-    </script>
-    <script src="/js/main.js"></script>
   </body>
 </html>

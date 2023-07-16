@@ -15,9 +15,9 @@ function highlightMove(move) {
   highlightSq(move.from);
 }
 
-export function updateLastMoves(data) {
+export default function updateLastMoves(data) {
   const { game } = data;
 
   unhightlightAll();
-  highlightMove(game[game.stm == 'w' ? 'black' : 'white'].lastMove);
+  highlightMove(game[game.stm === 'w' ? 'black' : 'white'].lastMove);
 }

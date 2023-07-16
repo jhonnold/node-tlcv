@@ -37,6 +37,11 @@ export enum Command {
   FMR = 'FMR',
 }
 
+type CommandTokens = [Command, ...Array<string>];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type UpdateResult = [EmitType, boolean, ...Array<any>];
+
 type ConfigItem = {
   fn: (tokens: CommandTokens) => Promise<UpdateResult> | UpdateResult;
   split: boolean;
@@ -46,13 +51,11 @@ type CommandConfig = {
   [key in Command]: ConfigItem;
 };
 
-type CommandTokens = [Command, ...Array<string>];
-
-type UpdateResult = [EmitType, boolean, ...Array<any>];
-
 class Handler {
   private _commandConfig: CommandConfig;
+
   private _broadcast: Broadcast;
+
   private _game: ChessGame;
 
   constructor(broadcast: Broadcast) {
@@ -98,7 +101,7 @@ class Handler {
     const lastToken = fenTokens.slice(-1)[0];
 
     // Sometimes we don't get castling info
-    if (lastToken == 'w' || lastToken == 'b') fenTokens.push('-');
+    if (lastToken === 'w' || lastToken === 'b') fenTokens.push('-');
 
     // Always push on ep square
     fenTokens.push('-');
@@ -126,7 +129,7 @@ class Handler {
     const [command, ...rest] = tokens;
     const name = rest.join(' ');
 
-    const color: Color = command == Command.WPLAYER ? 'white' : 'black';
+    const color: Color = command === Command.WPLAYER ? 'white' : 'black';
     this._game[color].reset();
     this._game[color].name = name;
     logger.info(`Updated game ${this._game.name} - Color: ${color}, Name: ${this._game[color].name}`, {
@@ -139,7 +142,7 @@ class Handler {
   private onPV(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
 
-    const color: Color = command == Command.WPV ? 'white' : 'black';
+    const color: Color = command === Command.WPV ? 'white' : 'black';
 
     this._game[color].depth = parseInt(rest[0]);
     this._game[color].score = parseInt(rest[1]) / 100;
@@ -208,7 +211,7 @@ class Handler {
   private onTime(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
 
-    const color: Color = command == Command.WTIME ? 'white' : 'black';
+    const color: Color = command === Command.WTIME ? 'white' : 'black';
     this._game[color].clockTime = parseInt(rest[0]) * 10;
 
     logger.info(`Updated game ${this._game.name} - Color: ${color}, ClockTime: ${this._game[color].clockTime}`, {
@@ -220,11 +223,11 @@ class Handler {
   private async onMove(tokens: CommandTokens): Promise<UpdateResult> {
     const [command, ...rest] = tokens;
 
-    const color: Color = command == Command.WMOVE ? 'white' : 'black';
-    const notColor: Color = command == Command.WMOVE ? 'black' : 'white';
+    const color: Color = command === Command.WMOVE ? 'white' : 'black';
+    const notColor: Color = command === Command.WMOVE ? 'black' : 'white';
 
     this._game.moveNumber = parseInt(rest[0].replace('.', ''));
-    if (color == 'white') this._game.black.pvMoveNumber = this._game.moveNumber;
+    if (color === 'white') this._game.black.pvMoveNumber = this._game.moveNumber;
     else this._game.white.pvMoveNumber = this._game.moveNumber + 1;
 
     try {
@@ -285,13 +288,13 @@ class Handler {
   }
 
   private onCT(tokens: CommandTokens): UpdateResult {
-    this._broadcast.results += tokens[1] + '\n';
+    this._broadcast.results += `${tokens[1]}\n`;
 
     return [EmitType.UPDATE, false];
   }
 
   private onAddUser(tokens: CommandTokens): UpdateResult {
-    if (username == tokens[1] || this._broadcast.spectators.has(tokens[1])) return [EmitType.UPDATE, false];
+    if (username === tokens[1] || this._broadcast.spectators.has(tokens[1])) return [EmitType.UPDATE, false];
 
     this._broadcast.spectators.add(tokens[1]);
     return [EmitType.UPDATE, true];
@@ -320,7 +323,7 @@ class Handler {
       if (v.startsWith('URL=')) valueIdx = i;
     });
 
-    if (nameIdx == -1 || valueIdx == -1) return [EmitType.UPDATE, false];
+    if (nameIdx === -1 || valueIdx === -1) return [EmitType.UPDATE, false];
 
     const name = tokens[nameIdx].slice(6, -1).toLowerCase(); // chop NAME="
     const url = tokens[valueIdx].slice(5, -1); // chop URL="
