@@ -11,6 +11,7 @@ export const app = express();
 
 // embedded js view engine (hardly used)
 app.set('view engine', 'ejs');
+app.set('views', 'build/views');
 
 app.use(logging);
 app.use(cors());
@@ -20,6 +21,9 @@ app.use(compression());
 // TODO: Run static assets through a script for
 // production readiness
 app.use(express.static('build/public'));
+
+// Serve a folder of PGNs
+app.use('/pgns', express.static('pgns'), serveIndex('pgns', { icons: true }));
 
 // GET /
 // GET /:port
@@ -33,5 +37,5 @@ app.use(routes);
 // POST /admin/close
 app.use('/admin', adminRoutes);
 
-// Serve a folder of PGNs
-app.use('/pgns', express.static('pgns'), serveIndex('pgns', { icons: true }));
+// Just forward to the base route on 404
+app.use('*', (_, res) => res.redirect('/'));

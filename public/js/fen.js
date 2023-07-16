@@ -1,6 +1,6 @@
 import $ from 'jquery';
 
-export function copyFen() {
+export default function copyFen() {
   const temp = $('<input>');
   $('body').append(temp);
 

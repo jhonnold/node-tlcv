@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>TLCV Admin Panel</title>
+  </head>
+  <body>
+    <div class="container" style="max-width: 960px; padding: 1rem">
+      <table>
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Port</th>
+            <th>Reconnect</th>
+            <th>Close</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const broadcast of broadcasts) {%>
+          <tr>
+            <td data-label="Site"><%= broadcast.game.site %></td>
+            <td data-label="Port"><%= broadcast.port %></td>
+            <td data-label="Reconnect">
+              <button class="tertiary reconnect" data-port="<%= broadcast.port %>">Reconnect</button>
+            </td>
+            <td data-label="Close">
+              <button class="secondary close" data-port="<%= broadcast.port %>">Close</button>
+            </td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+      <form id="add-new">
+        <label for="port">Port</label>
+        <input id="port" name="port" type="number" required />
+        <button type="submit" class="primary">Add new</button>
+      </form>
+    </div>
+  </body>
+</html>

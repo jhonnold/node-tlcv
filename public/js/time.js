@@ -38,18 +38,16 @@ function isTimerRunning(color) {
   return timerIntervals.has(color);
 }
 
-export function updateTimers(data) {
+export default function updateTimers(data) {
   const { game } = data;
 
-  if (game.stm == 'w') {
+  if (game.stm === 'w') {
     if (!isTimerRunning('white')) {
       stopTimer('black');
       startTimer(game, 'white');
     }
-  } else {
-    if (!isTimerRunning('black')) {
-      stopTimer('white');
-      startTimer(game, 'black');
-    }
+  } else if (!isTimerRunning('black')) {
+    stopTimer('white');
+    startTimer(game, 'black');
   }
 }

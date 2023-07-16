@@ -1,18 +1,6 @@
 import { Chess, Move, validateFen } from 'chess.js';
-import { logger } from './util/index.js';
 import dayjs from 'dayjs';
-
-export type SerializedGame = {
-  name: string;
-  site: string;
-  white: SerializedPlayer;
-  black: SerializedPlayer;
-  fen: string;
-  opening: string;
-  tablebase: string;
-  stm: 'w' | 'b';
-  moveNumber: number;
-};
+import { logger } from './util/index.js';
 
 export type SerializedPlayer = {
   name: string;
@@ -27,6 +15,18 @@ export type SerializedPlayer = {
   pv: Array<string>;
   pvFen: string;
   pvMoveNumber: number;
+};
+
+export type SerializedGame = {
+  name: string;
+  site: string;
+  white: SerializedPlayer;
+  black: SerializedPlayer;
+  fen: string;
+  opening: string;
+  tablebase: string;
+  stm: 'w' | 'b';
+  moveNumber: number;
 };
 
 export type MoveMetaData = {
@@ -45,17 +45,199 @@ export type LichessTablebaseResponse = {
   category: string | null;
 };
 
+export class Player {
+  private _name: string;
+
+  private _depth: number;
+
+  private _score: number;
+
+  private _nodes: number;
+
+  private _usedTime: number;
+
+  private _clockTime: number;
+
+  private _startTime: number;
+
+  private _lastMove: Move | null;
+
+  private _pv: Array<string>; // san representation
+
+  private _pvFen: string;
+
+  private _pvMoveNumber: number;
+
+  private _pvAlg: Array<string>;
+
+  _moves: Array<MoveMetaData>;
+
+  constructor() {
+    this._name = 'Unknown';
+    this._depth = 0;
+    this._score = 0.0;
+    this._nodes = 0;
+    this._usedTime = 0;
+    this._clockTime = 0;
+    this._startTime = 0;
+    this._lastMove = null;
+    this._pv = new Array<string>();
+    this._pvFen = '8/8/8/8/8/8/8/8 w - - 0 1';
+    this._pvMoveNumber = 0;
+    this._pvAlg = [];
+    this._moves = [];
+  }
+
+  reset(): void {
+    this._name = 'Unknown';
+    this._depth = 0;
+    this._score = 0.0;
+    this._nodes = 0;
+    this._usedTime = 0;
+    this._clockTime = 0;
+    this._startTime = 0;
+    this._lastMove = null;
+    this._pv = new Array<string>();
+    this._pvMoveNumber = 0;
+    this._pvAlg = [];
+    this._moves = [];
+  }
+
+  toJSON(): SerializedPlayer {
+    return {
+      name: this._name,
+      depth: this._depth,
+      score: this._score,
+      nodes: this._nodes,
+      usedTime: this._usedTime,
+      clockTime: this._clockTime,
+      startTime: this._startTime,
+      lastMove: this._lastMove,
+      pv: this._pv,
+      pvFen: this._pvFen,
+      pvMoveNumber: this._pvMoveNumber,
+      pvAlg: this._pvAlg,
+    };
+  }
+
+  public get name(): string {
+    return this._name;
+  }
+
+  public set name(v: string) {
+    this._name = v;
+  }
+
+  public get depth(): number {
+    return this._depth;
+  }
+
+  public set depth(v: number) {
+    this._depth = v;
+  }
+
+  public get score(): number {
+    return this._score;
+  }
+
+  public set score(v: number) {
+    this._score = v;
+  }
+
+  public get nodes(): number {
+    return this._nodes;
+  }
+
+  public set nodes(v: number) {
+    this._nodes = v;
+  }
+
+  public get usedTime(): number {
+    return this._usedTime;
+  }
+
+  public set usedTime(v: number) {
+    this._usedTime = v;
+  }
+
+  public get clockTime(): number {
+    return this._clockTime;
+  }
+
+  public set clockTime(v: number) {
+    this._clockTime = v;
+  }
+
+  public get startTime(): number {
+    return this._startTime;
+  }
+
+  public set startTime(v: number) {
+    this._startTime = v;
+  }
+
+  public get lastMove(): Move | null {
+    return this._lastMove;
+  }
+
+  public set lastMove(v: Move | null) {
+    this._lastMove = v;
+  }
+
+  public get pv(): Array<string> {
+    return this._pv;
+  }
+
+  public set pv(v: Array<string>) {
+    this._pv = v;
+  }
+
+  public set pvFen(fen: string) {
+    this._pvFen = fen;
+  }
+
+  public get pvFen(): string {
+    return this._pvFen;
+  }
+
+  public set pvAlg(move: Array<string>) {
+    this._pvAlg = move;
+  }
+
+  public get pvAlg(): Array<string> {
+    return this._pvAlg;
+  }
+
+  public get pvMoveNumber(): number {
+    return this._pvMoveNumber;
+  }
+
+  public set pvMoveNumber(v: number) {
+    this._pvMoveNumber = v;
+  }
+}
+
 export class ChessGame {
   private _name: string;
+
   private _site: string;
+
   private _white: Player;
+
   private _black: Player;
+
   private _instance: Chess;
+
   private _loaded: boolean;
+
   private _fen: string;
+
   private _opening: string;
+
   private _tablebase: string;
+
   private _moveNumber: number;
+
   private _fmr: number;
 
   constructor(name: string) {
@@ -264,166 +446,5 @@ export class ChessGame {
 
   public set fmr(v: number) {
     this._fmr = v;
-  }
-}
-
-export class Player {
-  private _name: string;
-  private _depth: number;
-  private _score: number;
-  private _nodes: number;
-  private _usedTime: number;
-  private _clockTime: number;
-  private _startTime: number;
-  private _lastMove: Move | null;
-  private _pv: Array<string>; // san representation
-  private _pvFen: string;
-  private _pvMoveNumber: number;
-  private _pvAlg: Array<string>;
-
-  _moves: Array<MoveMetaData>;
-
-  constructor() {
-    this._name = 'Unknown';
-    this._depth = 0;
-    this._score = 0.0;
-    this._nodes = 0;
-    this._usedTime = 0;
-    this._clockTime = 0;
-    this._startTime = 0;
-    this._lastMove = null;
-    this._pv = new Array<string>();
-    this._pvFen = '8/8/8/8/8/8/8/8 w - - 0 1';
-    this._pvMoveNumber = 0;
-    this._pvAlg = [];
-    this._moves = [];
-  }
-
-  reset(): void {
-    this._name = 'Unknown';
-    this._depth = 0;
-    this._score = 0.0;
-    this._nodes = 0;
-    this._usedTime = 0;
-    this._clockTime = 0;
-    this._startTime = 0;
-    this._lastMove = null;
-    this._pv = new Array<string>();
-    this._pvMoveNumber = 0;
-    this._pvAlg = [];
-    this._moves = [];
-  }
-
-  toJSON(): SerializedPlayer {
-    return {
-      name: this._name,
-      depth: this._depth,
-      score: this._score,
-      nodes: this._nodes,
-      usedTime: this._usedTime,
-      clockTime: this._clockTime,
-      startTime: this._startTime,
-      lastMove: this._lastMove,
-      pv: this._pv,
-      pvFen: this._pvFen,
-      pvMoveNumber: this._pvMoveNumber,
-      pvAlg: this._pvAlg,
-    };
-  }
-
-  public get name(): string {
-    return this._name;
-  }
-
-  public set name(v: string) {
-    this._name = v;
-  }
-
-  public get depth(): number {
-    return this._depth;
-  }
-
-  public set depth(v: number) {
-    this._depth = v;
-  }
-
-  public get score(): number {
-    return this._score;
-  }
-
-  public set score(v: number) {
-    this._score = v;
-  }
-
-  public get nodes(): number {
-    return this._nodes;
-  }
-
-  public set nodes(v: number) {
-    this._nodes = v;
-  }
-
-  public get usedTime(): number {
-    return this._usedTime;
-  }
-
-  public set usedTime(v: number) {
-    this._usedTime = v;
-  }
-
-  public get clockTime(): number {
-    return this._clockTime;
-  }
-
-  public set clockTime(v: number) {
-    this._clockTime = v;
-  }
-
-  public get startTime(): number {
-    return this._startTime;
-  }
-
-  public set startTime(v: number) {
-    this._startTime = v;
-  }
-
-  public get lastMove(): Move | null {
-    return this._lastMove;
-  }
-
-  public set lastMove(v: Move | null) {
-    this._lastMove = v;
-  }
-
-  public get pv(): Array<string> {
-    return this._pv;
-  }
-
-  public set pv(v: Array<string>) {
-    this._pv = v;
-  }
-
-  public set pvFen(fen: string) {
-    this._pvFen = fen;
-  }
-
-  public get pvFen(): string {
-    return this._pvFen;
-  }
-
-  public set pvAlg(move: Array<string>) {
-    this._pvAlg = move;
-  }
-
-  public get pvAlg(): Array<string> {
-    return this._pvAlg;
-  }
-
-  public get pvMoveNumber(): number {
-    return this._pvMoveNumber;
-  }
-
-  public set pvMoveNumber(v: number) {
-    this._pvMoveNumber = v;
   }
 }

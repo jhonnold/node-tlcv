@@ -1,19 +1,26 @@
 import { RemoteInfo, Socket, createSocket } from 'dgram';
-import { logger } from './util/index.js';
-import Handler from './handler.js';
 import { setInterval } from 'timers';
 import AsyncLock from 'async-lock';
+import { logger } from './util/index.js';
+import Handler from './handler.js';
 
 const PROCESSING_INTERVAL = 100;
 
 class Connection {
   private host: string;
+
   private port: number;
+
   private lastMessage: number | undefined;
+
   private socket: Socket;
+
   private handler: Handler;
+
   private unproccessed: string[];
+
   private timer: NodeJS.Timeout;
+
   private lock: AsyncLock;
 
   constructor(host: string, port: number, handler: Handler) {

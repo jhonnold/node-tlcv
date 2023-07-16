@@ -8,17 +8,17 @@ const router = Router();
 
 router.use(
   basic({
-    users: { admin: process.env['TLCV_PASSWORD'] as string },
+    users: { admin: process.env.TLCV_PASSWORD as string },
     challenge: true,
   }),
 );
 
 router.get('/', (_: Request, res: Response) => {
-  res.render('admin', { broadcasts: broadcasts.values() });
+  res.render('pages/admin', { broadcasts: broadcasts.values() });
 });
 
 router.post('/close', (req: Request, res: Response) => {
-  const port: number = req.body.port;
+  const { port } = req.body;
   const broadcast = broadcasts.get(port);
 
   if (broadcast) {
@@ -33,7 +33,7 @@ router.post('/close', (req: Request, res: Response) => {
 });
 
 router.post('/reconnect', (req: Request, res: Response) => {
-  const port: number = req.body.port;
+  const { port } = req.body;
   const broadcast = broadcasts.get(port);
 
   if (broadcast) {

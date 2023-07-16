@@ -6,24 +6,24 @@ import $ from 'jquery';
 
 function transform(xy, angle, xy0) {
   // put x and y relative to x0 and y0 so we can rotate around that
-  const rel_x = xy[0] - xy0[0];
-  const rel_y = xy[1] - xy0[1];
+  const relX = xy[0] - xy0[0];
+  const relY = xy[1] - xy0[1];
 
   // compute rotated relative points
-  const new_rel_x = Math.cos(angle) * rel_x - Math.sin(angle) * rel_y;
-  const new_rel_y = Math.sin(angle) * rel_x + Math.cos(angle) * rel_y;
+  const newRelX = Math.cos(angle) * relX - Math.sin(angle) * relY;
+  const newRelY = Math.sin(angle) * relX + Math.cos(angle) * relY;
 
-  return [xy0[0] + new_rel_x, xy0[1] + new_rel_y];
+  return [xy0[0] + newRelX, xy0[1] + newRelY];
 }
 
-function drawArrow(context, x0, y0, x1, y1, width, head_width, head_length) {
+function drawArrow(context, x0, y0, x1, y1, width, headWidth, headLength) {
   // compute length first
-  let length = Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
+  const length = Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
   let angle = Math.atan2(y1 - y0, x1 - x0);
   // adjust the angle by 90 degrees since the arrow we rotate is rotated by 90 degrees
   angle -= Math.PI / 2;
 
-  let p0 = [x0, y0];
+  const p0 = [x0, y0];
 
   // order will be: p1 -> p3 -> p5 -> p7 -> p6 -> p4 -> p2
   // formulate the two base points
@@ -31,12 +31,12 @@ function drawArrow(context, x0, y0, x1, y1, width, head_width, head_length) {
   let p2 = [x0 - width / 2, y0];
 
   // formulate the upper base points which connect the pointy end with the lengthy thing
-  let p3 = [x0 + width / 2, y0 + length - head_length];
-  let p4 = [x0 - width / 2, y0 + length - head_length];
+  let p3 = [x0 + width / 2, y0 + length - headLength];
+  let p4 = [x0 - width / 2, y0 + length - headLength];
 
   // formulate the outter points of the triangle
-  let p5 = [x0 + head_width / 2, y0 + length - head_length];
-  let p6 = [x0 - head_width / 2, y0 + length - head_length];
+  let p5 = [x0 + headWidth / 2, y0 + length - headLength];
+  let p6 = [x0 - headWidth / 2, y0 + length - headLength];
 
   // end point of the arrow
   let p7 = [x0, y0 + length];

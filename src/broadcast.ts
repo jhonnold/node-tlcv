@@ -16,15 +16,25 @@ export type SerializedBroadcast = {
 
 export class Broadcast {
   private _url: string;
+
   private _port: number;
+
   private _results: string;
+
   private _browserCount: number;
+
   private _spectators: Set<string>;
+
   private _chat: Array<string>;
+
   private _menu: Map<string, string>;
+
   private _game: ChessGame;
+
   private _handler: Handler;
+
   private _connection: Connection;
+
   private _pings: NodeJS.Timeout;
 
   constructor(url = config.url, port = config.ports[0]) {
@@ -129,7 +139,7 @@ export class Broadcast {
 const broadcasts = new Map<number, Broadcast>();
 
 const lookup = (hostname: string): Promise<string> =>
-  new Promise((res, rej) => dns.lookup(hostname, (err, addr) => (err ? rej(err) : res(addr))));
+  new Promise((resolve, reject) => dns.lookup(hostname, (err, addr) => (err ? reject(err) : resolve(addr))));
 
 export async function connect(): Promise<void> {
   const url = await lookup(config.url);
