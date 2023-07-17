@@ -359,6 +359,8 @@ class Handler {
       logger.error(`Unable to write to ${filepath}! - ${err}`, { port: this._broadcast.port });
     }
 
+    this._broadcast.reloadResults();
+
     return [EmitType.CHAT, true, message];
   }
 

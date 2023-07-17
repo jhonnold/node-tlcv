@@ -53,14 +53,12 @@ export class Broadcast {
     this._spectators = new Set();
     this._chat = [];
     this._menu = new Map<string, string>();
+
+    this.reloadResults();
   }
 
-  loadResults(): Promise<string> {
-    return new Promise((resolve) => {
-      this._connection.send('RESULTTABLE');
-
-      setTimeout(() => resolve(this._results), 5000);
-    });
+  reloadResults() {
+    this._connection.send('RESULTTABLE');
   }
 
   sendChat(msg: string): void {
