@@ -78,8 +78,17 @@ function updateLogos(white, black) {
 function updateInfo(game, color) {
   let { score } = game[color];
   if (color === 'black') score *= -1;
+
+  if (score > 100000) {
+    score = "M";
+  } else if (score < -100000) {
+    score = "-M";
+  } else {
+    score = score.toFixed(2);
+  }
+
   updateElText($(`#${color}-name`), game[color].name);
-  updateElText($(`#${color}-score`), score.toFixed(2));
+  updateElText($(`#${color}-score`), score);
   updateElText($(`#${color}-depth`), game[color].depth);
   updateElText($(`#${color}-nodes`), `${(game[color].nodes / 1000000).toFixed(2)}M`);
   updateElText($(`#${color}-nps`), `${(game[color].nodes / game[color].usedTime / 1000).toFixed(2)}M`);
