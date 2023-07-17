@@ -69,7 +69,7 @@
     "build": "tsc -p tsconfig.release.json",
     "clean": "rimraf build",
     "dev-public": "webpack --watch --progress --config webpack/webpack.dev.js",
-    "dev-server": "nodemon --legacy-watch -x 'node --loader ts-node/esm src/main.ts'",
+    "dev-server": "nodemon --legacy-watch -x node --loader ts-node/esm src/main.ts",
     "format": "prettier --write {src,public}/**/*.{js,html,ts,css}",
     "prebuild": "webpack --config webpack/webpack.prod.js",
     "lint": "eslint --fix src public",

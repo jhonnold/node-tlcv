@@ -61,7 +61,7 @@ function updateTitle(val) {
 function getLogoUrl(engine) {
   const words = engine.toLowerCase().split(/[^a-z0-9]+/);
   const versionIdx = words.findIndex((v, i) => i > 0 && /\d/.test(v));
-  return `url('img/logos/${words.slice(0, versionIdx).join('_')}.webp')`;
+  return `url('img/logos/${words.slice(0, versionIdx < 0 ? words.length : versionIdx).join('_')}.webp')`;
 }
 
 function updateLogos(white, black) {
