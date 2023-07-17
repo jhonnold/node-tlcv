@@ -4,7 +4,7 @@ export default function pvString(game, color) {
 
   return pv.reduce(
     (h, move, idx) =>
-      `${h}${idx % 2 === printOn ? `<strong>${n + Math.floor((idx + printOn) / 2)}</strong>. ` : ''}${move}`,
+      `${h}${idx % 2 === printOn ? `<strong>${n + Math.floor((idx + printOn) / 2)}</strong>. ` : ''}${move} `,
     color === 'white' ? '' : `<strong>${n}...</strong> `,
   );
 }
