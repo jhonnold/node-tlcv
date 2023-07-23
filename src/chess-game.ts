@@ -312,7 +312,7 @@ export class ChessGame {
       const data: LichessExplorerResponse = await response.json();
       const { opening } = data;
 
-      logger.info(`Received opening response for game ${this._name} - ${opening}`, { port: this.name });
+      logger.info(`Received opening response for game ${this._name} - ${JSON.stringify(opening)}`, { port: this.name });
 
       if (opening) {
         const { eco, name } = opening;
