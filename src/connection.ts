@@ -19,11 +19,7 @@ class Connection {
 
   private unproccessed: string[];
 
-  private acks: string[];
-
   private timer: NodeJS.Timeout;
-
-  private ackTimer: NodeJS.Timeout;
 
   private lock: AsyncLock;
 
@@ -32,7 +28,6 @@ class Connection {
     this.port = port;
     this.handler = handler;
     this.unproccessed = [];
-    this.acks = [];
     this.lock = new AsyncLock();
 
     this.socket = createSocket('udp4');
@@ -70,19 +65,6 @@ class Connection {
             logger.error(`Error processing messages - ${err}`, { port: this.port });
         });
     }, PROCESSING_INTERVAL);
-
-    this.ackTimer = setInterval(() => {
-      this.lock.acquire('acks', () => {
-        const ids = [...this.acks];
-        this.acks = [];
-        return ids;
-      })
-      .then((ids) => {
-        if (!ids.length) return;
-
-        ids.forEach(id => this.send(`ACK: ${id}`));
-      })
-    }, PROCESSING_INTERVAL);
   }
 
   private onError(err: Error): void {
@@ -104,10 +86,7 @@ class Connection {
 
     if (fullMessage.startsWith('<')) {
       const [idString, ...rest] = fullMessage.substring(1).split('>');
-
-      this.lock.acquire('acks', () => {
-        this.acks.push(idString);
-      });
+      this.send(`ACK: ${idString}`);
 
       const id = parseInt(idString);
       if (id === 1) {
@@ -138,7 +117,6 @@ class Connection {
 
   close(): void {
     clearInterval(this.timer);
-    clearInterval(this.ackTimer);
     this.socket.close();
   }
 }
