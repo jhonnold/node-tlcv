@@ -5,10 +5,10 @@ const { blue, green, yellow, red } = chalk;
 const { combine, timestamp, printf } = format;
 
 const colorMap: { [key: string]: chalk.Chalk } = {
-  DEBUG: blue,
-  INFO: green,
-  WARN: yellow,
-  ERROR: red,
+  debug: blue,
+  info: green,
+  warn: yellow,
+  error: red,
 };
 
 const logger = createLogger({
@@ -20,8 +20,7 @@ const logger = createLogger({
     timestamp(),
     printf(
       (info) =>
-        `${info.timestamp} ${colorMap[info.level.toUpperCase()](`[${info.level.toUpperCase().padStart(5)}]`)} ` +
-        `${info.port ? `[P${info.port}] ` : ''}${info.message}`,
+        `${info.timestamp} ${colorMap[info.level](`[${info.level}]`)} [P${info.port}] ${info.message}`,
     ),
   ),
 });
