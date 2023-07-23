@@ -81,13 +81,14 @@ class Connection {
   private onMessage(msg: Buffer, rInfo: RemoteInfo): void {
     logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`, { port: this.port });
 
-    let message = msg.toString().trim();
-    const idMatch = /^<\s*(\d+)>/g.exec(message);
+    const fullMessage = msg.toString().trim();
+    let messageText: string;
 
-    if (idMatch) {
-      this.send(`ACK: ${idMatch[1]}`);
+    if (fullMessage.startsWith('<')) {
+      const [idString, ...rest] = fullMessage.substring(1).split('>');
+      this.send(`ACK: ${idString}`);
 
-      const id = parseInt(idMatch[1]);
+      const id = parseInt(idString);
       if (id === 1) {
         logger.info(`Mesasge ids restarting. Going to 1 from ${this.lastMessage}`, { port: this.port });
       } else if (this.lastMessage && id < this.lastMessage) {
@@ -98,13 +99,14 @@ class Connection {
 
       this.lastMessage = id;
 
-      message = message.replace(/^<\s*(\d+)>/g, '');
+      messageText = rest.join('>');
     } else {
-      logger.debug(`No message id found for ${message}`, { port: this.port });
+      logger.debug(`No message id for ${fullMessage}`, { port: this.port });
+      messageText = fullMessage;
     }
 
     this.lock.acquire('messages', () => {
-      this.unproccessed.push(message);
+      this.unproccessed.push(messageText);
     });
   }
 
