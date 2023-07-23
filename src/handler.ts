@@ -149,8 +149,8 @@ class Handler {
     this._game[color].nodes = parseInt(rest[3]);
     this._game[color].usedTime = parseInt(rest[2]) * 10;
 
-    const copy = new Chess();
-    copy.loadPgn(this._game.instance.pgn());
+    const pvPlayout = new Chess();
+    pvPlayout.loadPgn(this._game.instance.pgn());
 
     const pv = rest.slice(4);
     const parsed = new Array<string>();
@@ -159,12 +159,12 @@ class Handler {
     // If the PV is not for the current STM then we undo the last move
     // and attempt to parse the PV from that position. This will happen when
     // the final pv is sent after the best move was sent. (See issue #9)
-    if (!color.startsWith(copy.turn())) copy.undo();
+    if (!color.startsWith(pvPlayout.turn())) pvPlayout.undo();
 
     for (let i = 0; i < pv.length; i++) {
       const alg = pv[i];
       try {
-        const move = copy.move(alg, { strict: false });
+        const move = pvPlayout.move(alg, { strict: false });
 
         parsed.push(move.san);
         pvAlg.push(`${move.from}${move.to}`);
@@ -177,33 +177,21 @@ class Handler {
     if (parsed.length) {
       this._game[color].pv = parsed;
       this._game[color].pvAlg = pvAlg;
-
-      const copy2 = new Chess();
-      copy2.loadPgn(this._game.instance.pgn());
-      if (!color.startsWith(copy2.turn())) copy2.undo();
-
-      this._game[color].pvFen = parsed
-        .reduce((board, move) => {
-          try {
-            board.move(move, { strict: false });
-          } catch (err) {
-            logger.warn(`Unable to parse a previously parsed move: ${move} - ${board.fen()}`, {
-              port: this._broadcast.port,
-            });
-          }
-
-          return board;
-        }, copy2)
-        .fen();
+      this._game[color].pvFen = pvPlayout.fen();
     }
 
     logger.info(
       `Updated game ${this._game.name} - Color: ${color}, Depth: ${this._game[color].depth}, Score: ${this._game[color].score}, Nodes: ${this._game[color].nodes}, UsedTime: ${this._game[color].usedTime}`,
       { port: this._broadcast.port },
     );
-    logger.info(`Updated game ${this._game.name} - Color: ${color}, PV: ${this._game[color].pv.join(' ')}`, {
-      port: this._broadcast.port,
-    });
+    logger.info(
+      `Updated game ${this._game.name} - Color: ${color}, PVFen: ${this._game[color].pvFen}, PV: ${this._game[
+        color
+      ].pv.join(' ')}`,
+      {
+        port: this._broadcast.port,
+      },
+    );
 
     return [EmitType.UPDATE, true];
   }
