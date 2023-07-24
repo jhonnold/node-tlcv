@@ -149,36 +149,10 @@ class Handler {
     this._game[color].nodes = parseInt(rest[3]);
     this._game[color].usedTime = parseInt(rest[2]) * 10;
 
-    const pvPlayout = new Chess();
-    pvPlayout.loadPgn(this._game.instance.pgn());
-
     const pv = rest.slice(4);
-    const parsed = new Array<string>();
-    const pvAlg = new Array<string>();
-
-    // If the PV is not for the current STM then we undo the last move
-    // and attempt to parse the PV from that position. This will happen when
-    // the final pv is sent after the best move was sent. (See issue #9)
-    if (!color.startsWith(pvPlayout.turn())) pvPlayout.undo();
-
-    for (let i = 0; i < pv.length; i++) {
-      const alg = pv[i];
-      try {
-        const move = pvPlayout.move(alg, { strict: false });
-
-        parsed.push(move.san);
-        pvAlg.push(`${move.from}${move.to}`);
-      } catch (err) {
-        break; // failed to parse a move
-      }
-    }
-
-    // Only if we could parse at least 1 do
-    if (parsed.length) {
-      this._game[color].pv = parsed;
-      this._game[color].pvAlg = pvAlg;
-      this._game[color].pvFen = pvPlayout.fen();
-    }
+    this._game[color].pv = pv;
+    this._game[color].pvAlg = [];
+    this._game[color].pvFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
     logger.info(
       `Updated game ${this._game.name} - Color: ${color}, Depth: ${this._game[color].depth}, Score: ${this._game[color].score}, Nodes: ${this._game[color].nodes}, UsedTime: ${this._game[color].usedTime}`,
