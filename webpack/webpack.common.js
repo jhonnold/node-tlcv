@@ -14,6 +14,10 @@ const PAGES = [
     page: 'admin.ejs',
     chunks: ['admin'],
   },
+  {
+    page: 'result.ejs',
+    chunks: ['result'],
+  },
 ];
 
 export default {
@@ -27,6 +31,12 @@ export default {
     ],
     admin: ['reset-css', 'mini.css', './public/js/admin.js', './public/css/main.css'],
     ['dark-theme']: ['./public/css/dark-theme.css'],
+    result: [
+      'reset-css',
+      'mini.css',
+      './public/css/result.css',
+      // './public/js/result.js',
+    ],
   },
   output: {
     path: path.resolve('./build/public'),
