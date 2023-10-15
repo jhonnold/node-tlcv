@@ -39,7 +39,7 @@ router.get('/:port([0-9]+)/pgn', (req: Request, res: Response): void => {
 router.get('/:port([0-9]+)/result-table', (req: Request, res: Response): void => {
   const { broadcast } = req as RequestWithBroadcast;
 
-  res.status(200).contentType('text/plain').send(broadcast.results);
+  res.render('pages/result', { data: broadcast.results });
 });
 
 export default router;

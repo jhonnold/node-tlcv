@@ -35,7 +35,7 @@ export default {
       'reset-css',
       'mini.css',
       './public/css/result.css',
-      // './public/js/result.js',
+      './public/js/result.js',
     ],
   },
   output: {
