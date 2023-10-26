@@ -106,7 +106,7 @@ function addChat(msg) {
       [, , , rest] = res;
     }
   } else {
-    const res = /\[(.*)\]\s+-\s+(.*)/i.exec(msg);
+    const res = /\[(.*?)\]\s+-\s+(.*)/i.exec(msg);
     if (res) {
       name = `[${res[1]}] `;
       [, , rest] = res;
