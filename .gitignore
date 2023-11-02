@@ -28,5 +28,6 @@ build/
 # Misc
 .DS_Store
 
+.node-version
 .env
 *.pgn
