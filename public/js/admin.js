@@ -1,22 +1,10 @@
 import $ from 'jquery';
 
-function reconnect(port) {
-  $.ajax({
-    type: 'POST',
-    url: '/admin/reconnect',
-    data: JSON.stringify({ port }),
-    contentType: 'application/json',
-    complete() {
-      window.location.reload();
-    },
-  });
-}
-
-function close(port) {
+function close(connection) {
   $.ajax({
     type: 'POST',
     url: '/admin/close',
-    data: JSON.stringify({ port }),
+    data: JSON.stringify({ connection }),
     contentType: 'application/json',
     complete() {
       window.location.reload();
@@ -24,11 +12,11 @@ function close(port) {
   });
 }
 
-function addNew(port) {
+function addNew(connection) {
   $.ajax({
     type: 'POST',
     url: '/admin/new',
-    data: JSON.stringify({ port }),
+    data: JSON.stringify({ connection }),
     contentType: 'application/json',
     complete() {
       window.location.reload();
@@ -40,19 +28,14 @@ $(document).ready(() => {
   $('#add-new').on('submit', (e) => {
     e.preventDefault();
 
-    const port = $('#port').val();
-    if (!port) return;
+    const connection = $('#connection').val();
+    if (!connection) return;
 
-    addNew(port);
+    addNew(connection);
   });
 
   $('button.close').click(function () {
-    const port = $(this).data('port');
-    close(port);
-  });
-
-  $('button.reconnect').click(function () {
-    const port = $(this).data('port');
-    reconnect(port);
+    const connection = $(this).data('connection');
+    close(connection);
   });
 });

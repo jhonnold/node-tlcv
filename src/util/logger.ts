@@ -12,10 +12,7 @@ const colorMap: { [key: string]: chalk.Chalk } = {
 };
 
 const logger = createLogger({
-  transports: [
-    new transports.Console({ level: 'error' }),
-    new transports.File({ level: 'debug', filename: `${process.env['LOG_DIR'] || ''}tlcv.log` }),
-  ],
+  transports: [new transports.Console({ level: process.env['LOG_LEVEL'] || 'info' })],
   format: combine(
     timestamp(),
     printf(

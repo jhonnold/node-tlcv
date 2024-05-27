@@ -1,8 +1,6 @@
-import dns from 'dns';
 import Connection from './connection.js';
 import Handler from './handler.js';
 import { ChessGame, SerializedGame } from './chess-game.js';
-import { config } from './config.js';
 
 export const username = 'tlcv.net';
 
@@ -15,7 +13,9 @@ export type SerializedBroadcast = {
 };
 
 export class Broadcast {
-  private _url: string;
+  private _host: string;
+
+  private _ip: string;
 
   private _port: number;
 
@@ -37,13 +37,14 @@ export class Broadcast {
 
   private _pings: NodeJS.Timeout;
 
-  constructor(url = config.url, port = config.ports[0]) {
-    this._url = url;
+  constructor(host: string, ip: string, port: number) {
+    this._host = host;
+    this._ip = ip;
     this._port = port;
 
     this._game = new ChessGame(String(this._port));
     this._handler = new Handler(this);
-    this._connection = new Connection(this._url, this._port, this._handler);
+    this._connection = new Connection(this._ip, this._port, this._handler);
 
     this._connection.send(`LOGONv15:${username}`);
     this._pings = setInterval(() => this._connection.send('PING'), 10000);
@@ -71,7 +72,7 @@ export class Broadcast {
     this._connection.close();
 
     setTimeout(() => {
-      this._connection = new Connection(this._url, this._port, this._handler);
+      this._connection = new Connection(this._ip, this._port, this._handler);
       this._connection.send(`LOGONv15:${username}`);
       this._pings = setInterval(() => this._connection.send('PING'), 10000);
     }, 500);
@@ -97,8 +98,20 @@ export class Broadcast {
     };
   }
 
+  public get host(): string {
+    return this._host;
+  }
+
+  public get ip(): string {
+    return this._ip;
+  }
+
   public get port(): number {
     return this._port;
+  }
+
+  public get connection(): string {
+    return `${this._host}:${this._port}`;
   }
 
   public get results(): string {
@@ -135,16 +148,5 @@ export class Broadcast {
 }
 
 const broadcasts = new Map<number, Broadcast>();
-
-const lookup = (hostname: string): Promise<string> =>
-  new Promise((resolve, reject) => dns.lookup(hostname, (err, addr) => (err ? reject(err) : resolve(addr))));
-
-export async function connect(): Promise<void> {
-  const url = await lookup(config.url);
-
-  config.ports.forEach((p) => {
-    broadcasts.set(p, new Broadcast(url, p));
-  });
-}
 
 export default broadcasts;

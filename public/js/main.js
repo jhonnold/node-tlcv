@@ -80,9 +80,9 @@ function updateInfo(game, color) {
   if (color === 'black') score *= -1;
 
   if (score > 100000) {
-    score = "M";
+    score = 'M';
   } else if (score < -100000) {
-    score = "-M";
+    score = '-M';
   } else {
     score = score.toFixed(2);
   }

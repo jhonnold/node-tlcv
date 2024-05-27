@@ -92,7 +92,10 @@ class Connection {
       if (id === 1) {
         logger.info(`Mesasge ids restarting. Going to 1 from ${this.lastMessage}`, { port: this.port });
       } else if (this.lastMessage && id < this.lastMessage) {
-        logger.warn(`Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}, SKIPPING PROCESSING!`, { port: this.port });
+        logger.warn(
+          `Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}, SKIPPING PROCESSING!`,
+          { port: this.port },
+        );
         // Hot exit, to avoid pushing this message out of order.
         return;
       }

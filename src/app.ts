@@ -23,7 +23,7 @@ app.use(compression());
 app.use(express.static('build/public'));
 
 // Serve a folder of PGNs
-app.use('/pgns', express.static('pgns'), serveIndex('pgns', { icons: true }));
+app.use('/pgns', express.static('pgns'), serveIndex(process.env['PGNS_DIR'] || 'pgns', { icons: true }));
 
 // GET /
 // GET /:port
