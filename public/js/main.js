@@ -144,8 +144,8 @@ function update(data, board, pvBoardWhite, pvBoardBlack) {
 
   $('#fen').text(game.fen);
   board.position(game.fen);
-  pvBoardWhite.position(game.white.pvFen);
-  pvBoardBlack.position(game.black.pvFen);
+  pvBoardWhite.position(game.white.pvFen, false);
+  pvBoardBlack.position(game.black.pvFen, false);
 
   clearArrows();
 
@@ -214,9 +214,6 @@ $(() => {
   const pvBoardSettings = {
     pieceTheme: '/img/{piece}.svg',
     showNotation: false,
-    appearSpeed: 0,
-    moveSpeed: 0,
-    trashSpeed: 0,
   };
   const pvBoardWhite = Chessboard('white-pv-board', pvBoardSettings);
   const pvBoardBlack = Chessboard('black-pv-board', pvBoardSettings);
