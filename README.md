@@ -1,6 +1,6 @@
 # Node TLCV
 
-A server implementation of Tom's live chess viewer. Designed to work with Graham Bank's [CCRL](https://ccrl.chessdom.com/ccrl/4040/) broadcasts. Watch live at [https://ccrl.live](https://ccrl.live/)!
+A server implementation of Tom's live chess viewer. Designed to work with Graham Bank's [CCRL](https://computerchess.org.uk/ccrl/4040/) broadcasts. Watch live at [https://ccrl.live](https://ccrl.live/)!
 
 ![screenshot](./.github/screenshot.jpg)
 
