@@ -320,8 +320,9 @@ export class ChessGame {
         logger.info(`Setting opening for game ${this._name} to ${eco} ${name}`, { port: this.name });
         this._opening = `${eco} ${name}`;
       }
-    } catch {
+    } catch (error) {
       logger.warn(`Error requesting opening for game ${this._name} @ ${url}`, { port: this.name });
+      logger.error(error);
     }
   }
 
@@ -372,8 +373,9 @@ export class ChessGame {
         logger.info(`Setting tablebase for game ${this._name} to blank`, { port: this.name });
         this._tablebase = '';
       }
-    } catch {
+    } catch (error) {
       logger.warn(`Error requesting tablebase for game ${this._name} @ ${url}`, { port: this.name });
+      logger.error(error);
       this._tablebase = '';
     }
   }

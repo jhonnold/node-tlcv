@@ -170,7 +170,7 @@ class Handler {
 
         parsed.push(move.san);
         pvAlg.push(`${move.from}${move.to}`);
-      } catch (err) {
+      } catch {
         break; // failed to parse a move
       }
     }
@@ -247,7 +247,7 @@ class Handler {
       } else {
         this._game.instance.setComment('(Book)');
       }
-    } catch (err) {
+    } catch {
       logger.warn(
         `Failed to parse ${rest[1]} for game ${this._game.name}, fen ${this._game.instance.fen()}! Loading from FEN...`,
         { port: this._broadcast.port },
@@ -345,8 +345,8 @@ class Handler {
     try {
       await mkdirp(dirname);
       await fs.writeFile(filepath, pgn);
-    } catch (err) {
-      logger.error(`Unable to write to ${filepath}! - ${err}`, { port: this._broadcast.port });
+    } catch (error) {
+      logger.error(`Unable to write to ${filepath}! - ${error}`, { port: this._broadcast.port });
     }
 
     this._broadcast.reloadResults();
