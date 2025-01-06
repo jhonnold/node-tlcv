@@ -13,6 +13,12 @@ router.get('/', (_: Request, res: Response): void => {
   res.redirect(`/${first.port}`);
 });
 
+router.get('/broadcasts', (_: Request, res: Response): void => {
+  const broadcast_ids = broadcasts.keys();
+
+  res.status(200).contentType('application/json').send(JSON.stringify(broadcast_ids));
+});
+
 router.use('/:port([0-9]+)', (req: Request, res: Response, next: NextFunction): void => {
   const port: number = parseInt(req.params.port);
   const broadcast: Broadcast | undefined = broadcasts.get(port);
