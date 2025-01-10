@@ -14,9 +14,9 @@ router.get('/', (_: Request, res: Response): void => {
 });
 
 router.get('/broadcasts', (_: Request, res: Response): void => {
-  const broadcast_ids = broadcasts.keys();
+  const broadcastIds = Array.from(broadcasts.keys());
 
-  res.status(200).contentType('application/json').send(JSON.stringify(broadcast_ids));
+  res.status(200).contentType('application/json').send(JSON.stringify(broadcastIds));
 });
 
 router.use('/:port([0-9]+)', (req: Request, res: Response, next: NextFunction): void => {
