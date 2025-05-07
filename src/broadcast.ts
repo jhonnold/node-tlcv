@@ -4,13 +4,13 @@ import { ChessGame, SerializedGame } from './chess-game.js';
 
 export const username = 'tlcv.net';
 
-export type SerializedBroadcast = {
+export interface SerializedBroadcast {
   game: SerializedGame;
-  spectators: Array<string>;
+  spectators: string[];
   browserCount: number;
-  chat: Array<string>;
-  menu: { [key: string]: string };
-};
+  chat: string[];
+  menu: Record<string, string>;
+}
 
 export class Broadcast {
   private _host: string;
@@ -25,7 +25,7 @@ export class Broadcast {
 
   private _spectators: Set<string>;
 
-  private _chat: Array<string>;
+  private _chat: string[];
 
   private _menu: Map<string, string>;
 
@@ -47,7 +47,9 @@ export class Broadcast {
     this._connection = new Connection(this._ip, this._port, this._handler);
 
     this._connection.send(`LOGONv15:${username}`);
-    this._pings = setInterval(() => this._connection.send('PING'), 10000);
+    this._pings = setInterval(() => {
+      this._connection.send('PING');
+    }, 10000);
 
     this._browserCount = 0;
     this._results = '';
@@ -74,7 +76,9 @@ export class Broadcast {
     setTimeout(() => {
       this._connection = new Connection(this._ip, this._port, this._handler);
       this._connection.send(`LOGONv15:${username}`);
-      this._pings = setInterval(() => this._connection.send('PING'), 10000);
+      this._pings = setInterval(() => {
+        this._connection.send('PING');
+      }, 10000);
     }, 500);
   }
 
@@ -82,11 +86,13 @@ export class Broadcast {
     clearInterval(this._pings);
     this._connection.send('LOGOFF');
 
-    setTimeout(() => this._connection.close(), 500);
+    setTimeout(() => {
+      this._connection.close();
+    }, 500);
   }
 
   toJSON(includeChat = false): SerializedBroadcast {
-    const menu: { [key: string]: string } = {};
+    const menu: Record<string, string> = {};
     for (const e of this._menu.entries()) menu[e[0]] = e[1];
 
     return {
@@ -130,7 +136,7 @@ export class Broadcast {
     return this._spectators;
   }
 
-  public get chat(): Array<string> {
+  public get chat(): string[] {
     return this._chat;
   }
 

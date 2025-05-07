@@ -1,12 +1,12 @@
 import $ from 'jquery';
 import Chessboard from 'chessboardjs';
 import { io } from 'socket.io-client';
-import updateTimers from './time.js';
-import updateLastMoves from './move.js';
-import pv from './pv.js';
-import { username, sendMsg } from './chat.js';
-import copyFen from './fen.js';
-import { clearArrows, drawMove } from './arrows.js';
+import updateTimers from './time';
+import updateLastMoves from './move';
+import pv from './pv';
+import { username, sendMsg } from './chat';
+import copyFen from './fen';
+import { clearArrows, drawMove } from './arrows';
 
 const port = +window.location.pathname.replace(/\//g, '');
 
@@ -275,7 +275,9 @@ $(() => {
   socket.on('new-chat', (data) => {
     const notScrolled = $('#chat-box')[0].scrollTop + chatHeight() > $('#chat-box')[0].scrollHeight;
 
-    data.forEach((msg) => addChat(msg));
+    data.forEach((msg) => {
+      addChat(msg);
+    });
 
     if (notScrolled) {
       const scrollTop = $('#chat-box')[0].scrollHeight;
@@ -286,6 +288,10 @@ $(() => {
   // Enable the connection!
   socket.connect();
 
-  $('#theme-light').on('click', () => setTheme('light'));
-  $('#theme-dark').on('click', () => setTheme('dark'));
+  $('#theme-light').on('click', () => {
+    setTheme('light');
+  });
+  $('#theme-dark').on('click', () => {
+    setTheme('dark');
+  });
 });

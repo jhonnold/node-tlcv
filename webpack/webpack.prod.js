@@ -1,9 +1,9 @@
-import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
-import TerserPlugin from 'terser-webpack-plugin';
-import { merge } from 'webpack-merge';
-import common from './webpack.common.js';
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const { merge } = require('webpack-merge');
+const common = require('./webpack.common.js');
 
-export default merge(common, {
+module.exports = merge(common, {
   mode: 'production',
   devtool: false,
   optimization: {

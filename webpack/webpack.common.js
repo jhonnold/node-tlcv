@@ -1,9 +1,9 @@
-import HtmlWebpackPlugin from 'html-webpack-plugin';
-import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import CopyWebpackPlugin from 'copy-webpack-plugin';
-import autoprefixer from 'autoprefixer';
-import path from 'path';
-import webpack from 'webpack';
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const autoprefixer = require('autoprefixer');
+const path = require('path');
+const webpack = require('webpack');
 
 const PAGES = [
   {
@@ -16,16 +16,16 @@ const PAGES = [
   },
 ];
 
-export default {
+module.exports = {
   entry: {
     main: [
       'reset-css',
       'mini.css',
       'chessboardjs/www/css/chessboard.css',
-      './public/js/main.js',
+      './public/ts/main.ts',
       './public/css/main.css',
     ],
-    admin: ['reset-css', 'mini.css', './public/js/admin.js', './public/css/main.css'],
+    admin: ['reset-css', 'mini.css', './public/ts/admin.ts', './public/css/main.css'],
     ['dark-theme']: ['./public/css/dark-theme.css'],
   },
   output: {
@@ -35,14 +35,14 @@ export default {
     clean: true,
   },
   resolve: {
-    extensions: ['.js'],
+    extensions: ['.ts', '.js'],
   },
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.tsx?$/,
+        use: 'ts-loader',
         exclude: /node_modules/,
-        use: { loader: 'babel-loader' },
       },
       {
         test: /\.css$/,

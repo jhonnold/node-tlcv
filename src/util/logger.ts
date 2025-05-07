@@ -4,7 +4,7 @@ import chalk from 'chalk';
 const { blue, green, yellow, red } = chalk;
 const { combine, timestamp, printf } = format;
 
-const colorMap: { [key: string]: chalk.Chalk } = {
+const colorMap: Record<string, chalk.Chalk> = {
   DEBUG: blue,
   INFO: green,
   WARN: yellow,

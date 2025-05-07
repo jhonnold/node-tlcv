@@ -30,7 +30,9 @@ function startTimer(game, color) {
   updateTimer(time, start, color);
   timerIntervals.set(
     color,
-    setInterval(() => updateTimer(time, start, color), 1000),
+    setInterval(() => {
+      updateTimer(time, start, color);
+    }, 1000),
   );
 }
 

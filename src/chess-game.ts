@@ -2,7 +2,7 @@ import { Chess, Move, validateFen } from 'chess.js';
 import dayjs from 'dayjs';
 import { logger } from './util/index.js';
 
-export type SerializedPlayer = {
+export interface SerializedPlayer {
   name: string;
   depth: number;
   score: number;
@@ -11,13 +11,13 @@ export type SerializedPlayer = {
   clockTime: number;
   startTime: number;
   lastMove: Move | null;
-  pvAlg: Array<string>;
-  pv: Array<string>;
+  pvAlg: string[];
+  pv: string[];
   pvFen: string;
   pvMoveNumber: number;
-};
+}
 
-export type SerializedGame = {
+export interface SerializedGame {
   name: string;
   site: string;
   white: SerializedPlayer;
@@ -27,23 +27,23 @@ export type SerializedGame = {
   tablebase: string;
   stm: 'w' | 'b';
   moveNumber: number;
-};
+}
 
-export type MoveMetaData = {
+export interface MoveMetaData {
   number: number;
   move: string;
   depth: number;
   score: number;
   nodes: number;
-};
+}
 
-export type LichessExplorerResponse = {
+export interface LichessExplorerResponse {
   opening: { eco: string; name: string } | null;
-};
+}
 
-export type LichessTablebaseResponse = {
+export interface LichessTablebaseResponse {
   category: string | null;
-};
+}
 
 export class Player {
   private _name: string;
@@ -62,15 +62,15 @@ export class Player {
 
   private _lastMove: Move | null;
 
-  private _pv: Array<string>; // san representation
+  private _pv: string[]; // san representation
 
   private _pvFen: string;
 
   private _pvMoveNumber: number;
 
-  private _pvAlg: Array<string>;
+  private _pvAlg: string[];
 
-  _moves: Array<MoveMetaData>;
+  _moves: MoveMetaData[];
 
   constructor() {
     this._name = 'Unknown';
@@ -184,11 +184,11 @@ export class Player {
     this._lastMove = v;
   }
 
-  public get pv(): Array<string> {
+  public get pv(): string[] {
     return this._pv;
   }
 
-  public set pv(v: Array<string>) {
+  public set pv(v: string[]) {
     this._pv = v;
   }
 
@@ -200,11 +200,11 @@ export class Player {
     return this._pvFen;
   }
 
-  public set pvAlg(move: Array<string>) {
+  public set pvAlg(move: string[]) {
     this._pvAlg = move;
   }
 
-  public get pvAlg(): Array<string> {
+  public get pvAlg(): string[] {
     return this._pvAlg;
   }
 

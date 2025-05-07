@@ -38,4 +38,6 @@ app.use(routes);
 app.use('/admin', adminRoutes);
 
 // Just forward to the base route on 404
-app.use('*', (_, res) => res.redirect('/'));
+app.use('*', (_, res) => {
+  res.redirect('/');
+});

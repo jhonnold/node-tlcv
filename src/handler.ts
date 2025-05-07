@@ -37,20 +37,18 @@ export enum Command {
   FMR = 'FMR',
 }
 
-type CommandTokens = [Command, ...Array<string>];
+type CommandTokens = [Command, ...string[]];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type UpdateResult = [EmitType, boolean, ...Array<any>];
+type UpdateResult = [EmitType, boolean, ...any[]];
 
-type ConfigItem = {
+interface ConfigItem {
   fn: (tokens: CommandTokens) => Promise<UpdateResult> | UpdateResult;
   split: boolean;
   lowPrio: boolean;
-};
+}
 
-type CommandConfig = {
-  [key in Command]: ConfigItem;
-};
+type CommandConfig = Record<Command, ConfigItem>;
 
 class Handler {
   private _commandConfig: CommandConfig;
@@ -163,8 +161,7 @@ class Handler {
     // the final pv is sent after the best move was sent. (See issue #9)
     if (!color.startsWith(pvPlayout.turn())) pvPlayout.undo();
 
-    for (let i = 0; i < pv.length; i++) {
-      const alg = pv[i];
+    for (const alg of pv) {
       try {
         const move = pvPlayout.move(alg, { strict: false });
 
@@ -373,7 +370,7 @@ class Handler {
     messages
       .map((msg) => splitOnCommand(msg))
       .forEach(([cmd, rest]) => {
-        const config = this._commandConfig[cmd] as ConfigItem | undefined;
+        const config = this._commandConfig[cmd];
         if (!config) {
           logger.warn(`Unable to process ${cmd}!`, { port: this._broadcast.port });
           return;

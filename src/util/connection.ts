@@ -3,7 +3,12 @@ import fs from 'node:fs/promises';
 import broadcasts, { Broadcast } from '../broadcast.js';
 
 const lookup = (hostname: string): Promise<string> =>
-  new Promise((resolve, reject) => dns.lookup(hostname, (err, addr) => (err ? reject(err) : resolve(addr))));
+  new Promise((resolve, reject) => {
+    dns.lookup(hostname, (err, addr) => {
+      if (err) reject(err);
+      else resolve(addr);
+    });
+  });
 
 export async function connect(): Promise<void> {
   const configDir = process.env.CONFIG_DIR || 'config';
