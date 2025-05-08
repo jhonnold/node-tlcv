@@ -31,3 +31,5 @@ build/
 .node-version
 .env
 *.pgn
+
+config/config.json

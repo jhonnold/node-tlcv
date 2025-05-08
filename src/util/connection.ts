@@ -1,6 +1,6 @@
 import dns from 'dns';
-import fs from 'node:fs/promises';
 import broadcasts, { Broadcast } from '../broadcast';
+import JsonDB from './jsondb';
 
 const lookup = (hostname: string): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -10,12 +10,13 @@ const lookup = (hostname: string): Promise<string> =>
     });
   });
 
-export async function connect(): Promise<void> {
-  const configDir = process.env.CONFIG_DIR || 'config';
-  const data = await fs.readFile(`${configDir}/config.json`, { encoding: 'utf8' });
-  const config = JSON.parse(data) as { connections: string[] };
+const dbPath = `${process.env.CONFIG_DIR || 'config'}/config.json`;
+const db = new JsonDB(dbPath);
 
-  for (const c of config.connections) {
+export async function connect(): Promise<void> {
+  const connections = db.read<string[]>('connections') || [];
+  console.log(connections);
+  for (const c of connections) {
     const [url, port] = c.split(':');
     const ip = await lookup(url);
 
@@ -24,10 +25,6 @@ export async function connect(): Promise<void> {
 }
 
 export async function newConnection(connection: string): Promise<void> {
-  const configDir = process.env.CONFIG_DIR || 'config';
-  const data = await fs.readFile(`${configDir}/config.json`, { encoding: 'utf8' });
-  const config = JSON.parse(data) as { connections: string[] };
-
   const [url, port] = connection.split(':');
   const ip = await lookup(url);
 
@@ -35,21 +32,17 @@ export async function newConnection(connection: string): Promise<void> {
 
   broadcasts.set(+port, new Broadcast(url, ip, +port));
 
-  config.connections = [...new Set([...config.connections, connection])];
-  await fs.writeFile(`${configDir}/config.json`, JSON.stringify(config), { encoding: 'utf8' });
+  const connections = db.read<string[]>('connections') || [];
+  db.update<string[]>('connections', [...new Set([...connections, connection])]);
 }
 
 export async function closeConnection(connection: string): Promise<void> {
-  const configDir = process.env.CONFIG_DIR || 'config';
-  const data = await fs.readFile(`${configDir}/config.json`, { encoding: 'utf8' });
-  const config = JSON.parse(data) as { connections: string[] };
-
   const [, port] = connection.split(':');
   const broadcast = broadcasts.get(+port);
   if (!broadcast) throw Error('Invalid port!');
   broadcast.close();
   broadcasts.delete(+port);
 
-  config.connections = config.connections.filter((c) => c !== connection);
-  await fs.writeFile(`${configDir}/config.json`, JSON.stringify(config), { encoding: 'utf8' });
+  const connections = db.read<string[]>('connections') || [];
+  db.update<string[]>('connections', connections.filter((c) => c !== connection));
 }
