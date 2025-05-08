@@ -3,10 +3,10 @@ import fs from 'fs/promises';
 import { mkdirp } from 'mkdirp';
 import dayjs from 'dayjs';
 import slugify from 'slugify';
-import { ChessGame, MoveMetaData } from './chess-game.js';
-import { logger, splitOnCommand } from './util/index.js';
-import { Broadcast, SerializedBroadcast, username } from './broadcast.js';
-import { io } from './io.js';
+import { ChessGame, MoveMetaData } from './chess-game';
+import { logger, splitOnCommand } from './util/index';
+import { Broadcast, username } from './broadcast';
+import { io } from './io';
 
 type Color = 'white' | 'black';
 
@@ -45,7 +45,6 @@ type UpdateResult = [EmitType, boolean, ...any[]];
 interface ConfigItem {
   fn: (tokens: CommandTokens) => Promise<UpdateResult> | UpdateResult;
   split: boolean;
-  lowPrio: boolean;
 }
 
 type CommandConfig = Record<Command, ConfigItem>;
@@ -57,31 +56,38 @@ class Handler {
 
   private _game: ChessGame;
 
+  private updateFlag: boolean;
+
   constructor(broadcast: Broadcast) {
     this._broadcast = broadcast;
     this._game = this._broadcast.game;
 
     this._commandConfig = {
-      [Command.FEN]: { fn: this.onFen.bind(this), split: true, lowPrio: false },
-      [Command.WPLAYER]: { fn: this.onPlayer.bind(this), split: false, lowPrio: false },
-      [Command.BPLAYER]: { fn: this.onPlayer.bind(this), split: false, lowPrio: false },
-      [Command.WPV]: { fn: this.onPV.bind(this), split: true, lowPrio: false },
-      [Command.BPV]: { fn: this.onPV.bind(this), split: true, lowPrio: false },
-      [Command.WTIME]: { fn: this.onTime.bind(this), split: true, lowPrio: false },
-      [Command.BTIME]: { fn: this.onTime.bind(this), split: true, lowPrio: false },
-      [Command.WMOVE]: { fn: this.onMove.bind(this), split: true, lowPrio: false },
-      [Command.BMOVE]: { fn: this.onMove.bind(this), split: true, lowPrio: false },
-      [Command.SITE]: { fn: this.onSite.bind(this), split: false, lowPrio: false },
-      [Command.CTRESET]: { fn: this.onCTReset.bind(this), split: false, lowPrio: false },
-      [Command.CT]: { fn: this.onCT.bind(this), split: false, lowPrio: false },
-      [Command.PONG]: { fn: () => [EmitType.UPDATE, false], split: false, lowPrio: false },
-      [Command.ADDUSER]: { fn: this.onAddUser.bind(this), split: false, lowPrio: false },
-      [Command.DELUSER]: { fn: this.onDelUser.bind(this), split: false, lowPrio: false },
-      [Command.CHAT]: { fn: this.onChat.bind(this), split: false, lowPrio: false },
-      [Command.MENU]: { fn: this.onMenu.bind(this), split: true, lowPrio: false },
-      [Command.RESULT]: { fn: this.onResult.bind(this), split: false, lowPrio: false },
-      [Command.FMR]: { fn: this.onFmr.bind(this), split: false, lowPrio: false },
+      [Command.FEN]: { fn: this.onFen.bind(this), split: true },
+      [Command.WPLAYER]: { fn: this.onPlayer.bind(this), split: false },
+      [Command.BPLAYER]: { fn: this.onPlayer.bind(this), split: false },
+      [Command.WPV]: { fn: this.onPV.bind(this), split: true },
+      [Command.BPV]: { fn: this.onPV.bind(this), split: true },
+      [Command.WTIME]: { fn: this.onTime.bind(this), split: true },
+      [Command.BTIME]: { fn: this.onTime.bind(this), split: true },
+      [Command.WMOVE]: { fn: this.onMove.bind(this), split: true },
+      [Command.BMOVE]: { fn: this.onMove.bind(this), split: true },
+      [Command.SITE]: { fn: this.onSite.bind(this), split: false },
+      [Command.CTRESET]: { fn: this.onCTReset.bind(this), split: false },
+      [Command.CT]: { fn: this.onCT.bind(this), split: false },
+      [Command.PONG]: { fn: () => [EmitType.UPDATE, false], split: false },
+      [Command.ADDUSER]: { fn: this.onAddUser.bind(this), split: false },
+      [Command.DELUSER]: { fn: this.onDelUser.bind(this), split: false },
+      [Command.CHAT]: { fn: this.onChat.bind(this), split: false },
+      [Command.MENU]: { fn: this.onMenu.bind(this), split: true },
+      [Command.RESULT]: { fn: this.onResult.bind(this), split: false },
+      [Command.FMR]: { fn: this.onFmr.bind(this), split: false },
     };
+
+    this.updateFlag = false;
+    setInterval(() => {
+      if (this.updateFlag) io.to(String(this._broadcast.port)).emit(EmitType.UPDATE, this._broadcast.toJSON());
+    }, 100);
   }
 
   private onFmr(tokens: CommandTokens): UpdateResult {
@@ -351,61 +357,27 @@ class Handler {
     return [EmitType.CHAT, true, message];
   }
 
-  async onMessages(messages: string[]): Promise<void> {
-    // We emit after processing all messages.
-    // UpdateEmit is the board result after the last processed message
-    // ChatEmit is all the chats received across these messages
-    let updateEmit: SerializedBroadcast | null = null;
-    const chatEmit: string[] = [];
-
-    const processLowPrio = this._broadcast.browserCount > 0;
-    if (!processLowPrio)
-      logger.info('No one viewing broadcast, skipping processing of low-priority messages.', {
-        port: this._broadcast.port,
-      });
-
-    const highPrioMessages: [Command, string][] = [];
-    const lowPriorityMessages = new Map<Command, string>();
-
-    messages
-      .map((msg) => splitOnCommand(msg))
-      .forEach(([cmd, rest]) => {
-        const config = this._commandConfig[cmd];
-        if (!config) {
-          logger.warn(`Unable to process ${cmd}!`, { port: this._broadcast.port });
-          return;
-        }
-
-        if (config.lowPrio) {
-          lowPriorityMessages.set(cmd, rest);
-        } else {
-          highPrioMessages.push([cmd, rest]);
-        }
-      });
-
-    for (const [cmd, rest] of [...highPrioMessages, ...(processLowPrio ? lowPriorityMessages : [])]) {
-      const commandConfig = this._commandConfig[cmd];
-
-      const [emit, updated, ...updateData] = await commandConfig.fn(
-        commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
-      );
-
-      if (updated) {
-        switch (emit) {
-          case EmitType.UPDATE:
-            updateEmit = this._broadcast.toJSON();
-            break;
-          case EmitType.CHAT:
-            chatEmit.push(updateData[0]);
-            break;
-        }
-      }
+  async onMessage(message: string): Promise<void> {
+    const [cmd, rest] = splitOnCommand(message);
+    const commandConfig = this._commandConfig[cmd];
+    if (!commandConfig) {
+      logger.info(`Nothing to do for command ${cmd}`, { port: this._broadcast.port });
+      return;
     }
 
-    if (updateEmit) io.to(String(this._broadcast.port)).emit(EmitType.UPDATE, updateEmit);
-    if (chatEmit.length) io.to(String(this._broadcast.port)).emit(EmitType.CHAT, chatEmit);
+    const [emit, updated, ...updateData] = await commandConfig.fn(
+      commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
+    );
 
-    logger.info(`Successfully processed ${messages.length} message(s)`, { port: this._broadcast.port });
+    logger.debug(`Successfully processed message for command ${cmd}`, { port: this._broadcast.port });
+
+    if (!updated) return;
+
+    if (emit == EmitType.CHAT) {
+      io.to(String(this._broadcast.port)).emit(EmitType.CHAT, updateData[0]);
+    } else if (emit == EmitType.UPDATE) {
+      this.updateFlag = true;
+    }
   }
 }
 

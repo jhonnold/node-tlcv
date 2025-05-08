@@ -1,8 +1,8 @@
-import Connection from './connection.js';
-import Handler from './handler.js';
-import { ChessGame, SerializedGame } from './chess-game.js';
+import Connection from './connection';
+import Handler from './handler';
+import { ChessGame, SerializedGame } from './chess-game';
 
-export const username = 'tlcv.net';
+export const username = 'ccrl.live';
 
 export interface SerializedBroadcast {
   game: SerializedGame;

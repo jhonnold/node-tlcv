@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import onFinished from 'on-finished';
-import logger from './logger.js';
+import logger from './logger';
 
 export default (req: Request, res: Response, next: NextFunction): void => {
   const start = new Date().getTime();

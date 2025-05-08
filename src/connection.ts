@@ -1,125 +1,96 @@
 import { RemoteInfo, Socket, createSocket } from 'dgram';
-import { setInterval } from 'timers';
-import AsyncLock from 'async-lock';
-import { logger } from './util/index.js';
-import Handler from './handler.js';
-
-const PROCESSING_INTERVAL = 100;
+import { logger } from './util/index';
+import Handler from './handler';
 
 class Connection {
   private host: string;
-
   private port: number;
 
   private lastMessage: number | undefined;
 
   private socket: Socket;
-
   private handler: Handler;
 
-  private unproccessed: string[];
-
-  private timer: NodeJS.Timeout;
-
-  private lock: AsyncLock;
+  private processing: boolean = false;
+  private queue: string[] = [];
 
   constructor(host: string, port: number, handler: Handler) {
     this.host = host;
     this.port = port;
     this.handler = handler;
-    this.unproccessed = [];
-    this.lock = new AsyncLock();
 
     this.socket = createSocket('udp4');
-
-    this.socket.on('error', this.onError.bind(this));
-    this.socket.on('listening', this.onListening.bind(this));
-    this.socket.on('message', this.onMessage.bind(this));
-
+    this.socket.on('error', (err) => this.onError(err));
+    this.socket.on('listening', () => this.onListening());
+    this.socket.on('message', (buf, remote) => this.onMessage(buf, remote));
     this.socket.bind(port);
-
-    this.timer = setInterval(() => {
-      this.lock
-        .acquire(
-          'processing',
-          async () => {
-            const messages = await this.lock.acquire(
-              'messages',
-              () => {
-                const messages = [...this.unproccessed];
-                this.unproccessed = [];
-                return messages;
-              },
-              { skipQueue: true },
-            );
-
-            if (!messages.length) return;
-
-            logger.debug(`Processing a total of ${messages.length} message(s)`, { port: this.port });
-            await this.handler.onMessages(messages);
-          },
-          { timeout: PROCESSING_INTERVAL },
-        )
-        .catch((err: Error) => {
-          if (!err.message.startsWith('async-lock timed out'))
-            logger.error(`Error processing messages - ${err}`, { port: this.port });
-        });
-    }, PROCESSING_INTERVAL);
   }
 
-  private onError(err: Error): void {
+  private onError(err: Error) {
     logger.error(`Unexpected socket error - ${err}`, { port: this.port });
 
     this.socket.close();
   }
 
-  private onListening(): void {
+  private onListening() {
     const address = this.socket.address();
     logger.info(`Listening @ ${address.address}:${address.port}`, { port: this.port });
   }
 
-  private onMessage(msg: Buffer, rInfo: RemoteInfo): void {
+  private async onMessage(msg: Buffer, rInfo: RemoteInfo) {
     logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`, { port: this.port });
 
-    const fullMessage = msg.toString().trim();
-    let messageText: string;
+    const trimmedMessage = msg.toString().trim();
+    const idMatch = /^<\s*(\d+)\s*>(.+)$/.exec(trimmedMessage);
 
-    if (fullMessage.startsWith('<')) {
-      const [idString, ...rest] = fullMessage.substring(1).split('>');
-      this.send(`ACK: ${idString}`);
+    if (idMatch) {
+      this.send(`ACK: ${idMatch[1]}`);
 
-      const id = parseInt(idString);
-      if (id === 1) {
-        logger.info(`Mesasge ids restarting. Going to 1 from ${this.lastMessage}`, { port: this.port });
-      } else if (this.lastMessage && id < this.lastMessage) {
-        logger.warn(
-          `Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}, SKIPPING PROCESSING!`,
-          { port: this.port },
-        );
-        // Hot exit, to avoid pushing this message out of order.
-        return;
+      const id = parseInt(idMatch[1]);
+      if (!isNaN(id)) {
+        if (id === 1) {
+          logger.info(`Mesasge ids restarting. Going to 1 from ${this.lastMessage}`, { port: this.port });
+        } else if (this.lastMessage && id < this.lastMessage) {
+          logger.warn(
+            `Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}, SKIPPING PROCESSING!`,
+            { port: this.port },
+          );
+
+          // Hot exit, as we've received a message out of order
+          // and don't want to process it.
+          return;
+        }
+
+        this.lastMessage = id;
+      } else {
+        logger.warn(`Received an unparsable message id: ${idMatch[1]}!`, { port: this.port });
       }
 
-      this.lastMessage = id;
-
-      messageText = rest.join('>');
+      this.queue.push(idMatch[2].trim());
     } else {
-      logger.debug(`No message id for ${fullMessage}`, { port: this.port });
-      messageText = fullMessage;
+      this.queue.push(trimmedMessage);
     }
 
-    this.lock.acquire('messages', () => {
-      this.unproccessed.push(messageText);
-    });
+    await this.processQueue();
   }
 
-  send(msg: string): void {
+  private async processQueue() {
+    if (this.processing) return;
+    this.processing = true;
+
+    while (this.queue.length > 0) {
+      await this.handler.onMessage(this.queue.shift());
+    }
+
+    this.processing = false;
+  }
+
+  send(msg: string) {
     logger.debug(`Sending message ${msg} to ${this.host}:${this.port}`, { port: this.port });
     this.socket.send(msg, this.port, this.host);
   }
 
-  close(): void {
-    clearInterval(this.timer);
+  close() {
     this.socket.close();
   }
 }

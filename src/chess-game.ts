@@ -1,6 +1,6 @@
 import { Chess, Move, validateFen } from 'chess.js';
 import dayjs from 'dayjs';
-import { logger } from './util/index.js';
+import { logger } from './util/index';
 
 export interface SerializedPlayer {
   name: string;

@@ -99,7 +99,7 @@ function addChat(msg) {
   let name = msg;
   let rest = '';
 
-  if (msg.startsWith('[tlcv.net')) {
+  if (msg.startsWith('[ccrl.live')) {
     const res = /\[(.*)\]\s+-\s+\((.*?)\)\s+(.*)/i.exec(msg);
     if (res) {
       name = `[${res[2]}] `;
@@ -221,7 +221,7 @@ $(() => {
   const socket = io({ autoConnect: false });
 
   // pull username from storage
-  $('#username').val(localStorage.getItem('tlcv.net-username'));
+  $('#username').val(localStorage.getItem('ccrl.live-username'));
 
   // We fix the chat-area height to match the board height
   $('#chat-area').height(chatHeight());
@@ -250,7 +250,7 @@ $(() => {
 
   // Nickname change
   $('#username').on('blur', () => {
-    localStorage.setItem('tlcv.net-username', username());
+    localStorage.setItem('ccrl.live-username', username());
     socket.emit('nick', username());
   });
 
@@ -275,9 +275,7 @@ $(() => {
   socket.on('new-chat', (data) => {
     const notScrolled = $('#chat-box')[0].scrollTop + chatHeight() > $('#chat-box')[0].scrollHeight;
 
-    data.forEach((msg) => {
-      addChat(msg);
-    });
+    addChat(data);
 
     if (notScrolled) {
       const scrollTop = $('#chat-box')[0].scrollHeight;

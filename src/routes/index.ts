@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import broadcasts, { Broadcast } from '../broadcast.js';
+import broadcasts, { Broadcast } from '../broadcast';
 
 interface RequestWithBroadcast extends Request {
   broadcast: Broadcast;

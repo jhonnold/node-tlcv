@@ -1,6 +1,6 @@
 import dns from 'dns';
 import fs from 'node:fs/promises';
-import broadcasts, { Broadcast } from '../broadcast.js';
+import broadcasts, { Broadcast } from '../broadcast';
 
 const lookup = (hostname: string): Promise<string> =>
   new Promise((resolve, reject) => {

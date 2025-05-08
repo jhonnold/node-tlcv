@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
-import broadcasts, { Broadcast } from './broadcast.js';
-import { logger, uniqueName } from './util/index.js';
+import broadcasts, { Broadcast } from './broadcast';
+import { logger, uniqueName } from './util/index';
 
 export const io = new Server();
 
