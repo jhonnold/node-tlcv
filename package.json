@@ -16,7 +16,7 @@
     "format": "prettier --write --no-error-on-unmatched-pattern src public",
     "prebuild": "webpack --config webpack/webpack.prod.js",
     "lint": "eslint --fix src",
-    "start": "node build/src/main.js",
+    "start": "node build/server/main.js",
     "test": "echo OK"
   },
   "dependencies": {
