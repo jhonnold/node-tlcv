@@ -152,6 +152,7 @@ class Handler {
     const pv = rest.slice(4);
 
     const pvPlayout = new Chess();
+    logger.debug(this.game.instance.pgn(), { port: this.broadcast.port });
     pvPlayout.loadPgn(this.game.instance.pgn());
 
     const parsed = [];
