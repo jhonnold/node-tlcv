@@ -2,7 +2,7 @@ import { Server, Socket } from 'socket.io';
 import broadcasts, { Broadcast } from './broadcast';
 import { logger, uniqueName } from './util/index';
 
-export const io = new Server();
+const io = new Server();
 
 io.on('connection', (socket: Socket) => {
   let broadcast: Broadcast | undefined;
@@ -12,7 +12,7 @@ io.on('connection', (socket: Socket) => {
     broadcast = broadcasts.get(port);
     if (!broadcast) return;
 
-    broadcast.browserCount++;
+    broadcast.browserCount += 1;
 
     username = uniqueName(user, broadcast.spectators);
     if (username) broadcast.spectators.add(username);
@@ -44,10 +44,12 @@ io.on('connection', (socket: Socket) => {
   socket.on('disconnect', () => {
     if (!broadcast) return;
 
-    broadcast.browserCount--;
+    broadcast.browserCount -= 1;
 
     if (username) broadcast.spectators.delete(username);
 
     logger.info(`${username} has left from port ${broadcast.port}!`, { port: broadcast.port });
   });
 });
+
+export default io;

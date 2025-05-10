@@ -1,8 +1,8 @@
 import 'dotenv/config';
 
 import http from 'http';
-import { app } from './app';
-import { io } from './io';
+import app from './app';
+import io from './io';
 import { logger, connect } from './util/index';
 
 const server = http.createServer(app);

@@ -69,7 +69,7 @@ export function drawMove(move, color, shift = 0) {
   const board = $('#board');
   const breite = board.height();
 
-  const canvas = $('#arrow-board')[0] as HTMLCanvasElement;
+  const canvas = $('#arrow-board')[0];
   const ctx = canvas.getContext('2d');
 
   if (ctx === null) return;
@@ -97,7 +97,7 @@ export function drawMove(move, color, shift = 0) {
 }
 
 export function clearArrows() {
-  const canvas = $('#arrow-board')[0] as HTMLCanvasElement;
+  const canvas = $('#arrow-board')[0];
   const ctx = canvas.getContext('2d');
 
   if (ctx === null) return;

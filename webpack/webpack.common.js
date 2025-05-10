@@ -22,26 +22,26 @@ module.exports = {
       'reset-css',
       'mini.css',
       'chessboardjs/www/css/chessboard.css',
-      './public/ts/main.ts',
+      './src/client/main.js',
       './public/css/main.css',
     ],
-    admin: ['reset-css', 'mini.css', './public/ts/admin.ts', './public/css/main.css'],
+    admin: ['reset-css', 'mini.css', './src/client/admin.js', './public/css/main.css'],
     ['dark-theme']: ['./public/css/dark-theme.css'],
   },
   output: {
     path: path.resolve('./build/public'),
-    filename: '[name].bundle.js',
+    filename: 'js/[name].bundle.js',
     publicPath: '/',
     clean: true,
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.js', '.jsx'],
   },
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
-        use: 'ts-loader',
+        test: /\.jsx?$/,
+        use: ['babel-loader'],
         exclude: /node_modules/,
       },
       {
@@ -65,8 +65,8 @@ module.exports = {
   plugins: [
     new webpack.ProvidePlugin({ $: 'jquery' }),
     new MiniCssExtractPlugin({
-      filename: '[name].css',
-      chunkFilename: '[id].css',
+      filename: 'css/[name].css',
+      chunkFilename: 'css/[id].css',
     }),
     new CopyWebpackPlugin({
       patterns: [

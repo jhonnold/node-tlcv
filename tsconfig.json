@@ -6,9 +6,11 @@
     "allowJs": false,
     "importHelpers": true,
     "sourceMap": true,
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
-    "typeRoots": ["./src/@types", "./node_modules/@types"]
+    "typeRoots": ["./node_modules/@types"],
+    "rootDir": "src/",
+    "outDir": "build/",
   },
-  "include": ["src/**/*", "public/**/*"]
+  "include": ["src/server/**/*"]
 }

@@ -20,7 +20,7 @@ router.get('/broadcasts', (_: Request, res: Response): void => {
 });
 
 router.use('/:port([0-9]+)', (req: Request, res: Response, next: NextFunction): void => {
-  const port: number = parseInt(req.params.port);
+  const port: number = parseInt(req.params.port, 10);
   const broadcast: Broadcast | undefined = broadcasts.get(port);
 
   if (!broadcast) {

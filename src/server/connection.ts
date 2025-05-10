@@ -5,13 +5,10 @@ import Handler from './handler';
 class Connection {
   private host: string;
   private port: number;
-
   private lastMessage: number | undefined;
-
   private socket: Socket;
   private handler: Handler;
-
-  private processing: boolean = false;
+  private processing = false;
   private queue: string[] = [];
 
   constructor(host: string, port: number, handler: Handler) {
@@ -46,8 +43,8 @@ class Connection {
     if (idMatch) {
       this.send(`ACK: ${idMatch[1]}`);
 
-      const id = parseInt(idMatch[1]);
-      if (!isNaN(id)) {
+      const id = parseInt(idMatch[1], 10);
+      if (!Number.isNaN(id)) {
         if (id === 1) {
           logger.info(`Mesasge ids restarting. Going to 1 from ${this.lastMessage}`, { port: this.port });
         } else if (this.lastMessage && id < this.lastMessage) {
@@ -79,7 +76,10 @@ class Connection {
     this.processing = true;
 
     while (this.queue.length > 0) {
-      await this.handler.onMessage(this.queue.shift());
+      const message = this.queue.shift();
+      if (message)
+        // eslint-disable-next-line no-await-in-loop
+        await this.handler.onMessage(message);
     }
 
     this.processing = false;

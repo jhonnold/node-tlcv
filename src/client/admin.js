@@ -34,7 +34,7 @@ $(document).ready(() => {
     addNew(connection);
   });
 
-  $('button.close').click(function () {
+  $('button.close').click(function onClick() {
     const connection = $(this).data('connection');
     close(connection);
   });

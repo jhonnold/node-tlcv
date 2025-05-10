@@ -1,0 +1,54 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "parserOptions": {
+    "sourceType": "module",
+    "ecmaVersion": "latest"
+  },
+  "extends": ["airbnb-base", "prettier"],
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "moduleDirectory": ["node_modules", "src/client/"],
+        "extensions": [".js"]
+      }
+    }
+  },
+  "overrides": [
+    {
+      "files": ["src/server/**/*.ts"],
+      "plugins": ["@typescript-eslint"],
+      "parser": "@typescript-eslint/parser",
+      "extends": ["airbnb-base", "prettier"],
+      "parserOptions": {
+        "project": "./tsconfig.json"
+      },
+      "globals": {
+        "NodeJS": true
+      },
+      "settings": {
+        "import/resolver": {
+          "node": {
+            "moduleDirectory": ["node_modules", "src/server/"],
+            "extensions": [".ts"]
+          }
+        }
+      },
+      "rules": {
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": "error",
+        "import/extensions": ["error", "never"],
+        "lines-between-class-members": [
+          "error",
+          "always",
+          {
+            "exceptAfterSingleLine": true
+          }
+        ]
+      }
+    }
+  ]
+}

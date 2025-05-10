@@ -25,12 +25,12 @@ const setTheme = (theme) => {
     $('#theme-dark').hide();
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/dark-theme.css';
+    link.href = '/css/dark-theme.css';
     $('head').append(link);
   } else {
     $('#theme-light').hide();
     $('#theme-dark').show();
-    const darkTheme = $('head [href="/dark-theme.css"]');
+    const darkTheme = $('head [href="/css/dark-theme.css"]');
     if (darkTheme) darkTheme.remove();
   }
   localStorage.setItem('theme', theme);
@@ -241,10 +241,10 @@ $(() => {
 
   // Setup chat listeners
   $('#chat-btn').on('click', () => $('#chat-msg').trigger('send'));
-  $('#chat-msg').on('keyup', function (e) {
+  $('#chat-msg').on('keyup', function onKeyup(e) {
     if (e.key === 'Enter') $(this).trigger('send');
   });
-  $('#chat-msg').on('send', function () {
+  $('#chat-msg').on('send', function onSend() {
     sendMsg(socket, $(this));
   });
 

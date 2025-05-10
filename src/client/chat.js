@@ -1,7 +1,7 @@
 import $ from 'jquery';
 
 export function username() {
-  return ($('#username').val() as string) || 'Anonymous';
+  return $('#username').val() || 'Anonymous';
 }
 
 export function sendMsg(socket, $chatMsg) {

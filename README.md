@@ -13,9 +13,8 @@ A server implementation of Tom's live chess viewer. Designed to work with Graham
   - [pm2](https://pm2.keymetrics.io/) if you'd like to run this in the background
 
 ### Setup
-- Modify [config.ts](src/config.ts)
-  - `url` should be the **IP ADDRESS** of your chess server
-  - `ports` should be an array of the initial ports you'd like to connect to
+- Create a base config in `config/config.json`.
+- It should be of the form: `{ connections: string[] }` where each string is `<host>:<port>`
 - Create a `.env` file at the same level as this `README` and specify a `TLCV_PASSWORD`
 ```bash
 # .env

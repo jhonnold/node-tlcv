@@ -7,7 +7,7 @@ const router = Router();
 
 router.use(
   basic({
-    users: { admin: process.env.TLCV_PASSWORD },
+    users: { admin: process.env.TLCV_PASSWORD as string },
     challenge: true,
   }),
 );

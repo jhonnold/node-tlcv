@@ -15,13 +15,15 @@ const db = new JsonDB(dbPath);
 
 export async function connect(): Promise<void> {
   const connections = db.read<string[]>('connections') || [];
-  console.log(connections);
-  for (const c of connections) {
-    const [url, port] = c.split(':');
-    const ip = await lookup(url);
 
-    broadcasts.set(+port, new Broadcast(url, ip, +port));
-  }
+  await Promise.all(
+    connections.map(async (c) => {
+      const [url, port] = c.split(':');
+      const ip = await lookup(url);
+
+      broadcasts.set(+port, new Broadcast(url, ip, +port));
+    }),
+  );
 }
 
 export async function newConnection(connection: string): Promise<void> {
@@ -44,5 +46,8 @@ export async function closeConnection(connection: string): Promise<void> {
   broadcasts.delete(+port);
 
   const connections = db.read<string[]>('connections') || [];
-  db.update<string[]>('connections', connections.filter((c) => c !== connection));
+  db.update<string[]>(
+    'connections',
+    connections.filter((c) => c !== connection),
+  );
 }

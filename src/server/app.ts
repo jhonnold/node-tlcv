@@ -7,7 +7,7 @@ import routes from './routes/index';
 import adminRoutes from './routes/admin';
 import { logging } from './util/index';
 
-export const app = express();
+const app = express();
 
 // embedded js view engine (hardly used)
 app.set('view engine', 'ejs');
@@ -41,3 +41,5 @@ app.use('/admin', adminRoutes);
 app.use('*', (_, res) => {
   res.redirect('/');
 });
+
+export default app;

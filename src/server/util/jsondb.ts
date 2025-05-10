@@ -47,7 +47,7 @@ class JsonDB {
     if (db[key] === undefined) {
       throw new Error(`Key '${key}' does not exist.`);
     }
-    delete db[key];
+    db[key] = undefined;
     this.saveDb(db);
   }
 }
