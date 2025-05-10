@@ -1,18 +1,8 @@
 import { Command } from '../handler';
 
 export function splitOnCommand(line: string): [Command, string] {
-  const semiIdx = line.indexOf(':');
-  const spaceIdx = line.indexOf(' ');
+  const match = line.match(/[: ]/);
+  if (!match) return [line as Command, ''];
 
-  // Assign the split to the semi-colon
-  let argSplit = semiIdx;
-
-  // If no semi-colon assign it to space
-  if (semiIdx < 0) argSplit = spaceIdx;
-  // If both, then choose the first one
-  else if (spaceIdx >= 0) argSplit = Math.min(semiIdx, spaceIdx);
-
-  if (argSplit < 0) return [line as Command, ''];
-
-  return [line.substring(0, argSplit) as Command, line.substring(argSplit + 1).trim()];
+  return [line.substring(0, match.index) as Command, line.substring(match.index + 1).trim()];
 }
