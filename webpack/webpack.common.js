@@ -26,7 +26,8 @@ module.exports = {
       './public/css/main.css',
     ],
     admin: ['reset-css', 'mini.css', './src/client/admin.js', './public/css/main.css'],
-    ['dark-theme']: ['./public/css/dark-theme.css'],
+    'dark-theme': ['./public/css/dark-theme.css'],
+    ui: ['reset-css', 'mini.css', './src/ui/index.jsx'],
   },
   output: {
     path: path.resolve('./build/public'),
@@ -63,7 +64,7 @@ module.exports = {
     ],
   },
   plugins: [
-    new webpack.ProvidePlugin({ $: 'jquery' }),
+    new webpack.ProvidePlugin({ React: 'react' }),
     new MiniCssExtractPlugin({
       filename: 'css/[name].css',
       chunkFilename: 'css/[id].css',
@@ -73,6 +74,12 @@ module.exports = {
         { from: './public/img', to: './img' },
         { from: './views/partials', to: '../views/partials' },
       ],
+    }),
+    new HtmlWebpackPlugin({
+      template: './public/index.html',
+      filename: './index.html',
+      favicon: './public/favicon.ico',
+      chunks: ['ui'],
     }),
     ...PAGES.map(
       ({ page, chunks }) =>

@@ -4,18 +4,22 @@
     "browser": true,
     "es6": true
   },
+  "parser": "@babel/eslint-parser",
+  "extends": ["airbnb", "prettier"],
   "parserOptions": {
     "sourceType": "module",
     "ecmaVersion": "latest"
   },
-  "extends": ["airbnb-base", "prettier"],
   "settings": {
     "import/resolver": {
       "node": {
-        "moduleDirectory": ["node_modules", "src/client/"],
-        "extensions": [".js"]
+        "moduleDirectory": ["node_modules", "src/client/", "src/ui/"],
+        "extensions": [".js", ".jsx"]
       }
     }
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off"
   },
   "overrides": [
     {
