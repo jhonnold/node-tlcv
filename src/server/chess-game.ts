@@ -193,7 +193,7 @@ export class ChessGame {
           'Content-Type': 'application/json',
         },
       });
-      const data: LichessExplorerResponse = await response.json();
+      const data = (await response.json()) as LichessExplorerResponse;
       const { opening } = data;
 
       logger.info(`Received opening response for game ${this.name} - ${JSON.stringify(opening)}`, { port: this.name });
@@ -223,7 +223,7 @@ export class ChessGame {
         },
       });
 
-      const data: LichessTablebaseResponse = await response.json();
+      const data = (await response.json()) as LichessTablebaseResponse;
       const { category } = data;
 
       logger.info(`Received tb category response for game ${this.name}: ${category}`, { port: this.name });

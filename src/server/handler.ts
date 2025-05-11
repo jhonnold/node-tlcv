@@ -152,27 +152,30 @@ class Handler {
     const pv = rest.slice(4);
 
     const pvPlayout = new Chess();
-    logger.debug(this.game.instance.pgn(), { port: this.broadcast.port });
-    pvPlayout.loadPgn(this.game.instance.pgn());
-
     const parsed = [];
     const pvAlg = [];
 
-    // If the PV is not for the current STM then we undo the last move
-    // and attempt to parse the PV from that position. This will happen when
-    // the final pv is sent after the best move was sent. (See issue #9)
-    if (!color.startsWith(pvPlayout.turn())) pvPlayout.undo();
+    try {
+      pvPlayout.loadPgn(this.game.instance.pgn(), { strict: false });
 
-    // eslint-disable-next-line no-restricted-syntax
-    for (const alg of pv) {
-      try {
-        const move = pvPlayout.move(alg, { strict: false });
+      // If the PV is not for the current STM then we undo the last move
+      // and attempt to parse the PV from that position. This will happen when
+      // the final pv is sent after the best move was sent. (See issue #9)
+      if (!color.startsWith(pvPlayout.turn())) pvPlayout.undo();
 
-        parsed.push(move.san);
-        pvAlg.push(`${move.from}${move.to}`);
-      } catch {
-        break; // failed to parse a move
+      // eslint-disable-next-line no-restricted-syntax
+      for (const alg of pv) {
+        try {
+          const move = pvPlayout.move(alg, { strict: false });
+
+          parsed.push(move.san);
+          pvAlg.push(`${move.from}${move.to}`);
+        } catch {
+          break; // failed to parse a move
+        }
       }
+    } catch (error) {
+      logger.warn(`Unable to parse PV: ${error}`);
     }
 
     // Only if we could parse at least 1 do

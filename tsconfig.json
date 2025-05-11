@@ -1,14 +1,6 @@
 {
+  "extends": "@tsconfig/node20/tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "allowJs": false,
-    "importHelpers": true,
-    "sourceMap": true,
-    "strict": true,
-    "esModuleInterop": true,
-    "typeRoots": ["./node_modules/@types"],
     "rootDir": "src/",
     "outDir": "build/",
   },

@@ -34,7 +34,7 @@ class Connection {
     logger.info(`Listening @ ${address.address}:${address.port}`, { port: this.port });
   }
 
-  private async onMessage(msg: Buffer, rInfo: RemoteInfo) {
+  private onMessage(msg: Buffer, rInfo: RemoteInfo) {
     logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`, { port: this.port });
 
     const trimmedMessage = msg.toString().trim();
@@ -68,7 +68,7 @@ class Connection {
       this.queue.push(trimmedMessage);
     }
 
-    await this.processQueue();
+    this.processQueue();
   }
 
   private async processQueue() {
@@ -91,6 +91,7 @@ class Connection {
   }
 
   close() {
+    this.socket.removeAllListeners();
     this.socket.close();
   }
 }

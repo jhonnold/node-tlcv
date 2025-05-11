@@ -34,8 +34,12 @@ export async function newConnection(connection: string): Promise<void> {
 
   broadcasts.set(+port, new Broadcast(url, ip, +port));
 
-  const connections = db.read<string[]>('connections') || [];
-  db.update<string[]>('connections', [...new Set([...connections, connection])]);
+  const connections = db.read<string[]>('connections');
+  if (connections === null) {
+    db.create<string[]>('connections', [connection]);
+  } else {
+    db.update<string[]>('connections', [...new Set([...connections, connection])]);
+  }
 }
 
 export async function closeConnection(connection: string): Promise<void> {
