@@ -33,7 +33,7 @@
   background-color: var(--surfaceColor);
 }
 
-.container {
+.container, #root {
   max-width: 135vh;
   padding: var(--universal-padding);
 }

@@ -27,7 +27,7 @@ module.exports = {
     ],
     admin: ['reset-css', 'mini.css', './src/client/admin.js', './public/css/main.css'],
     'dark-theme': ['./public/css/dark-theme.css'],
-    ui: ['reset-css', 'mini.css', './src/ui/index.jsx'],
+    ui: ['reset-css', 'mini.css', './src/ui/index.jsx', './public/css/main.css'],
   },
   output: {
     path: path.resolve('./build/public'),
