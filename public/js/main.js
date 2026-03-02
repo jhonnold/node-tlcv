@@ -225,6 +225,28 @@ function initResize(board, pvBoardWhite, pvBoardBlack) {
   let isResizing = false;
   let startX = 0;
   let startWidths = [0, 0];
+  let lastResizeTime = 0;
+  const THROTTLE_MS = 10;
+
+  // Helper function to resize all boards and update arrow canvas
+  function resizeBoards() {
+    board.resize();
+    pvBoardWhite.resize();
+    pvBoardBlack.resize();
+
+    const b = $('#board');
+    $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
+    clearArrows();
+  }
+
+  // Throttled resize function - limits resize calls to every THROTTLE_MS
+  function throttledResize() {
+    const now = Date.now();
+    if (now - lastResizeTime >= THROTTLE_MS) {
+      lastResizeTime = now;
+      resizeBoards();
+    }
+  }
 
   resizeHandle.on('mousedown', (e) => {
     isResizing = true;
@@ -232,6 +254,7 @@ function initResize(board, pvBoardWhite, pvBoardBlack) {
     const styles = window.getComputedStyle(mainLayout[0]);
     const columns = styles.gridTemplateColumns.split(' ');
     startWidths = [parseFloat(columns[0]), parseFloat(columns[2])];
+    lastResizeTime = 0; // Reset throttle on new drag
     e.preventDefault();
   });
 
@@ -257,19 +280,16 @@ function initResize(board, pvBoardWhite, pvBoardBlack) {
 
     mainLayout.css('grid-template-columns', `${newLeftWidth}px 8px ${newRightWidth}px`);
     setTimeout(() => $('#chat-area').height(chatHeight()), 5);
+
+    // Throttled board resize during drag
+    throttledResize();
   });
 
   $(document).on('mouseup', () => {
     if (isResizing) {
       isResizing = false;
-      // Resize boards after drag
-      board.resize();
-      pvBoardWhite.resize();
-      pvBoardBlack.resize();
-
-      const b = $('#board');
-      $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
-      clearArrows();
+      // Final resize ensures boards are correctly sized after drag ends
+      resizeBoards();
     }
   });
 }
