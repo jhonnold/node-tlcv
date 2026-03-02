@@ -200,9 +200,18 @@ function update(data, board, pvBoardWhite, pvBoardBlack) {
 }
 
 function chatHeight() {
-  const height = $('#board').height() - (155 + 155 + 32);
+  const containerWidth = $('.container').width();
+  const gap = 8; // resize handle width
+  const verticalOffset = 342; // Header + footer + padding/gaps height in pixels
 
-  return height > 116 ? height : 116;
+  // Max board width at 60% of container (leaving 40% for chat/info panel)
+  const maxBoardWidth = (containerWidth - gap) * 0.6;
+
+  // Board is square, so limit height to the smaller of:
+  // - available height based on window size
+  // - max board width
+  const maxBoardHeight = Math.min(maxBoardWidth, window.innerHeight) - verticalOffset;
+  return maxBoardHeight > 116 ? maxBoardHeight : 116;
 }
 
 function initResize(board, pvBoardWhite, pvBoardBlack) {
