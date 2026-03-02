@@ -205,6 +205,66 @@ function chatHeight() {
   return height > 116 ? height : 116;
 }
 
+function initResize(board, pvBoardWhite, pvBoardBlack) {
+  // Don't enable resize on mobile
+  if (window.innerWidth <= 767) {
+    return;
+  }
+
+  const resizeHandle = $('#resize-handle');
+  const mainLayout = $('.main-layout');
+  let isResizing = false;
+  let startX = 0;
+  let startWidths = [0, 0];
+
+  resizeHandle.on('mousedown', (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    const styles = window.getComputedStyle(mainLayout[0]);
+    const columns = styles.gridTemplateColumns.split(' ');
+    startWidths = [parseFloat(columns[0]), parseFloat(columns[2])];
+    e.preventDefault();
+  });
+
+  $(document).on('mousemove', (e) => {
+    if (!isResizing) return;
+
+    const dx = e.clientX - startX;
+    const totalWidth = startWidths[0] + startWidths[1];
+    let newLeftWidth = startWidths[0] + dx;
+    let newRightWidth = startWidths[1] - dx;
+
+    // Enforce minimum widths (20% each)
+    const minWidth = totalWidth * 0.4;
+    newLeftWidth = Math.max(minWidth, newLeftWidth);
+    newRightWidth = Math.max(minWidth, newRightWidth);
+
+    // Recalculate if hitting min limits
+    if (newLeftWidth === minWidth) {
+      newRightWidth = totalWidth - minWidth;
+    } else if (newRightWidth === minWidth) {
+      newLeftWidth = totalWidth - minWidth;
+    }
+
+    mainLayout.css('grid-template-columns', `${newLeftWidth}px 8px ${newRightWidth}px`);
+    setTimeout(() => $('#chat-area').height(chatHeight()), 5);
+  });
+
+  $(document).on('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      // Resize boards after drag
+      board.resize();
+      pvBoardWhite.resize();
+      pvBoardBlack.resize();
+
+      const b = $('#board');
+      $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
+      clearArrows();
+    }
+  });
+}
+
 $(() => {
   const board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
   clearArrows();
@@ -217,6 +277,9 @@ $(() => {
   };
   const pvBoardWhite = Chessboard('white-pv-board', pvBoardSettings);
   const pvBoardBlack = Chessboard('black-pv-board', pvBoardSettings);
+
+  // Initialize resize handle
+  initResize(board, pvBoardWhite, pvBoardBlack);
 
   const socket = io({ autoConnect: false });
 
