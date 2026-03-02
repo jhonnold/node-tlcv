@@ -27,6 +27,7 @@ build/
 
 # Misc
 .DS_Store
+.claude/docs/
 
 .node-version
 .env

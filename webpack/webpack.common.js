@@ -14,6 +14,10 @@ const PAGES = [
     page: 'admin.ejs',
     chunks: ['admin'],
   },
+  {
+    page: 'broadcasts.ejs',
+    chunks: ['main'],
+  },
 ];
 
 export default {

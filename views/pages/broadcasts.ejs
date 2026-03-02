@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Broadcasts - Lichess TV Chess</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FGG2Y6TFLR"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        window.dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+
+      gtag('config', 'G-FGG2Y6TFLR');
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-header">
+        <h1>Live Broadcasts</h1>
+      </div>
+      <% if (broadcasts.length === 0) { %>
+      <div class="empty-message">
+        <h2>No broadcasts available</h2>
+        <p>Check back later for live chess broadcasts.</p>
+      </div>
+      <% } else { %>
+      <div class="broadcasts-grid">
+        <% broadcasts.forEach(function(broadcast) { %>
+        <a href="/<%= broadcast.port %>" class="broadcast-card">
+          <div class="players">
+            <%= broadcast.white %> vs <%= broadcast.black %>
+          </div>
+          <div class="site"><%= broadcast.site %></div>
+          <div class="viewers"><%= broadcast.viewerCount %> viewer<%= broadcast.viewerCount !== 1 ? 's' : '' %></div>
+        </a>
+        <% }); %>
+      </div>
+      <% } %>
+      <h6 class="credits">
+        <small>
+          Chessboard by <a href="https://chessboardjs.com/">chessboard.js</a>. Chess pieces by
+          <a href="https://en.wikipedia.org/wiki/User:Cburnett">Cburnett</a>. Broadcasts by
+          <a href="https://computerchess.org.uk/ccrl/4040/">Graham Banks, CCRL</a>. Hosting and Development by
+          <a href="https://github.com/jhonnold">Jay Honnold</a>. Have a question, recommendation, or concern? Reach
+          out <a href="https://github.com/jhonnold/node-tlcv/issues">here</a>.
+        </small>
+      </h6>
+    </div>
+  </body>
+</html>

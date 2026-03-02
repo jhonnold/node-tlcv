@@ -8,9 +8,15 @@ interface RequestWithBroadcast extends Request {
 const router = Router();
 
 router.get('/', (_: Request, res: Response): void => {
-  const [first] = broadcasts.values();
+  const broadcastList = Array.from(broadcasts.values()).map((b) => ({
+    port: b.port,
+    white: b.game.white.name,
+    black: b.game.black.name,
+    site: b.game.site,
+    viewerCount: b.browserCount,
+  }));
 
-  res.redirect(`/${first.port}`);
+  res.render('pages/broadcasts', { broadcasts: broadcastList });
 });
 
 router.get('/broadcasts', (_: Request, res: Response): void => {
