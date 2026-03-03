@@ -298,17 +298,17 @@ export class ChessGame {
     if (!history.length) return;
 
     const moves = history.map((move) => `${move.from}${move.to}`).join(',');
-    const url = `https://explorer.lichess.ovh/master?play=${moves}`;
+    const url = `https://explorer.lichess.org/masters?play=${moves}`;
 
     logger.info(`Requesting opening for game ${this._name} from ${url}`, { port: this.name });
 
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (process.env.LICHESS_OAUTH_TOKEN) {
+        headers.Authorization = `Bearer ${process.env.LICHESS_OAUTH_TOKEN}`;
+      }
+
+      const response = await fetch(url, { method: 'GET', headers });
       const data: LichessExplorerResponse = await response.json();
       const { opening } = data;
 
