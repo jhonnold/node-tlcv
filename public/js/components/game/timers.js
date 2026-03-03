@@ -1,12 +1,11 @@
-import $ from 'jquery';
+// public/js/components/game/timers.js
+import $ from '../../$/index.js';
 
-// TODO: Maybe make this not a global entity?
 const timerIntervals = new Map();
 
 function msToString(ms) {
   const s = Math.floor((ms / 1000) % 60);
   const m = Math.floor(ms / 1000 / 60);
-
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
@@ -38,7 +37,7 @@ function isTimerRunning(color) {
   return timerIntervals.has(color);
 }
 
-export default function updateTimers(data) {
+export function updateTimers(data) {
   const { game } = data;
 
   if (game.stm === 'w') {
@@ -51,3 +50,10 @@ export default function updateTimers(data) {
     startTimer(game, 'black');
   }
 }
+
+export function stopAllTimers() {
+  stopTimer('white');
+  stopTimer('black');
+}
+
+export default { updateTimers, stopAllTimers };

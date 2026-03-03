@@ -1,1 +1,14 @@
-{"connections":["GrahamCCRL.dyndns.org:16069"]}
+{
+  "connections": [
+    "GrahamCCRL.dyndns.org:16061",
+    "GrahamCCRL.dyndns.org:16062",
+    "GrahamCCRL.dyndns.org:16063",
+    "GrahamCCRL.dyndns.org:16064",
+    "GrahamCCRL.dyndns.org:16065",
+    "GrahamCCRL.dyndns.org:16066",
+    "GrahamCCRL.dyndns.org:16067",
+    "GrahamCCRL.dyndns.org:16070",
+    "GrahamCCRL.dyndns.org:16072",
+    "GrahamCCRL.dyndns.org:16073"
+  ]
+}

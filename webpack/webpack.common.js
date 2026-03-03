@@ -26,7 +26,7 @@ export default {
       'reset-css',
       'mini.css',
       'chessboardjs/www/css/chessboard.css',
-      './public/js/main.js',
+      './public/js/index.js',
       './public/css/main.css',
     ],
     admin: ['reset-css', 'mini.css', './public/js/admin.js', './public/css/main.css'],
