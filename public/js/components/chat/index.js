@@ -1,10 +1,10 @@
 // public/js/components/chat/index.js
 import $ from '../../$/index.js';
-import { on, emit } from '../../events/index.js';
-import { username, sendMsg as sendChatMsg } from './messaging.js';
+import { on } from '../../events/index.js';
+import username from './messaging.js';
 
 export { username };
-export let socket = null;
+let socket = null;
 
 export function setSocket(s) {
   socket = s;
@@ -48,32 +48,6 @@ function isAtBottom() {
   return chatBox.scrollTop + chatBox.clientHeight >= chatBox.scrollHeight - 50;
 }
 
-export function init() {
-  // Load username from storage
-  $('#username').val(localStorage.getItem('tlcv.net-username'));
-
-  // Setup chat input
-  $('#chat-btn').on('click', () => $('#chat-msg').trigger('send'));
-  $('#chat-msg').on('keyup', function (e) {
-    if (e.key === 'Enter') $(this).trigger('send');
-  });
-  $('#chat-msg').on('send', function () {
-    sendMsg($(this));
-  });
-
-  // Nickname change
-  $('#username').on('blur', () => {
-    localStorage.setItem('tlcv.net-username', username());
-    if (socket) {
-      socket.emit('nick', username());
-    }
-  });
-
-  // Listen for chat messages
-  on('chat:message', handleChatMessage);
-  on('chat:history', handleChatHistory);
-}
-
 function sendMsg($chatMsg) {
   const msg = $chatMsg.val();
   if (!msg || !socket) return;
@@ -95,6 +69,32 @@ function handleChatMessage(data) {
 function handleChatHistory(msgs) {
   setChat(msgs);
   scrollToBottom();
+}
+
+export function init() {
+  // Load username from storage
+  $('#username').val(localStorage.getItem('tlcv.net-username'));
+
+  // Setup chat input
+  $('#chat-btn').on('click', () => $('#chat-msg').trigger('send'));
+  $('#chat-msg').on('keyup', function handleKeyup(e) {
+    if (e.key === 'Enter') $(this).trigger('send');
+  });
+  $('#chat-msg').on('send', function handleSend() {
+    sendMsg($(this));
+  });
+
+  // Nickname change
+  $('#username').on('blur', () => {
+    localStorage.setItem('tlcv.net-username', username());
+    if (socket) {
+      socket.emit('nick', username());
+    }
+  });
+
+  // Listen for chat messages
+  on('chat:message', handleChatMessage);
+  on('chat:history', handleChatHistory);
 }
 
 export function destroy() {

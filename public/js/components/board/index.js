@@ -1,38 +1,12 @@
 // public/js/components/board/index.js
 import Chessboard from 'chessboardjs';
-import { on, emit } from '../../events/index.js';
+import { on } from '../../events/index.js';
 import { drawMove, clearArrows } from './arrows.js';
-import { initResize, chatHeight } from './resize.js';
+import { initResize } from './resize.js';
 
 let board = null;
 let pvBoardWhite = null;
 let pvBoardBlack = null;
-
-export function init() {
-  // Initialize main board
-  board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
-
-  // Initialize arrow canvas
-  clearArrows();
-  const b = $('#board');
-  $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
-
-  // Initialize PV boards
-  const pvBoardSettings = {
-    pieceTheme: '/img/{piece}.svg',
-    showNotation: false,
-  };
-  pvBoardWhite = Chessboard('white-pv-board', pvBoardSettings);
-  pvBoardBlack = Chessboard('black-pv-board', pvBoardSettings);
-
-  // Initialize resize
-  initResize(board, pvBoardWhite, pvBoardBlack);
-
-  // Listen for game updates
-  on('game:update', handleGameUpdate);
-  on('game:state', handleGameState);
-  on('theme:change', handleThemeChange);
-}
 
 function handleGameUpdate(data) {
   const { game } = data;
@@ -61,6 +35,32 @@ function handleGameState(data) {
 
 function handleThemeChange() {
   clearArrows();
+}
+
+export function init() {
+  // Initialize main board
+  board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
+
+  // Initialize arrow canvas
+  clearArrows();
+  const b = $('#board');
+  $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
+
+  // Initialize PV boards
+  const pvBoardSettings = {
+    pieceTheme: '/img/{piece}.svg',
+    showNotation: false,
+  };
+  pvBoardWhite = Chessboard('white-pv-board', pvBoardSettings);
+  pvBoardBlack = Chessboard('black-pv-board', pvBoardSettings);
+
+  // Initialize resize
+  initResize(board, pvBoardWhite, pvBoardBlack);
+
+  // Listen for game updates
+  on('game:update', handleGameUpdate);
+  on('game:state', handleGameState);
+  on('theme:change', handleThemeChange);
 }
 
 export function resize() {

@@ -1,16 +1,8 @@
 // public/js/components/game/index.js
-import { on, emit } from '../../events/index.js';
+import { on } from '../../events/index.js';
 import { updateTimers, stopAllTimers } from './timers.js';
 import { update, updateSpectators, updateMenu } from './player-info.js';
 import copyFen from '../../utils/fen.js';
-
-export function init() {
-  on('game:update', handleGameUpdate);
-  on('game:state', handleGameState);
-
-  // Setup FEN copy
-  $('#fen-tooltip').on('click', copyFen);
-}
 
 function handleGameUpdate(data) {
   const { game, spectators, menu } = data;
@@ -23,6 +15,14 @@ function handleGameUpdate(data) {
 
 function handleGameState(data) {
   handleGameUpdate(data);
+}
+
+export function init() {
+  on('game:update', handleGameUpdate);
+  on('game:state', handleGameState);
+
+  // Setup FEN copy
+  $('#fen-tooltip').on('click', copyFen);
 }
 
 export function destroy() {

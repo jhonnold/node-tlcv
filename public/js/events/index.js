@@ -1,6 +1,16 @@
 // public/js/events/index.js
 const listeners = new Map();
 
+export function off(event, callback) {
+  const callbacks = listeners.get(event);
+  if (callbacks) {
+    const index = callbacks.indexOf(callback);
+    if (index > -1) {
+      callbacks.splice(index, 1);
+    }
+  }
+}
+
 export function on(event, callback) {
   if (!listeners.has(event)) {
     listeners.set(event, []);
@@ -17,19 +27,10 @@ export function emit(event, data) {
     try {
       callback(data);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(`Error in event handler for "${event}":`, error);
     }
   });
-}
-
-export function off(event, callback) {
-  const callbacks = listeners.get(event);
-  if (callbacks) {
-    const index = callbacks.indexOf(callback);
-    if (index > -1) {
-      callbacks.splice(index, 1);
-    }
-  }
 }
 
 export function once(event, callback) {

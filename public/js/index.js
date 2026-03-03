@@ -1,13 +1,13 @@
 // public/js/index.js - Main entry point
 import { io } from 'socket.io-client';
 import $ from './$/index.js';
-import { on, emit } from './events/index.js';
+import { emit } from './events/index.js';
 
 // Import components
-import theme from './components/theme/index.js';
-import game from './components/game/index.js';
-import board from './components/board/index.js';
-import chat, { username } from './components/chat/index.js';
+import { init as initTheme } from './components/theme/index.js';
+import { init as initGame } from './components/game/index.js';
+import { init as initBoard, getBoards } from './components/board/index.js';
+import { init as initChat, setSocket, username } from './components/chat/index.js';
 
 // Import utilities needed for init
 import { chatHeight } from './components/board/resize.js';
@@ -20,27 +20,7 @@ const port = +window.location.pathname.replace(/\//g, '');
 const socket = io({ autoConnect: false });
 
 // Pass socket to chat component
-chat.setSocket(socket);
-
-// Initialize all components
-function init() {
-  theme.init();
-  game.init();
-  board.init();
-  chat.init();
-
-  // Fix chat-area height to match board
-  $('#chat-area').height(chatHeight());
-
-  // Setup window resize handler
-  $(window).on('resize', handleWindowResize);
-
-  // Socket event handlers
-  setupSocketEvents();
-
-  // Connect!
-  socket.connect();
-}
+setSocket(socket);
 
 function setupSocketEvents() {
   socket.on('connect', () => {
@@ -63,7 +43,7 @@ function setupSocketEvents() {
 }
 
 function handleWindowResize() {
-  const { board: mainBoard, pvBoardWhite, pvBoardBlack } = board.getBoards();
+  const { board: mainBoard, pvBoardWhite, pvBoardBlack } = getBoards();
   if (mainBoard) mainBoard.resize();
   if (pvBoardWhite) pvBoardWhite.resize();
   if (pvBoardBlack) pvBoardBlack.resize();
@@ -74,6 +54,26 @@ function handleWindowResize() {
 
   const b = $('#board');
   $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
+}
+
+// Initialize all components
+function init() {
+  initTheme();
+  initGame();
+  initBoard();
+  initChat();
+
+  // Fix chat-area height to match board
+  $('#chat-area').height(chatHeight());
+
+  // Setup window resize handler
+  $(window).on('resize', handleWindowResize);
+
+  // Socket event handlers
+  setupSocketEvents();
+
+  // Connect!
+  socket.connect();
 }
 
 // Start when DOM is ready

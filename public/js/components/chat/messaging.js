@@ -1,6 +1,6 @@
 // public/js/components/chat/messaging.js
 import $ from '../../$/index.js';
 
-export function username() {
+export default function username() {
   return $('#username').val() || 'Anonymous';
 }
