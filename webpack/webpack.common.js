@@ -16,7 +16,7 @@ const PAGES = [
   },
   {
     page: 'broadcasts.ejs',
-    chunks: ['main'],
+    chunks: ['broadcasts'],
   },
 ];
 
@@ -30,6 +30,7 @@ export default {
       './public/css/main.css',
     ],
     admin: ['reset-css', 'mini.css', './public/js/admin.js', './public/css/main.css'],
+    broadcasts: ['reset-css', 'mini.css', './public/js/broadcasts.js', './public/css/main.css'],
     ['dark-theme']: ['./public/css/dark-theme.css'],
   },
   output: {
