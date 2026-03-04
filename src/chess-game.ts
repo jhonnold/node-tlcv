@@ -27,6 +27,8 @@ export type SerializedGame = {
   tablebase: string;
   stm: 'w' | 'b';
   moveNumber: number;
+  moves: string[];
+  startFen: string | null;
 };
 
 export type MoveMetaData = {
@@ -113,6 +115,7 @@ export class ChessGame {
   fmr: number;
   instance: Chess;
   loaded: boolean;
+  startFen: string | null;
 
   constructor(name: string) {
     this.name = name;
@@ -122,6 +125,7 @@ export class ChessGame {
 
     this.instance = new Chess();
     this.loaded = false;
+    this.startFen = null;
 
     this.fen = this.instance.fen();
     this.opening = 'Unknown';
@@ -142,6 +146,7 @@ export class ChessGame {
   reset(): void {
     this.instance = new Chess();
     this.loaded = true;
+    this.startFen = null;
 
     this.fen = this.instance.fen();
     this.opening = 'Unknown';
@@ -161,6 +166,7 @@ export class ChessGame {
       logger.info(`Setting fen for game ${this.name} to ${fen}`, { port: this.name });
       this.instance.load(fen);
       this.loaded = true;
+      this.startFen = fen;
       this.setPGNHeaders();
     } else {
       logger.error(`Unable to load fen ${fen} for game ${this.name} - ${err.error}`, { port: this.name });
@@ -178,6 +184,8 @@ export class ChessGame {
       tablebase: this.tablebase,
       stm: this.instance.turn(),
       moveNumber: this.moveNumber,
+      moves: this.instance.history(),
+      startFen: this.startFen,
     };
   }
 }

@@ -1,7 +1,18 @@
-<div id="chat-area">
-  <div class="card fluid" id="chat-box"></div>
-  <input placeholder="Anonymous" id="username" />
-  <ul class="card fluid" id="spectator-box"></ul>
-  <input placeholder="Type your message here..." id="chat-msg" />
-  <button class="primary" id="chat-btn">Send</button>
+<div id="chat-area" data-active-tab="chat">
+  <div id="tab-bar">
+    <button class="tab-btn active" data-tab="chat">Chat</button>
+    <button class="tab-btn" data-tab="moves">Moves</button>
+  </div>
+
+  <div id="chat-tab-panel" class="tab-panel">
+    <div class="card fluid" id="chat-box"></div>
+    <input placeholder="Anonymous" id="username" />
+    <ul class="card fluid" id="spectator-box"></ul>
+    <input placeholder="Type your message here..." id="chat-msg" />
+    <button class="primary" id="chat-btn">Send</button>
+  </div>
+
+  <div id="moves-tab-panel" class="tab-panel">
+    <div class="card fluid" id="move-list"></div>
+  </div>
 </div>

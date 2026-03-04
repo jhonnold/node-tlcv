@@ -6,12 +6,13 @@ import { emit } from './events/index.js';
 // Import components
 import { init as initTheme } from './components/theme/index.js';
 import { init as initGame } from './components/game/index.js';
-import { init as initBoard, getBoards } from './components/board/index.js';
+import { init as initBoard, resize as resizeBoard } from './components/board/index.js';
 import { init as initChat, setSocket, username } from './components/chat/index.js';
+import { init as initTabs } from './components/tabs/index.js';
+import { init as initNavigation } from './components/navigation/index.js';
 
 // Import utilities needed for init
 import { chatHeight } from './components/board/resize.js';
-import { clearArrows } from './components/board/arrows.js';
 
 // Get port from URL
 const port = +window.location.pathname.replace(/\//g, '');
@@ -43,17 +44,8 @@ function setupSocketEvents() {
 }
 
 function handleWindowResize() {
-  const { board: mainBoard, pvBoardWhite, pvBoardBlack } = getBoards();
-  if (mainBoard) mainBoard.resize();
-  if (pvBoardWhite) pvBoardWhite.resize();
-  if (pvBoardBlack) pvBoardBlack.resize();
-
+  resizeBoard();
   $('#chat-area').height(chatHeight());
-
-  clearArrows();
-
-  const b = $('#board');
-  $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
 }
 
 // Initialize all components
@@ -61,6 +53,8 @@ function init() {
   initTheme();
   initGame();
   initBoard();
+  initTabs();
+  initNavigation();
   initChat();
 
   // Fix chat-area height to match board

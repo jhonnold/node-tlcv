@@ -123,6 +123,10 @@ strong {
   font-weight: 300;
 }
 
+.tab-btn.active {
+  color: var(--backgroundColor);
+}
+
 #fen,
 #caption {
   border-color: var(--surfaceColorHover);

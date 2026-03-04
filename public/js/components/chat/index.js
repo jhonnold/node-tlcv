@@ -95,6 +95,11 @@ export function init() {
   // Listen for chat messages
   on('chat:message', handleChatMessage);
   on('chat:history', handleChatHistory);
+
+  // Scroll to bottom when switching back to Chat tab
+  on('tab:change', ({ tab }) => {
+    if (tab === 'chat') scrollToBottom();
+  });
 }
 
 export function destroy() {

@@ -7,26 +7,35 @@ import { initResize } from './resize.js';
 let board = null;
 let pvBoardWhite = null;
 let pvBoardBlack = null;
+let live = true;
+let lastGameData = null;
 
-function handleGameUpdate(data) {
-  const { game } = data;
-
-  board.position(game.fen);
-  pvBoardWhite.position(game.white.pvFen, false);
-  pvBoardBlack.position(game.black.pvFen, false);
-
+function drawArrows() {
   clearArrows();
+  if (!live || !lastGameData) return;
 
   const theme = localStorage.getItem('theme') || 'light';
   const mainArrowColor = theme === 'dark' ? '#68C07BEE' : '#114F8AEE';
   const secondaryArrowColor = theme === 'dark' ? '#F3AE4888' : '#F3AE4888';
 
-  const { pvAlg: stmPvAlg = [] } = game[game.stm === 'w' ? 'white' : 'black'];
-  const { pvAlg: xstmPvAlg = [] } = game[game.stm === 'w' ? 'black' : 'white'];
+  const { pvAlg: stmPvAlg = [] } = lastGameData[lastGameData.stm === 'w' ? 'white' : 'black'];
+  const { pvAlg: xstmPvAlg = [] } = lastGameData[lastGameData.stm === 'w' ? 'black' : 'white'];
 
   const sameMove = stmPvAlg[0] === xstmPvAlg[1] ? 1 : 0;
   if (xstmPvAlg[1]) drawMove(xstmPvAlg[1], secondaryArrowColor, 1 * sameMove);
   if (stmPvAlg[0]) drawMove(stmPvAlg[0], mainArrowColor, -1 * sameMove);
+}
+
+function handleGameUpdate(data) {
+  const { game } = data;
+
+  lastGameData = game;
+
+  // Board position is controlled by nav:position event
+  pvBoardWhite.position(game.white.pvFen, false);
+  pvBoardBlack.position(game.black.pvFen, false);
+
+  drawArrows();
 }
 
 function handleGameState(data) {
@@ -34,7 +43,13 @@ function handleGameState(data) {
 }
 
 function handleThemeChange() {
-  clearArrows();
+  drawArrows();
+}
+
+function handleNavPosition({ fen, isLive }) {
+  live = isLive;
+  board.position(fen);
+  drawArrows();
 }
 
 export function init() {
@@ -61,6 +76,8 @@ export function init() {
   on('game:update', handleGameUpdate);
   on('game:state', handleGameState);
   on('theme:change', handleThemeChange);
+  on('nav:position', handleNavPosition);
+  on('board:resize', drawArrows);
 }
 
 export function resize() {
@@ -70,7 +87,7 @@ export function resize() {
 
   const b = $('#board');
   $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
-  clearArrows();
+  drawArrows();
 }
 
 export function getBoards() {
