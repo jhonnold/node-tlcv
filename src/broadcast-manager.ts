@@ -1,6 +1,6 @@
 import dns from 'dns';
-import broadcasts, { Broadcast } from '../broadcast.js';
-import configStore from '../config/config-store.js';
+import broadcasts, { Broadcast } from './broadcast.js';
+import configStore from './config/config-store.js';
 
 const lookup = (hostname: string): Promise<string> =>
   new Promise((resolve, reject) => dns.lookup(hostname, (err, addr) => (err ? reject(err) : resolve(addr))));
