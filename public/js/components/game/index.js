@@ -30,12 +30,12 @@ export function init() {
   });
 
   // Setup FEN copy
-  $('#fen-tooltip').on('click', copyFen);
+  $('#copy-fen-btn').on('click', copyFen);
 }
 
 export function destroy() {
   stopAllTimers();
-  $('#fen-tooltip').off('click');
+  $('#copy-fen-btn').off('click');
 }
 
 export default { init, destroy };

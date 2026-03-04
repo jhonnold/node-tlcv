@@ -8,7 +8,4 @@ export default function copyFen() {
   document.execCommand('copy');
 
   temp.remove();
-
-  $('#fen-tooltip').attr('aria-label', 'Copied!');
-  setTimeout(() => $('#fen-tooltip').attr('aria-label', 'Click to copy'), 1000);
 }

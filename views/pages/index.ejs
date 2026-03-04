@@ -25,16 +25,9 @@
           <canvas id="arrow-board" height="2400" width="2400"></canvas>
           <div id="board"></div>
         </div>
-        <div class="below-board">
-          <div id="fen-tooltip" class="tooltip" aria-label="Click to copy">
-            <pre id="fen"></pre>
-          </div>
-          <pre id="caption"></pre>
-        </div>
         <%- include('../partials/info-card', { color: 'white' }) %> <%- include('../partials/chat') %>
         <div id="button-container" class="row">
           <a href="/pgns" target="_blank" class="primary button">PGNS</a>
-          <a href="/<%= port %>/pgn" target="_blank" class="primary button">PGN</a>
         </div>
       </div>
       <h6 class="credits">

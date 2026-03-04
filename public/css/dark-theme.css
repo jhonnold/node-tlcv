@@ -127,9 +127,3 @@ strong {
   color: var(--backgroundColor);
 }
 
-#fen,
-#caption {
-  border-color: var(--surfaceColorHover);
-  border-left-color: var(--primaryColor);
-  background-color: var(--surfaceColor);
-}
