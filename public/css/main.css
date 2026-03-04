@@ -269,6 +269,12 @@
   flex-direction: column;
 }
 
+#chat-area[data-active-tab='results'] #results-tab-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* Chat tab internals */
 #chat-tab-panel * {
   font-size: 0.875rem;
@@ -466,6 +472,48 @@ pre {
   .move-table td::before {
     content: none;
   }
+
+  /* Reset mini.css mobile table transforms for results table */
+  .results-table {
+    display: table;
+    border: 0;
+  }
+
+  .results-table thead,
+  .results-table thead th {
+    position: sticky;
+    height: auto;
+    width: auto;
+    margin: 0;
+    overflow: visible;
+    padding: 6px 8px 5px;
+    clip: auto;
+    clip-path: none;
+  }
+
+  .results-table tbody {
+    display: table-row-group;
+    border: 0;
+  }
+
+  .results-table tr {
+    display: table-row;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+  }
+
+  .results-table td {
+    display: table-cell;
+    border: 0;
+  }
+
+  .results-table td::before {
+    content: none;
+  }
 }
 
 /* Move list */
@@ -589,6 +637,156 @@ pre {
   background: var(--primaryColor);
   color: var(--backgroundColor);
   font-weight: 700;
+}
+
+/* Results tab */
+#results-container {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+  box-sizing: border-box;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+/* Results table - mini.css reset (same pattern as .move-table) */
+.results-table {
+  display: table;
+  width: auto;
+  max-height: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  padding: 0;
+  flex-flow: unset;
+  white-space: nowrap;
+}
+
+.results-table thead,
+.results-table tbody {
+  display: table-header-group;
+  border: 0;
+  flex-flow: unset;
+  max-width: none;
+  flex: unset;
+  margin: 0;
+}
+
+.results-table tbody {
+  display: table-row-group;
+}
+
+.results-table tr {
+  display: table-row;
+  padding: 0;
+  flex-flow: unset;
+  flex: unset;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+
+.results-table th,
+.results-table td {
+  display: table-cell;
+  flex: unset;
+  overflow: visible;
+  text-overflow: clip;
+  background: transparent;
+  color: inherit;
+  border: 0;
+}
+
+.results-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surfaceColor);
+  color: var(--textColor);
+  opacity: 0.6;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 8px 5px;
+  border-bottom: 1px solid var(--surfaceColorHover);
+  z-index: 1;
+}
+
+.results-table tbody tr {
+  border-bottom: 1px solid var(--surfaceColorHover);
+}
+
+.results-table tbody td {
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.results-col-rank,
+.results-rank {
+  width: 24px;
+  text-align: right;
+  padding-right: 6px !important;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.results-table .results-rank {
+  color: var(--secondaryColor);
+}
+
+.results-col-name,
+.results-name {
+  text-align: left;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.results-col-games,
+.results-games {
+  text-align: right;
+  padding-right: 8px !important;
+}
+
+.results-col-points,
+.results-points {
+  text-align: right;
+  padding-right: 8px !important;
+  font-weight: 700;
+}
+
+.results-table .results-points {
+  color: var(--secondaryColor);
+}
+
+.results-col-h2h,
+.results-h2h-cell {
+  text-align: center;
+  width: 24px;
+  min-width: 24px;
+  font-size: 0.65rem;
+  font-family: monospace;
+}
+
+.h2h-self {
+  background: var(--surfaceColorHover) !important;
+}
+
+.h2h-empty {
+  color: var(--textColor);
+  opacity: 0.2;
+}
+
+
+.results-loading,
+.results-error,
+.results-empty {
+  padding: 16px 8px;
+  color: var(--textColor);
+  opacity: 0.6;
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 /* Broadcasts page */

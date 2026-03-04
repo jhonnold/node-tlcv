@@ -1,8 +1,11 @@
+import { ParsedResults } from './services/result-parser.js';
+
 export class BroadcastState {
   readonly chat: Array<string>;
   readonly spectators: Set<string>;
   readonly menu: Map<string, string>;
   results: string;
+  parsedResults: ParsedResults | null;
   browserCount: number;
 
   constructor() {
@@ -10,6 +13,7 @@ export class BroadcastState {
     this.spectators = new Set();
     this.menu = new Map<string, string>();
     this.results = '';
+    this.parsedResults = null;
     this.browserCount = 0;
   }
 

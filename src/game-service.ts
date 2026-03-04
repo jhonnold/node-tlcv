@@ -6,6 +6,7 @@ import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
+import { parseResults } from './services/result-parser.js';
 
 type Color = 'white' | 'black';
 
@@ -255,12 +256,17 @@ class GameService {
 
   private onCTReset(): UpdateResult {
     this.broadcast.results = '';
+    this.broadcast.parsedResults = null;
 
     return [EmitType.UPDATE, false];
   }
 
   private onCT(tokens: CommandTokens): UpdateResult {
     this.broadcast.results += `${tokens[1]}\n`;
+
+    if (/total\s+games\s*=/i.test(tokens[1])) {
+      this.broadcast.parsedResults = parseResults(this.broadcast.results);
+    }
 
     return [EmitType.UPDATE, false];
   }

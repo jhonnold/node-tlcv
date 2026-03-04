@@ -10,6 +10,7 @@ import { init as initBoard, resize as resizeBoard } from './components/board/ind
 import { init as initChat, setSocket, username } from './components/chat/index.js';
 import { init as initTabs } from './components/tabs/index.js';
 import { init as initNavigation } from './components/navigation/index.js';
+import { init as initResults } from './components/results/index.js';
 
 // Import utilities needed for init
 import { chatHeight } from './components/board/resize.js';
@@ -55,6 +56,7 @@ function init() {
   initBoard();
   initTabs();
   initNavigation();
+  initResults();
   initChat();
 
   // Fix chat-area height to match board

@@ -3,6 +3,7 @@ import GameService from './game-service.js';
 import { ChessGame, SerializedGame } from './chess-game.js';
 import { BroadcastState } from './broadcast-state.js';
 import { emitUpdate, emitChat } from './socket-io-adapter.js';
+import { ParsedResults } from './services/result-parser.js';
 
 export const username = 'tlcv.net';
 
@@ -111,6 +112,14 @@ export class Broadcast {
 
   public get menu(): Map<string, string> {
     return this.state.menu;
+  }
+
+  public get parsedResults(): ParsedResults | null {
+    return this.state.parsedResults;
+  }
+
+  public set parsedResults(v: ParsedResults | null) {
+    this.state.parsedResults = v;
   }
 }
 

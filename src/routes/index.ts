@@ -54,4 +54,15 @@ router.get('/:port([0-9]+)/result-table', (req: Request, res: Response): void =>
   res.status(200).contentType('text/plain').send(broadcast.results);
 });
 
+router.get('/:port([0-9]+)/result-table/json', (req: Request, res: Response): void => {
+  const { broadcast } = req as RequestWithBroadcast;
+
+  if (!broadcast.parsedResults) {
+    res.status(404).json({ error: 'No results available' });
+    return;
+  }
+
+  res.status(200).json(broadcast.parsedResults);
+});
+
 export default router;
