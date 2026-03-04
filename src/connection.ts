@@ -1,126 +1,23 @@
-import { RemoteInfo, Socket, createSocket } from 'dgram';
-import { setInterval } from 'timers';
-import AsyncLock from 'async-lock';
-import { logger } from './util/index.js';
-import Handler from './handler.js';
-
-const PROCESSING_INTERVAL = 100;
+import { UdpTransport } from './transport/udp-transport.js';
+import { MessageBuffer, BatchConsumer } from './transport/message-buffer.js';
 
 class Connection {
-  private host: string;
+  private transport: UdpTransport;
 
-  private port: number;
+  private messageBuffer: MessageBuffer;
 
-  private lastMessage: number | undefined;
-
-  private socket: Socket;
-
-  private handler: Handler;
-
-  private unproccessed: string[];
-
-  private timer: NodeJS.Timeout;
-
-  private lock: AsyncLock;
-
-  constructor(host: string, port: number, handler: Handler) {
-    this.host = host;
-    this.port = port;
-    this.handler = handler;
-    this.unproccessed = [];
-    this.lock = new AsyncLock();
-
-    this.socket = createSocket('udp4');
-
-    this.socket.on('error', this.onError.bind(this));
-    this.socket.on('listening', this.onListening.bind(this));
-    this.socket.on('message', this.onMessage.bind(this));
-
-    this.socket.bind(port);
-
-    this.timer = setInterval(() => {
-      this.lock
-        .acquire(
-          'processing',
-          async () => {
-            const messages = await this.lock.acquire(
-              'messages',
-              () => {
-                const messages = [...this.unproccessed];
-                this.unproccessed = [];
-                return messages;
-              },
-              { skipQueue: true },
-            );
-
-            if (!messages.length) return;
-
-            logger.debug(`Processing a total of ${messages.length} message(s)`, { port: this.port });
-            await this.handler.onMessages(messages);
-          },
-          { timeout: PROCESSING_INTERVAL },
-        )
-        .catch((err: Error) => {
-          if (!err.message.startsWith('async-lock timed out'))
-            logger.error(`Error processing messages - ${err}`, { port: this.port });
-        });
-    }, PROCESSING_INTERVAL);
-  }
-
-  private onError(err: Error): void {
-    logger.error(`Unexpected socket error - ${err}`, { port: this.port });
-
-    this.socket.close();
-  }
-
-  private onListening(): void {
-    const address = this.socket.address();
-    logger.info(`Listening @ ${address.address}:${address.port}`, { port: this.port });
-  }
-
-  private onMessage(msg: Buffer, rInfo: RemoteInfo): void {
-    logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`, { port: this.port });
-
-    const fullMessage = msg.toString().trim();
-    let messageText: string;
-
-    if (fullMessage.startsWith('<')) {
-      const [idString, ...rest] = fullMessage.substring(1).split('>');
-      this.send(`ACK: ${idString}`);
-
-      const id = parseInt(idString);
-      if (id === 1) {
-        logger.info(`Mesasge ids restarting. Going to 1 from ${this.lastMessage}`, { port: this.port });
-      } else if (this.lastMessage && id < this.lastMessage) {
-        logger.warn(
-          `Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}, SKIPPING PROCESSING!`,
-          { port: this.port },
-        );
-        // Hot exit, to avoid pushing this message out of order.
-        return;
-      }
-
-      this.lastMessage = id;
-
-      messageText = rest.join('>');
-    } else {
-      logger.debug(`No message id for ${fullMessage}`, { port: this.port });
-      messageText = fullMessage;
-    }
-
-    this.lock.acquire('messages', () => {
-      this.unproccessed.push(messageText);
-    });
+  constructor(host: string, port: number, onBatch: BatchConsumer) {
+    this.messageBuffer = new MessageBuffer(port, onBatch);
+    this.transport = new UdpTransport(host, port, (msg) => this.messageBuffer.push(msg));
   }
 
   send(msg: string): void {
-    logger.debug(`Sending message ${msg} to ${this.host}:${this.port}`, { port: this.port });
-    this.socket.send(msg, this.port, this.host);
+    this.transport.send(msg);
   }
 
   close(): void {
-    clearInterval(this.timer);
-    this.socket.close();
+    this.messageBuffer.close();
+    this.transport.close();
   }
 }
 

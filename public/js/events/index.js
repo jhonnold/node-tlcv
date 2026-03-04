@@ -23,7 +23,7 @@ export function on(event, callback) {
 
 export function emit(event, data) {
   const callbacks = listeners.get(event) || [];
-  callbacks.forEach(callback => {
+  callbacks.forEach((callback) => {
     try {
       callback(data);
     } catch (error) {

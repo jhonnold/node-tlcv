@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 import http from 'http';
 import { app } from './app.js';
-import { io } from './io.js';
+import { io } from './socket-io-adapter.js';
 import { logger, connect } from './util/index.js';
 
 const server = http.createServer(app);

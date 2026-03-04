@@ -1,4 +1,24 @@
-import { Command } from '../handler.js';
+export enum Command {
+  FEN = 'FEN',
+  WPLAYER = 'WPLAYER',
+  BPLAYER = 'BPLAYER',
+  WPV = 'WPV',
+  BPV = 'BPV',
+  WTIME = 'WTIME',
+  BTIME = 'BTIME',
+  WMOVE = 'WMOVE',
+  BMOVE = 'BMOVE',
+  SITE = 'SITE',
+  CT = 'CT',
+  CTRESET = 'CTRESET',
+  PONG = 'PONG',
+  ADDUSER = 'ADDUSER',
+  DELUSER = 'DELUSER',
+  CHAT = 'CHAT',
+  MENU = 'MENU',
+  RESULT = 'result',
+  FMR = 'FMR',
+}
 
 export function splitOnCommand(line: string): [Command, string] {
   const semiIdx = line.indexOf(':');

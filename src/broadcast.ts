@@ -1,6 +1,8 @@
 import Connection from './connection.js';
-import Handler from './handler.js';
+import GameService from './game-service.js';
 import { ChessGame, SerializedGame } from './chess-game.js';
+import { BroadcastState } from './broadcast-state.js';
+import { emitUpdate, emitChat } from './socket-io-adapter.js';
 
 export const username = 'tlcv.net';
 
@@ -13,137 +15,102 @@ export type SerializedBroadcast = {
 };
 
 export class Broadcast {
-  private _host: string;
-
-  private _ip: string;
-
-  private _port: number;
-
-  private _results: string;
-
-  private _browserCount: number;
-
-  private _spectators: Set<string>;
-
-  private _chat: Array<string>;
-
-  private _menu: Map<string, string>;
-
-  private _game: ChessGame;
-
-  private _handler: Handler;
-
-  private _connection: Connection;
-
-  private _pings: NodeJS.Timeout;
+  readonly host: string;
+  readonly ip: string;
+  readonly port: number;
+  readonly game: ChessGame;
+  private state: BroadcastState;
+  private gameService: GameService;
+  private conn: Connection;
+  private pings: NodeJS.Timeout;
 
   constructor(host: string, ip: string, port: number) {
-    this._host = host;
-    this._ip = ip;
-    this._port = port;
+    this.host = host;
+    this.ip = ip;
+    this.port = port;
 
-    this._game = new ChessGame(String(this._port));
-    this._handler = new Handler(this);
-    this._connection = new Connection(this._ip, this._port, this._handler);
+    this.state = new BroadcastState();
+    this.game = new ChessGame(String(this.port));
+    this.gameService = new GameService(this);
+    this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this));
 
-    this._connection.send(`LOGONv15:${username}`);
-    this._pings = setInterval(() => this._connection.send('PING'), 10000);
-
-    this._browserCount = 0;
-    this._results = '';
-    this._spectators = new Set();
-    this._chat = [];
-    this._menu = new Map<string, string>();
+    this.conn.send(`LOGONv15:${username}`);
+    this.pings = setInterval(() => this.conn.send('PING'), 10000);
 
     this.reloadResults();
   }
 
+  private async processMessages(messages: string[]): Promise<void> {
+    const { update, chat } = await this.gameService.onMessages(messages);
+
+    if (update) emitUpdate(this.port, update);
+    if (chat.length) emitChat(this.port, chat);
+  }
+
   reloadResults() {
-    this._connection.send('RESULTTABLE');
+    this.conn.send('RESULTTABLE');
   }
 
   sendChat(msg: string): void {
-    this._connection.send(`CHAT: ${msg}`);
+    this.conn.send(`CHAT: ${msg}`);
   }
 
   reconnect(): void {
-    clearInterval(this._pings);
-    this._connection.send('LOGOFF');
-    this._connection.close();
+    clearInterval(this.pings);
+    this.conn.send('LOGOFF');
+    this.conn.close();
 
     setTimeout(() => {
-      this._connection = new Connection(this._ip, this._port, this._handler);
-      this._connection.send(`LOGONv15:${username}`);
-      this._pings = setInterval(() => this._connection.send('PING'), 10000);
+      this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this));
+      this.conn.send(`LOGONv15:${username}`);
+      this.pings = setInterval(() => this.conn.send('PING'), 10000);
     }, 500);
   }
 
   close(): void {
-    clearInterval(this._pings);
-    this._connection.send('LOGOFF');
+    clearInterval(this.pings);
+    this.conn.send('LOGOFF');
 
-    setTimeout(() => this._connection.close(), 500);
+    setTimeout(() => this.conn.close(), 500);
   }
 
   toJSON(includeChat = false): SerializedBroadcast {
-    const menu: { [key: string]: string } = {};
-    for (const e of this._menu.entries()) menu[e[0]] = e[1];
-
     return {
       game: this.game.toJSON(),
-      spectators: Array.from(this._spectators),
-      browserCount: this._browserCount,
-      chat: includeChat ? this._chat.slice(-1000) : [],
-      menu,
+      ...this.state.toJSON(includeChat),
     };
   }
 
-  public get host(): string {
-    return this._host;
-  }
-
-  public get ip(): string {
-    return this._ip;
-  }
-
-  public get port(): number {
-    return this._port;
-  }
-
   public get connection(): string {
-    return `${this._host}:${this._port}`;
+    return `${this.host}:${this.port}`;
   }
 
   public get results(): string {
-    return this._results;
+    return this.state.results;
   }
 
   public set results(v: string) {
-    this._results = v;
-  }
-
-  public get game(): ChessGame {
-    return this._game;
+    this.state.results = v;
   }
 
   public get spectators(): Set<string> {
-    return this._spectators;
+    return this.state.spectators;
   }
 
   public get chat(): Array<string> {
-    return this._chat;
+    return this.state.chat;
   }
 
   public get browserCount(): number {
-    return this._browserCount;
+    return this.state.browserCount;
   }
 
   public set browserCount(v: number) {
-    this._browserCount = v;
+    this.state.browserCount = v;
   }
 
   public get menu(): Map<string, string> {
-    return this._menu;
+    return this.state.menu;
   }
 }
 

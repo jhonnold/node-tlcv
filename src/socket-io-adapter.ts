@@ -2,7 +2,12 @@ import { Server, Socket } from 'socket.io';
 import broadcasts, { Broadcast } from './broadcast.js';
 import { logger, uniqueName } from './util/index.js';
 
-export const io = new Server();
+export enum EmitType {
+  UPDATE = 'update',
+  CHAT = 'new-chat',
+}
+
+const io = new Server();
 
 io.on('connection', (socket: Socket) => {
   let broadcast: Broadcast | undefined;
@@ -51,3 +56,13 @@ io.on('connection', (socket: Socket) => {
     logger.info(`${username} has left from port ${broadcast.port}!`, { port: broadcast.port });
   });
 });
+
+export function emitUpdate(port: number, data: unknown): void {
+  io.to(String(port)).emit(EmitType.UPDATE, data);
+}
+
+export function emitChat(port: number, messages: string[]): void {
+  io.to(String(port)).emit(EmitType.CHAT, messages);
+}
+
+export { io };
