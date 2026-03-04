@@ -280,7 +280,7 @@ class GameService {
 
   private onChat(tokens: CommandTokens): UpdateResult {
     // Disable connection messages. TODO: Make this configurable
-    if (tokens[0].endsWith('has arrived!') || tokens[0].endsWith('has left!')) return [EmitType.CHAT, false];
+    if (tokens[1].endsWith('has arrived!') || tokens[1].endsWith('has left!')) return [EmitType.CHAT, false];
 
     this.broadcast.chat.push(tokens[1]);
     return [EmitType.CHAT, true, tokens[1]];
