@@ -28,40 +28,35 @@ The server uses Express for HTTP routing and Socket.IO for real-time client comm
 1. **main.ts** - Entry point; creates HTTP server, attaches Socket.IO, loads config connections
 2. **config/config.json** - Defines which chess server addresses/ports to connect to
 3. **Broadcast** (broadcast.ts) - Represents one chess broadcast/port; manages game state, spectators, chat
-4. **Connection** (connection.ts) - UDP socket to the external chess server; receives messages
-5. **Handler** (handler.ts) - Parses commands from the chess server (FEN, WMOVE, BMOVE, WPV, etc.) and updates game state
-6. **Socket.IO** (io.ts) - Broadcasts state to web clients; handles client join/chat/disconnect
+4. **Transport** (transport/) - UDP socket layer; `udp-transport.ts` manages the socket, `message-buffer.ts` handles message ordering
+5. **GameService** (game-service.ts) - Parses commands from the chess server (FEN, WMOVE, BMOVE, WPV, CHAT, etc.) and updates game state
+6. **Socket.IO** (socket-io-adapter.ts) - Broadcasts state to web clients; handles client join/chat/disconnect
 
 ### Frontend Architecture
 
 The frontend is vanilla JavaScript using jQuery and chessboardjs, bundled with Webpack.
 
-**Templates (EJS)**:
-- `views/pages/index.ejs` - Main game view with board, player info cards, chat, resizable split layout
-- `views/pages/broadcasts.ejs` - List of all active broadcasts
-- `views/pages/admin.ejs` - Admin panel for managing connections
-- `views/partials/info-card.ejs` - Player info component (score, depth, nodes, Nps, PV, clock, mini PV board)
-- `views/partials/chat.ejs` - Chat UI component
+**Templates (EJS)**: `views/pages/` (index, broadcasts, admin) and `views/partials/` (info-card, chat)
 
-**JavaScript modules** (public/js/):
-- `main.js` - Entry point; connects Socket.IO, initializes chessboardjs boards, handles state updates
-- `chat.js` - Chat send/receive, username management
-- `fen.js` - FEN string display and click-to-copy
-- `arrows.js` - Canvas-based arrow drawing on board for principal variation
-- `move.js` - Last move highlighting
-- `pv.js` - Principal variation text formatting
-- `time.js` - Clock timer display updates
-- `admin.js` - Admin panel functionality
+**Component-based JS modules** (public/js/):
+- `index.js` - Entry point; connects Socket.IO, initializes boards, handles state updates
+- `components/board/` - Board rendering, PV arrow drawing, resize handling
+- `components/chat/` - Chat send/receive, username management
+- `components/game/` - Game state display, player info cards, clock timers
+- `components/theme/` - Dark theme toggle
+- `utils/` - FEN display, engine logo matching, PV text formatting
+- `events/` - Custom event bus for inter-component communication
+- `admin.js`, `broadcasts.js` - Standalone page entry points
 
 **Assets**:
 - `public/img/` - Chess piece SVGs, engine logos (WebP) auto-matched to engine names
-- `public/dark-theme.css` - Dark theme stylesheet
+- `public/css/` - Main and dark theme stylesheets
 
 ### Key Classes
 
 - **Broadcast**: Core entity representing a single broadcast. Contains ChessGame, spectators Set, chat Array, menu Map. Sends LOGONv15 to connect to server.
-- **Connection**: Manages UDP socket. Uses AsyncLock for message processing. Handles message IDs for ordering.
-- **Handler**: Processes ~20 command types from the chess server. Maps commands to game state updates. Emits via Socket.IO.
+- **GameService**: Processes ~20 command types from the chess server via a `commandConfig` map. Each command has `split` (tokenize by whitespace) and `lowPrio` flags.
+- **BroadcastState** (broadcast-state.ts): Serialization of broadcast state for Socket.IO emission.
 
 ### Routes
 
@@ -83,6 +78,13 @@ Socket.IO events:
 - `nick` - Client changes username
 - `disconnect` - Client leaves
 
+## Code Style
+
+- TypeScript strict mode, ESNext target
+- Prettier for formatting, ESLint for linting
+- Node >= 18 required
+- Webpack bundles frontend assets (configs in `webpack/`)
+
 ## Configuration
 
 Configuration is in `config/config.json`:
@@ -103,15 +105,24 @@ Environment variables:
 - `src/main.ts` - Server entry point
 - `src/app.ts` - Express configuration
 - `src/broadcast.ts` - Broadcast class and exports
-- `src/connection.ts` - UDP connection handling
-- `src/handler.ts` - Chess server message processing
-- `src/io.ts` - Socket.IO server
+- `src/broadcast-state.ts` - Broadcast serialization for Socket.IO
+- `src/game-service.ts` - Chess server command processing
+- `src/protocol.ts` - Command enum and message parsing
+- `src/socket-io-adapter.ts` - Socket.IO server and emit helpers
 - `src/chess-game.ts` - Chess game state wrapper
-- `src/routes/index.ts` - Main routes
-- `src/routes/admin.ts` - Admin panel routes
+- `src/connection.ts` - Connection lifecycle management
+- `src/transport/` - UDP transport and message buffering
+- `src/services/` - External integrations (Lichess openings/tablebase, PGN saving)
+- `src/routes/` - Express route handlers (index, admin)
 
 **Frontend**:
 - `views/pages/index.ejs` - Main game view template
-- `public/js/main.js` - Client entry point
-- `public/js/chat.js` - Chat functionality
-- `public/js/arrows.js` - PV arrow drawing
+- `public/js/index.js` - Client entry point
+- `public/js/components/` - UI components (board, chat, game, theme)
+- `public/js/utils/` - Shared utilities (FEN, logos, PV formatting)
+
+## Gotchas
+
+- **Protocol token indexing**: `CommandTokens` is typed `[Command, ...string[]]`. `tokens[0]` is always the Command enum value (e.g. `'CHAT'`), NOT the message content. The actual data starts at `tokens[1]`. Commands with `split: true` have whitespace-tokenized data; `split: false` commands have a single string at `tokens[1]`.
+- **Low-priority messages**: Commands flagged `lowPrio` in the config are skipped when `browserCount === 0` (no viewers).
+- **Lichess API**: Uses Bearer auth token; openings explorer and tablebase endpoints have rate limits.
