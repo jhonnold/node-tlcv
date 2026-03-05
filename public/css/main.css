@@ -524,6 +524,19 @@ pre {
   .main-layout {
     display: flex;
     flex-direction: column;
+    gap: calc(2 * var(--universal-margin));
+  }
+
+  .right-column {
+    display: contents;
+  }
+
+  #black-info {
+    order: -1;
+  }
+
+  #chat-area {
+    order: 1;
   }
 
   #resize-handle {
