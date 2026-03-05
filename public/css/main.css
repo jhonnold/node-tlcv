@@ -187,8 +187,9 @@
   padding: 4px;
   color: var(--textColor);
   opacity: 0.6;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, background 0.15s;
   flex-shrink: 0;
+  border-radius: var(--universal-border-radius);
 }
 
 .pv {
@@ -210,6 +211,7 @@
 
 .theme-toggle:hover {
   opacity: 1;
+  background: var(--surfaceColorHover);
 }
 .white-1e1d7 {
   background-color: var(--boardLight);
@@ -279,6 +281,7 @@
 
 .tab-btn:hover {
   opacity: 1;
+  background: var(--surfaceColorHover);
 }
 
 /* Chat area outer container */
@@ -990,4 +993,51 @@ pre {
   text-align: center;
   padding: 40px;
   color: var(--textColor);
+}
+
+/* Site header */
+.site-header {
+  background-color: var(--surfaceColor);
+  border-bottom: 1px solid var(--surfaceColorHover);
+  padding: 12px 16px;
+  color: var(--textColor);
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 var(--universal-padding);
+}
+
+.site-header-brand {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--textColor);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.site-header-brand:visited {
+  color: var(--textColor);
+}
+
+.site-header-brand:hover {
+  color: var(--primaryColor);
+}
+
+.site-header-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.site-header-inner .theme-toggle {
+  margin-left: auto;
 }
