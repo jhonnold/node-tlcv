@@ -36,14 +36,18 @@ The server uses Express for HTTP routing and Socket.IO for real-time client comm
 
 The frontend is vanilla JavaScript using jQuery and chessboardjs, bundled with Webpack.
 
-**Templates (EJS)**: `views/pages/` (index, broadcasts, admin) and `views/partials/` (info-card, chat)
+**Templates (EJS)**: `views/pages/` (index, broadcasts, admin) and `views/partials/` (header, info-card, chat)
 
 **Component-based JS modules** (public/js/):
 - `index.js` - Entry point; connects Socket.IO, initializes boards, handles state updates
 - `components/board/` - Board rendering, PV arrow drawing, resize handling
 - `components/chat/` - Chat send/receive, username management
 - `components/game/` - Game state display, player info cards, clock timers
+- `components/tabs/` - Tabbed interface (Chat, Moves, Results, Details)
+- `components/navigation/` - Move list navigation with keyboard support
+- `components/results/` - Tournament results/standings table rendering
 - `components/theme/` - Dark theme toggle
+- `$/` - jQuery wrapper utility
 - `utils/` - FEN display, engine logo matching, PV text formatting
 - `events/` - Custom event bus for inter-component communication
 - `admin.js`, `broadcasts.js` - Standalone page entry points
@@ -65,6 +69,7 @@ The frontend is vanilla JavaScript using jQuery and chessboardjs, bundled with W
 - `/:port` - Individual game view (renders EJS template)
 - `/:port/pgn` - Returns PGN for the game
 - `/:port/result-table` - Returns tournament results
+- `/:port/result-table/json` - Returns parsed tournament results as JSON
 - `/admin` - Admin panel (basic auth, username: admin)
 
 ### Client-Server Communication
@@ -111,6 +116,8 @@ Environment variables:
 - `src/socket-io-adapter.ts` - Socket.IO server and emit helpers
 - `src/chess-game.ts` - Chess game state wrapper
 - `src/connection.ts` - Connection lifecycle management
+- `src/broadcast-manager.ts` - Broadcast creation, reconnection, and lifecycle orchestration
+- `src/config/config-store.ts` - Config read/write abstraction for connections
 - `src/transport/` - UDP transport and message buffering
 - `src/services/` - External integrations (Lichess openings/tablebase, PGN saving)
 - `src/routes/` - Express route handlers (index, admin)
