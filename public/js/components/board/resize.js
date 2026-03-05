@@ -2,13 +2,16 @@
 import $ from '../../$/index.js';
 import { emit } from '../../events/index.js';
 
+const INFO_CARD_HEIGHT = 155;
+const GAP = 32;
+const VERTICAL_OFFSET = INFO_CARD_HEIGHT * 2 + GAP;
+const STORAGE_KEY = 'board-width';
+const MIN_COL_WIDTH = 475;
+const HANDLE_WIDTH = 16;
+
 export function chatHeight() {
-  const containerWidth = $('.container').width();
-  const gap = 8;
-  const verticalOffset = 342;
-  const maxBoardWidth = (containerWidth - gap) * 0.6;
-  const maxBoardHeight = Math.min(maxBoardWidth, window.innerHeight) - verticalOffset;
-  return maxBoardHeight > 116 ? maxBoardHeight : 116;
+  const boardHeight = $('#board').height();
+  return Math.min(600, Math.max(400, boardHeight - VERTICAL_OFFSET));
 }
 
 export function initResize(board, pvBoardWhite, pvBoardBlack) {
@@ -32,6 +35,18 @@ export function initResize(board, pvBoardWhite, pvBoardBlack) {
     const b = $('#board');
     $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
     emit('board:resize');
+  }
+
+  // Restore saved board width
+  const savedWidth = parseFloat(localStorage.getItem(STORAGE_KEY));
+  if (!isNaN(savedWidth) && savedWidth >= MIN_COL_WIDTH) {
+    const availableWidth = Math.min(window.innerWidth, 1440) - HANDLE_WIDTH;
+    const leftWidth = Math.min(savedWidth, availableWidth - MIN_COL_WIDTH);
+    if (leftWidth >= MIN_COL_WIDTH) {
+      const rightWidth = availableWidth - leftWidth;
+      mainLayout.css('grid-template-columns', `${leftWidth}px ${HANDLE_WIDTH}px ${rightWidth}px`);
+      resizeBoards();
+    }
   }
 
   function throttledResize() {
@@ -60,17 +75,16 @@ export function initResize(board, pvBoardWhite, pvBoardBlack) {
     let newLeftWidth = startWidths[0] + dx;
     let newRightWidth = startWidths[1] - dx;
 
-    const minWidth = totalWidth * 0.4;
-    newLeftWidth = Math.max(minWidth, newLeftWidth);
-    newRightWidth = Math.max(minWidth, newRightWidth);
+    newLeftWidth = Math.max(MIN_COL_WIDTH, newLeftWidth);
+    newRightWidth = Math.max(MIN_COL_WIDTH, newRightWidth);
 
-    if (newLeftWidth === minWidth) {
-      newRightWidth = totalWidth - minWidth;
-    } else if (newRightWidth === minWidth) {
-      newLeftWidth = totalWidth - minWidth;
+    if (newLeftWidth === MIN_COL_WIDTH) {
+      newRightWidth = totalWidth - MIN_COL_WIDTH;
+    } else if (newRightWidth === MIN_COL_WIDTH) {
+      newLeftWidth = totalWidth - MIN_COL_WIDTH;
     }
 
-    mainLayout.css('grid-template-columns', `${newLeftWidth}px 8px ${newRightWidth}px`);
+    mainLayout.css('grid-template-columns', `${newLeftWidth}px ${HANDLE_WIDTH}px ${newRightWidth}px`);
     setTimeout(() => $('#chat-area').height(chatHeight()), 5);
     throttledResize();
   });
@@ -79,6 +93,10 @@ export function initResize(board, pvBoardWhite, pvBoardBlack) {
     if (isResizing) {
       isResizing = false;
       resizeBoards();
+
+      const styles = window.getComputedStyle(mainLayout[0]);
+      const leftWidth = parseFloat(styles.gridTemplateColumns.split(' ')[0]);
+      localStorage.setItem(STORAGE_KEY, leftWidth);
     }
   });
 }

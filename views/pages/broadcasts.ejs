@@ -39,7 +39,9 @@
         <% }); %>
       </div>
       <% } %>
-      <h6 class="credits">
+    </div>
+    <footer class="site-footer">
+      <div class="site-footer-inner">
         <small>
           Chessboard by <a href="https://chessboardjs.com/">chessboard.js</a>. Chess pieces by
           <a href="https://en.wikipedia.org/wiki/User:Cburnett">Cburnett</a>. Broadcasts by
@@ -47,11 +49,11 @@
           <a href="https://github.com/jhonnold">Jay Honnold</a>. Have a question, recommendation, or concern? Reach
           out <a href="https://github.com/jhonnold/node-tlcv/issues">here</a>.
         </small>
-      </h6>
-      <h6 class="other">
-        <a id="theme-dark" class="primary button theme-btn" style="display: none">Switch to dark theme</a>
-        <a id="theme-light" class="primary button theme-btn" style="display: none">Switch to light theme</a>
-      </h6>
-    </div>
+        <button id="theme-toggle" class="theme-toggle" title="Toggle theme">
+          <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+      </div>
+    </footer>
   </body>
 </html>

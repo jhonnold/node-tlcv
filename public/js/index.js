@@ -11,8 +11,6 @@ import { init as initChat, setSocket, username } from './components/chat/index.j
 import { init as initTabs } from './components/tabs/index.js';
 import { init as initNavigation } from './components/navigation/index.js';
 import { init as initResults } from './components/results/index.js';
-
-// Import utilities needed for init
 import { chatHeight } from './components/board/resize.js';
 
 // Get port from URL
@@ -59,11 +57,11 @@ function init() {
   initResults();
   initChat();
 
-  // Fix chat-area height to match board
-  $('#chat-area').height(chatHeight());
-
   // Setup window resize handler
   $(window).on('resize', handleWindowResize);
+
+  // Remeasure board after all resources (fonts, stylesheets) have loaded
+  $(window).on('load', handleWindowResize);
 
   // Socket event handlers
   setupSocketEvents();

@@ -12,15 +12,15 @@ const getPreferredTheme = () => {
 
 export function setTheme(theme) {
   if (theme === 'dark') {
-    $('#theme-light').show();
-    $('#theme-dark').hide();
+    $('#theme-icon-sun').show();
+    $('#theme-icon-moon').hide();
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = '/dark-theme.css';
     $('head').append(link);
   } else {
-    $('#theme-light').hide();
-    $('#theme-dark').show();
+    $('#theme-icon-sun').hide();
+    $('#theme-icon-moon').show();
     const darkTheme = $('head [href="/dark-theme.css"]');
     if (darkTheme) darkTheme.remove();
   }
@@ -38,13 +38,11 @@ export function init() {
   globalTheme = getPreferredTheme();
   setTheme(globalTheme);
 
-  $('#theme-light').on('click', () => setTheme('light'));
-  $('#theme-dark').on('click', () => setTheme('dark'));
+  $('#theme-toggle').on('click', () => setTheme(globalTheme === 'dark' ? 'light' : 'dark'));
 }
 
 export function destroy() {
-  $('#theme-light').off('click');
-  $('#theme-dark').off('click');
+  $('#theme-toggle').off('click');
 }
 
 export default { init, destroy, setTheme, getTheme };
