@@ -11,7 +11,6 @@
   --textColor: #342f3a;
 }
 
-
 .black-3c85d {
   background-color: var(--boardDark);
 }
@@ -237,7 +236,6 @@
   justify-content: center;
 }
 
-
 #caption {
   font-size: 0.75rem;
   overflow: hidden;
@@ -456,7 +454,6 @@
   grid-column: 2;
   grid-row: 2;
 }
-
 
 a.primary.button {
   color: var(--backgroundColor);
@@ -929,7 +926,6 @@ pre {
   color: var(--textColor);
   opacity: 0.2;
 }
-
 
 .results-loading,
 .results-error,

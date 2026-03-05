@@ -52,6 +52,8 @@
     "eslint-config-prettier": "^8.8.0",
     "eslint-config-standard": "^17.1.0",
     "html-webpack-plugin": "^5.5.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2",
     "mini-css-extract-plugin": "^2.7.6",
     "nodemon": "^3.0.1",
     "postcss-loader": "^7.3.3",
@@ -74,7 +76,21 @@
     "prebuild": "webpack --config webpack/webpack.prod.js",
     "lint": "eslint --fix src public",
     "start": "node build/src/main.js",
-    "test": "echo OK"
+    "test": "echo OK",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "public/**/*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "{src,public}/**/*.{css,html}": [
+      "prettier --write"
+    ]
   },
   "author": "Jay Honnold <jayhonnold@gmail.com>",
   "license": "MIT",

@@ -63,8 +63,7 @@ export function parseResults(raw: string): ParsedResults {
     h2hHeaderPositions.push(match.index);
   }
   const numH2HCols = h2hHeaderPositions.length;
-  const h2hColWidth =
-    h2hHeaderPositions.length > 1 ? h2hHeaderPositions[1] - h2hHeaderPositions[0] : 3;
+  const h2hColWidth = h2hHeaderPositions.length > 1 ? h2hHeaderPositions[1] - h2hHeaderPositions[0] : 3;
 
   // Parse standings rows: skip header and separator line(s)
   const standings: StandingsRow[] = [];
