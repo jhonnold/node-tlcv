@@ -57,11 +57,11 @@ function init() {
   initResults();
   initChat();
 
+  // Set initial chat-area height now that boards are created and resize restored
+  handleWindowResize();
+
   // Setup window resize handler
   $(window).on('resize', handleWindowResize);
-
-  // Remeasure board after all resources (fonts, stylesheets) have loaded
-  $(window).on('load', handleWindowResize);
 
   // Socket event handlers
   setupSocketEvents();

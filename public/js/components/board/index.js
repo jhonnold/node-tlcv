@@ -82,8 +82,6 @@ export function init() {
 
 export function resize() {
   if (board) board.resize();
-  if (pvBoardWhite) pvBoardWhite.resize();
-  if (pvBoardBlack) pvBoardBlack.resize();
 
   const b = $('#board');
   $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
