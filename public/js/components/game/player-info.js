@@ -49,37 +49,19 @@ export function updateSpectators(spectators) {
 }
 
 export function updateMenu(menu) {
-  const $eventThreadButton = $('#event-thread');
-  const $scheduleButton = $('#schedule');
+  const $schedule = $('#schedule');
+  const $eventThread = $('#event-thread');
 
   if (menu.schedule) {
-    if (!$scheduleButton[0])
-      $('#button-container').append(
-        $('<a>')
-          .attr('href', menu.schedule)
-          .attr('class', 'primary button')
-          .attr('id', 'schedule')
-          .attr('target', '_blank')
-          .text('Schedule'),
-      );
-    else if ($scheduleButton.attr('href') !== menu.schedule) $scheduleButton.attr('href', menu.schedule);
+    $schedule.attr('href', menu.schedule).prop('hidden', false);
   } else {
-    $scheduleButton.remove();
+    $schedule.prop('hidden', true);
   }
 
   if (menu.even) {
-    if (!$eventThreadButton[0])
-      $('#button-container').append(
-        $('<a>')
-          .attr('href', menu.even)
-          .attr('class', 'primary button')
-          .attr('id', 'event-thread')
-          .attr('target', '_blank')
-          .text('Event'),
-      );
-    else if ($eventThreadButton.attr('href') !== menu.even) $eventThreadButton.attr('href', menu.even);
+    $eventThread.attr('href', menu.even).prop('hidden', false);
   } else {
-    $eventThreadButton.remove();
+    $eventThread.prop('hidden', true);
   }
 }
 

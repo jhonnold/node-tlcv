@@ -3,6 +3,7 @@
     <button class="tab-btn active" data-tab="chat">Chat</button>
     <button class="tab-btn" data-tab="moves">Moves</button>
     <button class="tab-btn" data-tab="results">Results</button>
+    <button class="tab-btn" data-tab="details">Details</button>
   </div>
 
   <div id="chat-tab-panel" class="tab-panel">
@@ -33,5 +34,26 @@
 
   <div id="results-tab-panel" class="tab-panel">
     <div class="card fluid" id="results-container"></div>
+  </div>
+
+  <div id="details-tab-panel" class="tab-panel">
+    <div class="card fluid" id="details-links">
+      <a href="/pgns" target="_blank" class="details-link">
+        <span class="details-link-label">PGN Archive</span>
+        <svg class="details-link-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+      </a>
+      <a href="/<%= port %>/pgn" target="_blank" class="details-link">
+        <span class="details-link-label">Current Game PGN</span>
+        <svg class="details-link-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+      </a>
+      <a id="schedule" href="#" target="_blank" class="details-link" hidden>
+        <span class="details-link-label">Schedule</span>
+        <svg class="details-link-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+      </a>
+      <a id="event-thread" href="#" target="_blank" class="details-link" hidden>
+        <span class="details-link-label">Event</span>
+        <svg class="details-link-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+      </a>
+    </div>
   </div>
 </div>

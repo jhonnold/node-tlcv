@@ -183,14 +183,6 @@
   grid-column-start: 1;
 }
 
-#button-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  grid-row-start: 5;
-  grid-column-start: 3;
-}
 
 #caption {
   font-size: 0.75rem;
@@ -271,6 +263,65 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+#chat-area[data-active-tab='details'] #details-tab-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Details tab */
+#details-links {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex: 1;
+  width: 100%;
+  margin: 0;
+}
+
+.details-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  text-decoration: none;
+  color: var(--textColor);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  border-bottom: 1px solid var(--surfaceColorHover);
+}
+
+.details-link:last-child {
+  border-bottom: none;
+}
+
+.details-link:visited {
+  color: var(--textColor);
+}
+
+.details-link:hover {
+  background: var(--surfaceColorHover);
+  color: var(--primaryColor);
+}
+
+.details-link-arrow {
+  color: var(--primaryColor);
+  opacity: 0.7;
+}
+
+.details-link:hover .details-link-arrow {
+  opacity: 1;
+}
+
+.details-link[hidden] {
+  display: none;
+}
+
+.details-link[hidden] + .details-link {
+  border-top: none;
 }
 
 /* Chat tab internals */
