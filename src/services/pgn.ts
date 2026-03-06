@@ -7,7 +7,7 @@ import { logger } from '../util/index.js';
 
 export async function savePgn(game: ChessGame, port: number): Promise<void> {
   const { white, black, site } = game;
-  const pgn = game.instance.pgn();
+  const pgn = game.instance.pgn({ maxWidth: 80 });
 
   const siteSlug = slugify(site, '_');
   const dirname = `pgns/${siteSlug}`;

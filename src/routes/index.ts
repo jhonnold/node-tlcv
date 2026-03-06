@@ -45,7 +45,10 @@ router.get('/:port([0-9]+)', (req: Request, res: Response): void => {
 
 router.get('/:port([0-9]+)/pgn', (req: Request, res: Response): void => {
   const { broadcast } = req as RequestWithBroadcast;
-  res.status(200).contentType('text/plain').send(broadcast.game.instance.pgn());
+  res
+    .status(200)
+    .contentType('text/plain')
+    .send(broadcast.game.instance.pgn({ maxWidth: 80 }));
 });
 
 router.get('/:port([0-9]+)/result-table', (req: Request, res: Response): void => {
