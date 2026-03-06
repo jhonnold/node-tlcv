@@ -234,6 +234,12 @@ export function init() {
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
       goTo(navIndex + 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(0);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      goTo(sanMoves.length);
     }
   });
 }
