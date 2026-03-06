@@ -3,6 +3,7 @@ import Chessboard from 'chessboardjs';
 import { on } from '../../events/index.js';
 import { drawMove, clearArrows } from './arrows.js';
 import { initResize } from './resize.js';
+import copyFen from '../../utils/fen.js';
 
 let board = null;
 let pvBoardWhite = null;
@@ -68,6 +69,10 @@ export function init() {
   };
   pvBoardWhite = Chessboard('white-pv-board', pvBoardSettings);
   pvBoardBlack = Chessboard('black-pv-board', pvBoardSettings);
+
+  // Click PV boards to copy their FEN
+  $('#white-pv-board').on('click', () => lastGameData && copyFen(lastGameData.white.pvFen));
+  $('#black-pv-board').on('click', () => lastGameData && copyFen(lastGameData.black.pvFen));
 
   // Initialize resize
   initResize(board, pvBoardWhite, pvBoardBlack);
