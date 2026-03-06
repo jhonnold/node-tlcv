@@ -320,20 +320,66 @@
   overflow: hidden;
 }
 
-#chat-area[data-active-tab='eval'] #eval-tab-panel {
+#chat-area[data-active-tab='graphs'] #graphs-tab-panel {
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-#eval-container {
+#graphs-layout {
+  display: flex;
+  flex-direction: row;
   flex: 1;
   min-height: 0;
   width: 100%;
-  position: relative;
   padding: 8px;
   box-sizing: border-box;
   margin: 0;
+}
+
+#graphs-chart-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
+#graph-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 4px 0;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid var(--surfaceColorHover);
+}
+
+.graph-btn {
+  font-family: 'Red Hat Text', sans-serif;
+  font-weight: 500;
+  font-size: 0.75rem;
+  background: transparent;
+  border: 1px solid var(--surfaceColorHover);
+  border-radius: var(--universal-border-radius);
+  padding: 5px 10px;
+  cursor: pointer;
+  color: var(--textColor);
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.graph-btn.active {
+  opacity: 1;
+  background: var(--primaryColor);
+  border-color: var(--primaryColor);
+  color: var(--backgroundColor);
+}
+
+.graph-btn:hover:not(.active) {
+  opacity: 1;
+  background: var(--surfaceColorHover);
 }
 
 /* Details tab */

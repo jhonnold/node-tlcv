@@ -2,7 +2,7 @@
   <div id="tab-bar">
     <button class="tab-btn active" data-tab="chat">Chat</button>
     <button class="tab-btn" data-tab="moves">Moves</button>
-    <button class="tab-btn" data-tab="eval">Eval</button>
+    <button class="tab-btn" data-tab="graphs">Graphs</button>
     <button class="tab-btn" data-tab="results">Results</button>
     <button class="tab-btn" data-tab="details">Details</button>
   </div>
@@ -33,9 +33,16 @@
     <span id="fen" hidden></span>
   </div>
 
-  <div id="eval-tab-panel" class="tab-panel">
-    <div class="card fluid" id="eval-container">
-      <canvas id="eval-chart"></canvas>
+  <div id="graphs-tab-panel" class="tab-panel">
+    <div class="card fluid" id="graphs-layout">
+      <div id="graphs-chart-area">
+        <canvas id="graphs-chart"></canvas>
+      </div>
+      <div id="graph-selector">
+        <button class="graph-btn active" data-graph="eval">Eval</button>
+        <button class="graph-btn" data-graph="depth">Depth</button>
+        <button class="graph-btn" data-graph="nodes">Nodes</button>
+      </div>
     </div>
   </div>
 

@@ -223,7 +223,7 @@ export function init() {
   // Keyboard navigation - active on Moves and Eval tabs
   $(document).on('keydown', (e) => {
     const tab = getActiveTab();
-    if (tab !== 'moves' && tab !== 'eval') return;
+    if (tab !== 'moves' && tab !== 'graphs') return;
 
     const el = document.activeElement;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
