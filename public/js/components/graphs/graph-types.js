@@ -120,6 +120,33 @@ const GRAPH_TYPES = {
       return `${prefix}: ${abbreviateNumber(value)}`;
     },
   },
+
+  time: {
+    label: 'Time',
+    getValue(meta) {
+      return meta.time;
+    },
+    buildYAxis(whiteData, blackData, textColor, gridColor) {
+      const maxVal = computePositiveYBound(whiteData, blackData);
+      return {
+        min: 0,
+        suggestedMax: maxVal,
+        ticks: {
+          color: textColor,
+          font: { size: 10 },
+          callback(v) {
+            return `${v}s`;
+          },
+        },
+        grid: { color: gridColor, drawTicks: false },
+        border: { dash: [2, 4] },
+      };
+    },
+    formatTooltip(value, datasetIndex) {
+      const prefix = datasetIndex === 0 ? 'White' : 'Black';
+      return `${prefix}: ${value}s`;
+    },
+  },
 };
 
 export default GRAPH_TYPES;

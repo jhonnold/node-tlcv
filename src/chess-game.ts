@@ -8,6 +8,7 @@ export type MoveMetaData = {
   depth: number;
   score: number;
   nodes: number;
+  time: number;
 };
 
 export type SerializedPlayer = {

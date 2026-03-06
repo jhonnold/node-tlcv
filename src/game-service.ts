@@ -212,6 +212,8 @@ class GameService {
           depth: this.game[color].depth,
           score: this.game[color].score,
           nodes: this.game[color].nodes,
+          time:
+            this.game[color].startTime > 0 ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000) : 0,
         };
         this.game[color].moves.push(moveMeta);
 
