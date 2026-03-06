@@ -2,6 +2,7 @@
   <div id="tab-bar">
     <button class="tab-btn active" data-tab="chat">Chat</button>
     <button class="tab-btn" data-tab="moves">Moves</button>
+    <button class="tab-btn" data-tab="eval">Eval</button>
     <button class="tab-btn" data-tab="results">Results</button>
     <button class="tab-btn" data-tab="details">Details</button>
   </div>
@@ -30,6 +31,12 @@
       <div id="move-list"></div>
     </div>
     <span id="fen" hidden></span>
+  </div>
+
+  <div id="eval-tab-panel" class="tab-panel">
+    <div class="card fluid" id="eval-container">
+      <canvas id="eval-chart"></canvas>
+    </div>
   </div>
 
   <div id="results-tab-panel" class="tab-panel">

@@ -44,7 +44,7 @@ function getFen(idx) {
 
 function emitPosition() {
   const fen = getFen(navIndex);
-  emit('nav:position', { fen, isLive: isLive() });
+  emit('nav:position', { fen, isLive: isLive(), index: navIndex });
   $('#fen').text(fen);
 }
 
@@ -161,7 +161,11 @@ function renderMoveList() {
   scrollActiveIntoView();
 }
 
-function goTo(idx) {
+export function getNavIndex() {
+  return navIndex;
+}
+
+export function goTo(idx) {
   navIndex = Math.max(0, Math.min(idx, sanMoves.length));
   renderMoveList();
   emitPosition();
@@ -216,9 +220,10 @@ export function init() {
     if (tab === 'moves') scrollActiveIntoView();
   });
 
-  // Keyboard navigation - only active when Moves tab is showing
+  // Keyboard navigation - active on Moves and Eval tabs
   $(document).on('keydown', (e) => {
-    if (getActiveTab() !== 'moves') return;
+    const tab = getActiveTab();
+    if (tab !== 'moves' && tab !== 'eval') return;
 
     const el = document.activeElement;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;

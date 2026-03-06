@@ -320,6 +320,22 @@
   overflow: hidden;
 }
 
+#chat-area[data-active-tab='eval'] #eval-tab-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#eval-container {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  padding: 8px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
 /* Details tab */
 #details-links {
   display: flex;

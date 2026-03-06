@@ -2,6 +2,14 @@ import { Chess, Move, validateFen } from 'chess.js';
 import dayjs from 'dayjs';
 import { logger } from './util/index.js';
 
+export type MoveMetaData = {
+  number: number;
+  move: string;
+  depth: number;
+  score: number;
+  nodes: number;
+};
+
 export type SerializedPlayer = {
   name: string;
   depth: number;
@@ -15,6 +23,7 @@ export type SerializedPlayer = {
   pv: Array<string>;
   pvFen: string;
   pvMoveNumber: number;
+  moves: Array<MoveMetaData>;
 };
 
 export type SerializedGame = {
@@ -29,14 +38,6 @@ export type SerializedGame = {
   moveNumber: number;
   moves: string[];
   startFen: string | null;
-};
-
-export type MoveMetaData = {
-  number: number;
-  move: string;
-  depth: number;
-  score: number;
-  nodes: number;
 };
 
 export class Player {
@@ -99,6 +100,7 @@ export class Player {
       pvFen: this.pvFen,
       pvMoveNumber: this.pvMoveNumber,
       pvAlg: this.pvAlg,
+      moves: this.moves,
     };
   }
 }

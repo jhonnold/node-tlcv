@@ -17,17 +17,19 @@ export function setTheme(theme) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = '/dark-theme.css';
+    const fireThemeChange = () => emit('theme:change', { theme });
+    link.onload = fireThemeChange;
+    link.onerror = fireThemeChange;
     $('head').append(link);
   } else {
     $('#theme-icon-sun').hide();
     $('#theme-icon-moon').show();
     const darkTheme = $('head [href="/dark-theme.css"]');
     if (darkTheme) darkTheme.remove();
+    emit('theme:change', { theme });
   }
   localStorage.setItem('theme', theme);
-
   globalTheme = theme;
-  emit('theme:change', { theme });
 }
 
 export function getTheme() {
