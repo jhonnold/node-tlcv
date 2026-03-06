@@ -798,8 +798,9 @@ pre {
 .move-table thead th {
   position: sticky;
   top: 0;
-  background: var(--surfaceColor);
+  background: var(--backgroundColor);
   color: var(--textColor);
+  opacity: 1;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -920,9 +921,9 @@ pre {
 .results-table thead th {
   position: sticky;
   top: 0;
-  background: var(--surfaceColor);
+  background: var(--backgroundColor);
   color: var(--textColor);
-  opacity: 0.6;
+  opacity: 1;
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
