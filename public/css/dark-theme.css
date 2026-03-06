@@ -65,6 +65,7 @@ strong {
 
 .black-3c85d {
   background-color: var(--boardDark);
+  color: var(--boardLight);
 }
 
 .board-b72b1 {
@@ -107,6 +108,7 @@ strong {
 }
 .white-1e1d7 {
   background-color: var(--boardLight);
+  color: var(--boardDark);
 }
 
 #chat-area input {

@@ -54,7 +54,7 @@ function handleNavPosition({ fen, isLive }) {
 
 export function init() {
   // Initialize main board
-  board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: false });
+  board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: true });
 
   // Initialize arrow canvas
   clearArrows();

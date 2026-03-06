@@ -13,6 +13,7 @@
 
 .black-3c85d {
   background-color: var(--boardDark);
+  color: var(--boardLight);
 }
 
 .board-b72b1 {
@@ -20,6 +21,12 @@
 
   border-color: var(--surfaceColorHover);
   border-radius: 8px;
+}
+
+.notation-322f9 {
+  font-family: 'Red Hat Text', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
 }
 
 .card {
@@ -214,6 +221,7 @@
 }
 .white-1e1d7 {
   background-color: var(--boardLight);
+  color: var(--boardDark);
 }
 
 #arrow-board {
