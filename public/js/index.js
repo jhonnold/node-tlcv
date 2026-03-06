@@ -12,6 +12,7 @@ import { init as initTabs } from './components/tabs/index.js';
 import { init as initNavigation } from './components/navigation/index.js';
 import { init as initResults } from './components/results/index.js';
 import { init as initGraphs } from './components/graphs/index.js';
+import { init as initFocus } from './components/focus/index.js';
 import { chatHeight } from './components/board/resize.js';
 
 // Get port from URL
@@ -58,6 +59,7 @@ function init() {
   initResults();
   initGraphs();
   initChat();
+  initFocus();
 
   // Set initial chat-area height now that boards are created and resize restored
   handleWindowResize();
