@@ -121,6 +121,33 @@ const GRAPH_TYPES = {
     },
   },
 
+  nps: {
+    label: 'NPS',
+    getValue(meta) {
+      return meta.time > 0 ? Math.round(meta.nodes / meta.time) : null;
+    },
+    buildYAxis(whiteData, blackData, textColor, gridColor) {
+      const maxVal = computePositiveYBound(whiteData, blackData);
+      return {
+        min: 0,
+        suggestedMax: maxVal,
+        ticks: {
+          color: textColor,
+          font: { size: 10 },
+          callback(v) {
+            return `${abbreviateNumber(v)}/s`;
+          },
+        },
+        grid: { color: gridColor, drawTicks: false },
+        border: { dash: [2, 4] },
+      };
+    },
+    formatTooltip(value, datasetIndex) {
+      const prefix = datasetIndex === 0 ? 'White' : 'Black';
+      return `${prefix}: ${abbreviateNumber(value)} NPS`;
+    },
+  },
+
   time: {
     label: 'Time',
     getValue(meta) {
