@@ -40,7 +40,7 @@ export function initResize(board, pvBoardWhite, pvBoardBlack) {
   // Restore saved board width
   const savedWidth = parseFloat(localStorage.getItem(STORAGE_KEY));
   if (!Number.isNaN(savedWidth) && savedWidth >= MIN_COL_WIDTH) {
-    const availableWidth = Math.min(window.innerWidth, 1440) - HANDLE_WIDTH;
+    const availableWidth = Math.min(window.innerWidth, 2160) - HANDLE_WIDTH;
     const leftWidth = Math.min(savedWidth, availableWidth - MIN_COL_WIDTH);
     if (leftWidth >= MIN_COL_WIDTH) {
       const rightWidth = availableWidth - leftWidth;

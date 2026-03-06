@@ -36,7 +36,7 @@
 }
 
 .container {
-  max-width: 1440px;
+  max-width: 2160px;
   padding: var(--universal-padding);
 }
 
@@ -53,7 +53,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  max-width: 1440px;
+  max-width: 2160px;
   margin: 0 auto;
   padding: 0 var(--universal-padding);
 }
@@ -258,8 +258,8 @@
   background-color: var(--surfaceColor);
   border: 1px solid var(--surfaceColorHover);
   border-radius: var(--universal-border-radius);
-  padding: 2px;
-  gap: 2px;
+  padding: 1px;
+  gap: 1px;
   margin-bottom: 8px;
 }
 
@@ -268,11 +268,11 @@
   text-align: center;
   font-family: 'Red Hat Text', sans-serif;
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   background: transparent;
   border: none;
   border-radius: var(--universal-border-radius);
-  padding: 4px 14px;
+  padding: 1px 6px;
   cursor: pointer;
   color: var(--textColor);
   opacity: 0.6;
@@ -1073,7 +1073,7 @@ pre {
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 1440px;
+  max-width: 2160px;
   margin: 0 auto;
   padding: 0 var(--universal-padding);
 }
