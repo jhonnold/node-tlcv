@@ -124,6 +124,14 @@ export class Broadcast {
   public set parsedGames(v: GameRecord[] | null) {
     this.state.parsedGames = v;
   }
+
+  public get currentGameNumber(): number {
+    return this.state.currentGameNumber;
+  }
+
+  public set currentGameNumber(v: number) {
+    this.state.currentGameNumber = v;
+  }
 }
 
 const broadcasts = new Map<number, Broadcast>();

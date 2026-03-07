@@ -7,6 +7,7 @@ export class BroadcastState {
   results: string;
   parsedResults: ParsedResults | null;
   parsedGames: GameRecord[] | null;
+  currentGameNumber: number;
   browserCount: number;
 
   constructor() {
@@ -16,6 +17,7 @@ export class BroadcastState {
     this.results = '';
     this.parsedResults = null;
     this.parsedGames = null;
+    this.currentGameNumber = 1;
     this.browserCount = 0;
   }
 

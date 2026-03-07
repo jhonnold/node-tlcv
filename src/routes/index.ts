@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import slugify from 'slugify';
 import broadcasts, { Broadcast } from '../broadcast.js';
 
 interface RequestWithBroadcast extends Request {
@@ -76,7 +77,13 @@ router.get('/:port([0-9]+)/games/json', (req: Request, res: Response): void => {
     return;
   }
 
-  res.status(200).json(broadcast.parsedGames);
+  const siteSlug = slugify(broadcast.game.site, '_');
+  const games = broadcast.parsedGames.map((g) => ({
+    ...g,
+    pgnUrl: `/pgns/${siteSlug}/raw/${g.gameNumber}.pgn`,
+  }));
+
+  res.status(200).json(games);
 });
 
 export default router;

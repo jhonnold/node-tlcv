@@ -304,7 +304,10 @@ class GameService {
     if (this.gamesParseTimer) clearTimeout(this.gamesParseTimer);
     this.gamesParseTimer = setTimeout(() => {
       const games = parseGames(this.broadcast.results);
-      if (games.length > 0) this.broadcast.parsedGames = games;
+      if (games.length > 0) {
+        this.broadcast.parsedGames = games;
+        this.broadcast.currentGameNumber = games[0].gameNumber + 1;
+      }
       this.gamesParseTimer = null;
     }, 100);
 
@@ -360,7 +363,7 @@ class GameService {
 
     this.game.instance.header('Result', tokens[1].trim());
 
-    await savePgn(this.game, this.broadcast.port);
+    await savePgn(this.game, this.broadcast.port, this.broadcast.currentGameNumber);
 
     this.broadcast.reloadResults();
 

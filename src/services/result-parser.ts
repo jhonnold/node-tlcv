@@ -124,6 +124,13 @@ export function parseResults(raw: string): ParsedResults {
   return { standings, totalGames };
 }
 
+function stripEngineSuffix(name: string): string {
+  return name
+    .replace(/\s*\d+CPU\b/i, '')
+    .replace(/\s*(64|32)-BIT\b/i, '')
+    .trim();
+}
+
 export function parseGames(raw: string): GameRecord[] {
   if (!raw || !raw.trim()) return [];
 
@@ -147,8 +154,8 @@ export function parseGames(raw: string): GameRecord[] {
 
     games.push({
       gameNumber: parseInt(match[1], 10),
-      white: match[2].trim(),
-      black: match[3].trim(),
+      white: stripEngineSuffix(match[2].trim()),
+      black: stripEngineSuffix(match[3].trim()),
       result: match[4],
     });
   }

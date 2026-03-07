@@ -80,4 +80,5 @@ export type GameRecord = {
   white: string;
   black: string;
   result: string;
+  pgnUrl?: string;
 };

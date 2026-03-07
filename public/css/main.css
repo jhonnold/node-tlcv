@@ -1128,6 +1128,29 @@ pre {
   text-align: center;
 }
 
+.games-col-pgn {
+  width: 36px;
+  text-align: center;
+}
+
+.games-pgn {
+  text-align: center;
+}
+
+.games-pgn-link {
+  color: var(--primaryColor);
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.games-pgn-link:hover {
+  opacity: 1;
+}
+
+.games-pgn-link:visited {
+  color: var(--primaryColor);
+}
+
 .games-table tbody tr {
   border-bottom: 1px solid var(--surfaceColorHover);
 }
