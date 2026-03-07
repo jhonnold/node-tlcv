@@ -4,6 +4,7 @@ import $ from 'jquery';
 import type { MoveMetaData } from '../../../../shared/types';
 import { on, emit } from '../../events/index';
 import type { GameEventData } from '../../events/index';
+import { getActiveTab } from '../tabs/index';
 
 // State
 // navIndex ranges from 0 to sanMoves.length inclusive:
@@ -16,6 +17,7 @@ let fens: string[] = []; // computed FENs: fens[i] = position AFTER sanMoves[i]
 let lastMoves: { from: string; to: string }[] = []; // { from, to } for each half-move
 let navIndex = 0;
 let liveFen = 'start';
+let dirty = false;
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -94,6 +96,15 @@ function scrollActiveIntoView() {
   } else if (isLive()) {
     $list[0].scrollTop = $list[0].scrollHeight;
   }
+}
+
+function updateActiveHighlight() {
+  const $list = $('#move-list');
+  $list.find('.move-entry.active').removeClass('active');
+  if (navIndex > 0) {
+    $list.find(`.move-entry[data-idx="${navIndex - 1}"]`).addClass('active');
+  }
+  scrollActiveIntoView();
 }
 
 function renderMoveList() {
@@ -177,7 +188,7 @@ export function getNavIndex() {
 
 export function goTo(idx: number) {
   navIndex = Math.max(0, Math.min(idx, sanMoves.length));
-  renderMoveList();
+  updateActiveHighlight();
   emitPosition();
 }
 
@@ -201,15 +212,21 @@ function handleGameUpdate(data: GameEventData) {
   startFen = game.startFen || null;
   liveFen = game.fen;
 
-  if (sanMoves.length !== prevLength) {
-    rebuildFens();
-  }
+  const movesChanged = sanMoves.length !== prevLength;
 
   if (wasLive) {
     navIndex = sanMoves.length;
   }
 
-  renderMoveList();
+  if (movesChanged) {
+    rebuildFens();
+
+    if (getActiveTab() === 'moves') {
+      renderMoveList();
+    } else {
+      dirty = true;
+    }
+  }
 
   if (wasLive) {
     emitPosition();
@@ -225,9 +242,15 @@ export function init() {
     goTo(idx + 1);
   });
 
-  // Scroll move list into view when switching to Moves tab
   on('tab:change', ({ tab }) => {
-    if (tab === 'moves') scrollActiveIntoView();
+    if (tab === 'moves') {
+      if (dirty) {
+        renderMoveList();
+        dirty = false;
+      } else {
+        scrollActiveIntoView();
+      }
+    }
   });
 
   // Keyboard navigation - active unless an editable element is focused
