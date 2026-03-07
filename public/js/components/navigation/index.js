@@ -12,6 +12,7 @@ import { getActiveTab } from '../tabs/index.js';
 let sanMoves = []; // SAN strings from server
 let startFen = null; // starting FEN (null = standard)
 let fens = []; // computed FENs: fens[i] = position AFTER sanMoves[i]
+let lastMoves = []; // { from, to } for each half-move
 let navIndex = 0;
 let liveFen = 'start';
 
@@ -24,11 +25,13 @@ function isLive() {
 function rebuildFens() {
   const chess = startFen ? new Chess(startFen) : new Chess();
   fens = [];
+  lastMoves = [];
 
   sanMoves.every((san) => {
     try {
-      chess.move(san);
+      const move = chess.move(san);
       fens.push(chess.fen());
+      lastMoves.push({ from: move.from, to: move.to });
       return true;
     } catch {
       return false;
@@ -42,9 +45,15 @@ function getFen(idx) {
   return liveFen;
 }
 
+function getLastMove(idx) {
+  if (idx === 0) return null;
+  if (idx > 0 && idx <= lastMoves.length) return lastMoves[idx - 1];
+  return null;
+}
+
 function emitPosition() {
   const fen = getFen(navIndex);
-  emit('nav:position', { fen, isLive: isLive(), index: navIndex });
+  emit('nav:position', { fen, isLive: isLive(), index: navIndex, lastMove: getLastMove(navIndex) });
   $('#fen').text(fen);
 }
 

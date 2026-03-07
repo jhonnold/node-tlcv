@@ -47,9 +47,18 @@ function handleThemeChange() {
   drawArrows();
 }
 
-function handleNavPosition({ fen, isLive }) {
+function highlightSquares(lastMove) {
+  $('#board .highlight').removeClass('highlight');
+  if (lastMove) {
+    $(`#board [data-square="${lastMove.from}"]`).addClass('highlight');
+    $(`#board [data-square="${lastMove.to}"]`).addClass('highlight');
+  }
+}
+
+function handleNavPosition({ fen, isLive, lastMove }) {
   live = isLive;
   board.position(fen);
+  highlightSquares(lastMove);
   drawArrows();
 }
 
