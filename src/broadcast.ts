@@ -10,7 +10,6 @@ export const username = 'tlcv.net';
 export type SerializedBroadcast = {
   game: SerializedGame;
   spectators: Array<string>;
-  browserCount: number;
   chat: Array<string>;
   menu: { [key: string]: string };
 };

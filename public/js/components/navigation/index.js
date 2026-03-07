@@ -182,7 +182,7 @@ export function goTo(idx) {
 
 function handleGameState(data) {
   const { game } = data;
-  sanMoves = game.moves || [];
+  sanMoves = (game.moves || []).map((m) => m.move);
   startFen = game.startFen || null;
   liveFen = game.fen;
   rebuildFens();
@@ -196,7 +196,7 @@ function handleGameUpdate(data) {
   const wasLive = isLive();
   const prevLength = sanMoves.length;
 
-  sanMoves = game.moves || [];
+  sanMoves = (game.moves || []).map((m) => m.move);
   startFen = game.startFen || null;
   liveFen = game.fen;
 

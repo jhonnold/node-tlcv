@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import { ChessGame, MoveMetaData } from './chess-game.js';
+import { ChessGame } from './chess-game.js';
 import { logger } from './util/index.js';
 import { Broadcast, SerializedBroadcast, username } from './broadcast.js';
 import { fetchOpening, fetchTablebase } from './services/lichess.js';
@@ -198,6 +198,7 @@ class GameService {
 
     try {
       const move = this.game.instance.move(rest[1], { strict: false });
+      const colorCode: 'w' | 'b' = color === 'white' ? 'w' : 'b';
 
       this.game[color].lastMove = move;
       logger.info(`Updated game ${this.game.name} - Color: ${color}, Last Move: ${this.game[color].lastMove?.san}`, {
@@ -205,17 +206,18 @@ class GameService {
       });
 
       if (this.game[color].depth > 0) {
-        // Setup metadata
-        const moveMeta: MoveMetaData = {
+        this.game.moveMeta.push({
+          color: colorCode,
           number: this.game.moveNumber,
           move: move.san,
           depth: this.game[color].depth,
           score: this.game[color].score,
           nodes: this.game[color].nodes,
           time:
-            this.game[color].startTime > 0 ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000) : 0,
-        };
-        this.game[color].moves.push(moveMeta);
+            this.game[color].startTime > 0
+              ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000)
+              : null,
+        });
 
         // Set the PGN comment for this move
         const comment = `(${this.game[color].pv.join(' ')}) ${this.game[color].score.toFixed(2)}/${
@@ -223,6 +225,16 @@ class GameService {
         } ${Math.round((new Date().getTime() - this.game[color].startTime) / 1000)}`;
         this.game.instance.setComment(comment);
       } else {
+        this.game.moveMeta.push({
+          color: colorCode,
+          number: this.game.moveNumber,
+          move: move.san,
+          depth: null,
+          score: null,
+          nodes: null,
+          time: null,
+        });
+
         this.game.instance.setComment('(Book)');
       }
     } catch {

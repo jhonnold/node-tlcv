@@ -10,39 +10,20 @@ let lastGameData = null;
 function getMoveMetaAtIndex(navIndex) {
   if (!lastGameData || navIndex <= 0) return { movedColor: null, movedMeta: null, otherColor: null, otherMeta: null };
 
-  const game = lastGameData;
-  const sanMoves = game.moves || [];
-  const startFen = game.startFen || null;
+  const moves = lastGameData.moves || [];
+  if (navIndex > moves.length) return { movedColor: null, movedMeta: null, otherColor: null, otherMeta: null };
 
-  if (navIndex > sanMoves.length) return { movedColor: null, movedMeta: null, otherColor: null, otherMeta: null };
-
-  const blackStarts = startFen ? startFen.split(' ')[1] === 'b' : false;
-  const startMoveNum = startFen ? parseInt(startFen.split(' ')[5], 10) || 1 : 1;
-  const halfMoveOffset = blackStarts ? 1 : 0;
-
-  // The half-move index of the move that was just played
   const halfIdx = navIndex - 1;
-  const globalHalfMove = halfIdx + halfMoveOffset;
-  const moveNum = startMoveNum + Math.floor(globalHalfMove / 2);
-  const isWhiteMove = globalHalfMove % 2 === 0;
-
-  const movedColor = isWhiteMove ? 'white' : 'black';
-  const otherColor = isWhiteMove ? 'black' : 'white';
-
-  const movedMoves = game[movedColor].moves || [];
-  const otherMoves = game[otherColor].moves || [];
-
-  // Find meta for the moved side at this move number
-  const movedMeta = movedMoves.find((m) => m.number === moveNum) || null;
+  const moved = moves[halfIdx];
+  const movedColor = moved.color === 'w' ? 'white' : 'black';
+  const otherColor = moved.color === 'w' ? 'black' : 'white';
+  const movedMeta = moved.depth !== null ? moved : null;
 
   // Find the most recent meta for the other side before this point
-  // If white just moved at moveNum N, black's last move was at N-1
-  // If black just moved at moveNum N, white's last move was at N
-  const otherMaxNum = isWhiteMove ? moveNum - 1 : moveNum;
   let otherMeta = null;
-  for (let i = otherMoves.length - 1; i >= 0; i -= 1) {
-    if (otherMoves[i].number <= otherMaxNum) {
-      otherMeta = otherMoves[i];
+  for (let i = halfIdx - 1; i >= 0; i -= 1) {
+    if (moves[i].color !== moved.color && moves[i].depth !== null) {
+      otherMeta = moves[i];
       break;
     }
   }

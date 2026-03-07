@@ -39,7 +39,6 @@ export class BroadcastState {
 
   toJSON(includeChat = false): {
     spectators: Array<string>;
-    browserCount: number;
     chat: Array<string>;
     menu: { [key: string]: string };
   } {
@@ -48,7 +47,6 @@ export class BroadcastState {
 
     return {
       spectators: Array.from(this.spectators),
-      browserCount: this.browserCount,
       chat: includeChat ? this.chat.slice(-1000) : [],
       menu,
     };

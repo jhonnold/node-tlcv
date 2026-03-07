@@ -12,10 +12,7 @@ Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryS
 let chart = null;
 let chartInitialized = false;
 let activeGraph = 'eval';
-let whiteMoves = [];
-let blackMoves = [];
-let sanMoves = [];
-let startFen = null;
+let gameMoves = [];
 
 function getCssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -31,39 +28,27 @@ function buildPointRadii(dataArray) {
 
 function buildChartData(type) {
   const config = GRAPH_TYPES[type];
-  if (!sanMoves.length) {
+  if (!gameMoves.length) {
     return { labels: [], whiteData: [], blackData: [] };
   }
 
-  const count = sanMoves.length;
+  const count = gameMoves.length;
   const whiteData = new Array(count).fill(null);
   const blackData = new Array(count).fill(null);
   const labels = new Array(count).fill('');
 
-  // Build lookup maps: moveNumber -> MoveMetaData
-  const whiteByNum = new Map();
-  whiteMoves.forEach((meta) => whiteByNum.set(meta.number, meta));
-  const blackByNum = new Map();
-  blackMoves.forEach((meta) => blackByNum.set(meta.number, meta));
+  for (let i = 0; i < count; i += 1) {
+    const m = gameMoves[i];
+    const isWhite = m.color === 'w';
 
-  const blackStarts = startFen ? startFen.split(' ')[1] === 'b' : false;
-  const startMoveNum = startFen ? parseInt(startFen.split(' ')[5], 10) || 1 : 1;
-  const halfMoveOffset = blackStarts ? 1 : 0;
+    labels[i] = isWhite ? `${m.number}. ${m.move}` : `${m.number}... ${m.move}`;
 
-  for (let i = 0; i < sanMoves.length; i += 1) {
-    const globalHalfMove = i + halfMoveOffset;
-    const moveNum = startMoveNum + Math.floor(globalHalfMove / 2);
-    const isWhiteMove = globalHalfMove % 2 === 0;
-
-    if (isWhiteMove) {
-      labels[i] = `${moveNum}. ${sanMoves[i]}`;
-      if (whiteByNum.has(moveNum)) {
-        whiteData[i] = config.getValue(whiteByNum.get(moveNum), 'white');
-      }
-    } else {
-      labels[i] = `${moveNum}... ${sanMoves[i]}`;
-      if (blackByNum.has(moveNum)) {
-        blackData[i] = config.getValue(blackByNum.get(moveNum), 'black');
+    if (m.depth !== null) {
+      const color = isWhite ? 'white' : 'black';
+      if (isWhite) {
+        whiteData[i] = config.getValue(m, color);
+      } else {
+        blackData[i] = config.getValue(m, color);
       }
     }
   }
@@ -172,10 +157,7 @@ function refreshChart() {
 }
 
 function storeGameData(game) {
-  whiteMoves = game.white.moves || [];
-  blackMoves = game.black.moves || [];
-  sanMoves = game.moves || [];
-  startFen = game.startFen || null;
+  gameMoves = game.moves || [];
 }
 
 function switchGraphType(type) {

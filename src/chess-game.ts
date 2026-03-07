@@ -3,12 +3,13 @@ import dayjs from 'dayjs';
 import { logger } from './util/index.js';
 
 export type MoveMetaData = {
+  color: 'w' | 'b';
   number: number;
   move: string;
-  depth: number;
-  score: number;
-  nodes: number;
-  time: number;
+  depth: number | null;
+  score: number | null;
+  nodes: number | null;
+  time: number | null;
 };
 
 export type SerializedPlayer = {
@@ -19,16 +20,13 @@ export type SerializedPlayer = {
   usedTime: number;
   clockTime: number;
   startTime: number;
-  lastMove: Move | null;
   pvAlg: Array<string>;
   pv: Array<string>;
   pvFen: string;
   pvMoveNumber: number;
-  moves: Array<MoveMetaData>;
 };
 
 export type SerializedGame = {
-  name: string;
   site: string;
   white: SerializedPlayer;
   black: SerializedPlayer;
@@ -36,8 +34,7 @@ export type SerializedGame = {
   opening: string;
   tablebase: string;
   stm: 'w' | 'b';
-  moveNumber: number;
-  moves: string[];
+  moves: MoveMetaData[];
   startFen: string | null;
 };
 
@@ -54,7 +51,6 @@ export class Player {
   pvFen: string;
   pvMoveNumber: number;
   pvAlg: Array<string>;
-  moves: Array<MoveMetaData>;
 
   constructor() {
     this.name = 'Unknown';
@@ -69,7 +65,6 @@ export class Player {
     this.pvFen = '8/8/8/8/8/8/8/8 w - - 0 1';
     this.pvMoveNumber = 0;
     this.pvAlg = [];
-    this.moves = [];
   }
 
   reset(): void {
@@ -84,7 +79,6 @@ export class Player {
     this.pv = new Array<string>();
     this.pvMoveNumber = 0;
     this.pvAlg = [];
-    this.moves = [];
   }
 
   toJSON(): SerializedPlayer {
@@ -96,12 +90,10 @@ export class Player {
       usedTime: this.usedTime,
       clockTime: this.clockTime,
       startTime: this.startTime,
-      lastMove: this.lastMove,
       pv: this.pv,
       pvFen: this.pvFen,
       pvMoveNumber: this.pvMoveNumber,
       pvAlg: this.pvAlg,
-      moves: this.moves,
     };
   }
 }
@@ -119,6 +111,7 @@ export class ChessGame {
   instance: Chess;
   loaded: boolean;
   startFen: string | null;
+  moveMeta: Array<MoveMetaData>;
 
   constructor(name: string) {
     this.name = name;
@@ -135,6 +128,7 @@ export class ChessGame {
     this.tablebase = '';
     this.moveNumber = 1;
     this.fmr = 0;
+    this.moveMeta = [];
 
     this.setPGNHeaders();
   }
@@ -156,6 +150,7 @@ export class ChessGame {
     this.tablebase = '';
     this.moveNumber = this.instance.moveNumber();
     this.fmr = 0;
+    this.moveMeta = [];
 
     this.setPGNHeaders();
   }
@@ -170,6 +165,7 @@ export class ChessGame {
       this.instance.load(fen);
       this.loaded = true;
       this.startFen = fen;
+      this.moveMeta = [];
       this.setPGNHeaders();
     } else {
       logger.error(`Unable to load fen ${fen} for game ${this.name} - ${err.error}`, { port: this.name });
@@ -178,7 +174,6 @@ export class ChessGame {
 
   toJSON(): SerializedGame {
     return {
-      name: this.name,
       site: this.site,
       white: this.white.toJSON(),
       black: this.black.toJSON(),
@@ -186,8 +181,7 @@ export class ChessGame {
       opening: this.opening,
       tablebase: this.tablebase,
       stm: this.instance.turn(),
-      moveNumber: this.moveNumber,
-      moves: this.instance.history(),
+      moves: this.moveMeta,
       startFen: this.startFen,
     };
   }
