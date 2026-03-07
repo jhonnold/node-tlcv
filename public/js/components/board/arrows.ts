@@ -1,7 +1,7 @@
 // public/js/components/board/arrows.js
 import $ from 'jquery';
 
-function transform(xy, angle, xy0) {
+function transform(xy: number[], angle: number, xy0: number[]) {
   const relX = xy[0] - xy0[0];
   const relY = xy[1] - xy0[1];
   const newRelX = Math.cos(angle) * relX - Math.sin(angle) * relY;
@@ -9,7 +9,16 @@ function transform(xy, angle, xy0) {
   return [xy0[0] + newRelX, xy0[1] + newRelY];
 }
 
-function drawArrow(context, x0, y0, x1, y1, width, headWidth, headLength) {
+function drawArrow(
+  context: CanvasRenderingContext2D,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  width: number,
+  headWidth: number,
+  headLength: number,
+) {
   const length = Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
   let angle = Math.atan2(y1 - y0, x1 - x0);
   angle -= Math.PI / 2;
@@ -45,9 +54,9 @@ function drawArrow(context, x0, y0, x1, y1, width, headWidth, headLength) {
   context.fill();
 }
 
-export function drawMove(move, color, shift = 0) {
+export function drawMove(move: string, color: string, shift = 0) {
   const board = $('#board');
-  const breite = board.height();
+  const breite = board.height()!;
 
   const canvas = $('#arrow-board')[0] as HTMLCanvasElement;
   const ctx = canvas.getContext('2d');
@@ -59,7 +68,7 @@ export function drawMove(move, color, shift = 0) {
   const toX = move.charCodeAt(2) - 96;
   const toY = Number(move.charAt(3));
 
-  const maxY = $('#arrow-board').height();
+  const maxY = $('#arrow-board').height()!;
 
   const b = breite / 8;
   const c = b / 2;

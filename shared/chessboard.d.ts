@@ -27,7 +27,6 @@ declare module 'chessboardjs' {
     start(useAnimation?: boolean): void;
   }
 
-  function ChessBoard(elementId: string, config?: ChessboardConfig | Position): ChessboardInstance;
-
-  export = ChessBoard;
+  export default function ChessBoard(elementId: string, config?: ChessboardConfig | Position): ChessboardInstance;
+  export type { ChessboardInstance, ChessboardConfig, Position };
 }

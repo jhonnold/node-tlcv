@@ -8,7 +8,7 @@ export function getActiveTab() {
   return activeTab;
 }
 
-function switchTab(tab) {
+function switchTab(tab: string) {
   activeTab = tab;
 
   $('#chat-area').attr('data-active-tab', tab);

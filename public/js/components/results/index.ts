@@ -1,12 +1,13 @@
 // public/js/components/results/index.js
 import $ from 'jquery';
+import type { H2HCell, StandingsRow } from '../../../../shared/types';
 import { on } from '../../events/index';
 
 function getPort() {
   return +window.location.pathname.replace(/\//g, '');
 }
 
-function renderH2HCell(cell, isSelf) {
+function renderH2HCell(cell: H2HCell, isSelf: boolean) {
   const $td = $('<td>').addClass('results-h2h-cell');
 
   if (isSelf) {
@@ -20,7 +21,7 @@ function renderH2HCell(cell, isSelf) {
   return $td.text(cell.results);
 }
 
-function renderStandings(standings) {
+function renderStandings(standings: StandingsRow[]) {
   if (!standings.length) {
     return $('<p>').addClass('results-empty').text('No standings data available.');
   }
@@ -35,7 +36,7 @@ function renderStandings(standings) {
   $hr.append($('<th>').addClass('results-col-games').text('G'));
   $hr.append($('<th>').addClass('results-col-points').text('Pts'));
 
-  standings.forEach((row) => {
+  standings.forEach((row: StandingsRow) => {
     $hr.append($('<th>').addClass('results-col-h2h').text(row.rank));
   });
 
@@ -43,7 +44,7 @@ function renderStandings(standings) {
   $table.append($thead);
 
   const $tbody = $('<tbody>');
-  standings.forEach((row) => {
+  standings.forEach((row: StandingsRow) => {
     const $tr = $('<tr>');
     $tr.append($('<td>').addClass('results-rank').text(row.rank));
     $tr.append($('<td>').addClass('results-name').attr('title', row.name).text(row.name));
@@ -54,7 +55,7 @@ function renderStandings(standings) {
         .text(row.points % 1 === 0 ? `${row.points}.0` : row.points),
     );
 
-    row.h2h.forEach((cell) => {
+    row.h2h.forEach((cell: H2HCell) => {
       $tr.append(renderH2HCell(cell, cell.results === '**'));
     });
 

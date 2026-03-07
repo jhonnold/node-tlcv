@@ -1,16 +1,17 @@
 // public/js/components/chat/index.js
 import $ from 'jquery';
+import type { Socket } from 'socket.io-client';
 import { on } from '../../events/index';
 import username from './messaging';
 
 export { username };
-let socket = null;
+let socket: Socket | null = null;
 
-export function setSocket(s) {
+export function setSocket(s: Socket) {
   socket = s;
 }
 
-function addChat(msg) {
+function addChat(msg: string) {
   let name = msg;
   let rest = '';
 
@@ -31,9 +32,9 @@ function addChat(msg) {
   $('#chat-box').append($('<p>').text(rest).prepend($('<strong>').text(name)));
 }
 
-function setChat(msgs) {
+function setChat(msgs: string[]) {
   $('#chat-box').children().remove();
-  msgs.forEach((msg) => {
+  msgs.forEach((msg: string) => {
     addChat(msg);
   });
 }
@@ -48,7 +49,7 @@ function isAtBottom() {
   return chatBox.scrollTop + chatBox.clientHeight >= chatBox.scrollHeight - 50;
 }
 
-function sendMsg($chatMsg) {
+function sendMsg($chatMsg: JQuery) {
   const msg = $chatMsg.val();
   if (!msg || !socket) return;
 
@@ -56,24 +57,24 @@ function sendMsg($chatMsg) {
   $chatMsg.val('');
 }
 
-function handleChatMessage(data) {
+function handleChatMessage(data: string[]) {
   const wasAtBottom = isAtBottom();
 
-  data.forEach((msg) => addChat(msg));
+  data.forEach((msg: string) => addChat(msg));
 
   if (wasAtBottom) {
     scrollToBottom();
   }
 }
 
-function handleChatHistory(msgs) {
+function handleChatHistory(msgs: string[]) {
   setChat(msgs);
   scrollToBottom();
 }
 
 export function init() {
   // Load username from storage
-  $('#username').val(localStorage.getItem('tlcv.net-username'));
+  $('#username').val(localStorage.getItem('tlcv.net-username') ?? '');
 
   // Setup chat input
   $('#chat-btn').on('click', () => $('#chat-msg').trigger('send'));

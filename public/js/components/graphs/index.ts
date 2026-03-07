@@ -1,5 +1,6 @@
 // public/js/components/graphs/index.js
 import { Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip } from 'chart.js';
+import type { MoveMetaData, SerializedGame } from '../../../../shared/types';
 import { on } from '../../events/index';
 import { getActiveTab } from '../tabs/index';
 import { goTo, getNavIndex } from '../navigation/index';
@@ -9,24 +10,24 @@ import { init as initSelector, setActive } from './selector';
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip);
 
 // Module state
-let chart = null;
+let chart: Chart | null = null;
 let chartInitialized = false;
 let activeGraph = 'eval';
-let gameMoves = [];
+let gameMoves: MoveMetaData[] = [];
 
-function getCssVar(name) {
+function getCssVar(name: string) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-function buildPointRadii(dataArray) {
+function buildPointRadii(dataArray: (number | null)[]) {
   const activeIdx = getNavIndex() - 1;
-  return dataArray.map((val, i) => {
+  return dataArray.map((val: number | null, i: number) => {
     if (i === activeIdx && val !== null) return 6;
     return 3;
   });
 }
 
-function buildChartData(type) {
+function buildChartData(type: string) {
   const config = GRAPH_TYPES[type];
   if (!gameMoves.length) {
     return { labels: [], whiteData: [], blackData: [] };
@@ -132,8 +133,8 @@ function createChart() {
               return items[0]?.label || '';
             },
             label(item) {
-              if (item.raw === null) return null;
-              return GRAPH_TYPES[activeGraph].formatTooltip(item.raw, item.datasetIndex);
+              if (item.raw === null) return '';
+              return GRAPH_TYPES[activeGraph].formatTooltip(item.raw as number, item.datasetIndex);
             },
           },
         },
@@ -145,22 +146,24 @@ function createChart() {
 }
 
 function refreshChart() {
-  if (!chartInitialized) return;
+  if (!chartInitialized || !chart) return;
   const { labels, whiteData, blackData, yAxis } = prepareChartPayload();
   chart.data.labels = labels;
   chart.data.datasets[0].data = whiteData;
+  // @ts-expect-error -- pointRadius exists on line dataset but not on the generic union
   chart.data.datasets[0].pointRadius = buildPointRadii(whiteData);
   chart.data.datasets[1].data = blackData;
+  // @ts-expect-error -- pointRadius exists on line dataset but not on the generic union
   chart.data.datasets[1].pointRadius = buildPointRadii(blackData);
-  Object.assign(chart.options.scales.y, yAxis);
+  Object.assign(chart.options!.scales!.y!, yAxis);
   chart.update('none');
 }
 
-function storeGameData(game) {
+function storeGameData(game: SerializedGame) {
   gameMoves = game.moves || [];
 }
 
-function switchGraphType(type) {
+function switchGraphType(type: string) {
   if (type === activeGraph) return;
   activeGraph = type;
   setActive(type);

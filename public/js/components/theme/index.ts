@@ -10,7 +10,7 @@ const getPreferredTheme = () => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
-export function setTheme(theme) {
+export function setTheme(theme: string) {
   if (theme === 'dark') {
     $('#theme-icon-sun').show();
     $('#theme-icon-moon').hide();

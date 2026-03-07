@@ -1,5 +1,6 @@
 // public/js/components/board/resize.js
 import $ from 'jquery';
+import type { ChessboardInstance } from 'chessboardjs';
 import { emit } from '../../events/index';
 
 const INFO_CARD_HEIGHT = 155;
@@ -10,7 +11,7 @@ const MIN_COL_WIDTH = 475;
 const HANDLE_WIDTH = 16;
 const LAYOUT_PADDING = 24; // container padding (16px) + grid gaps (8px)
 
-let preferredLeftWidth = null;
+let preferredLeftWidth: number | null = null;
 
 function getAvailableWidth() {
   return Math.min(window.innerWidth, 2160) - HANDLE_WIDTH - LAYOUT_PADDING;
@@ -38,11 +39,15 @@ export function updateLayout() {
 }
 
 export function chatHeight() {
-  const boardHeight = $('#board').height();
+  const boardHeight = $('#board').height()!;
   return Math.min(600, Math.max(400, boardHeight - VERTICAL_OFFSET));
 }
 
-export function initResize(board, pvBoardWhite, pvBoardBlack) {
+export function initResize(
+  board: ChessboardInstance,
+  pvBoardWhite: ChessboardInstance,
+  pvBoardBlack: ChessboardInstance,
+) {
   if (window.innerWidth <= 767) {
     return;
   }
@@ -61,12 +66,12 @@ export function initResize(board, pvBoardWhite, pvBoardBlack) {
     pvBoardBlack.resize();
 
     const b = $('#board');
-    $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
+    $('#arrow-board').attr('height', b.height()!).height(b.height()!).attr('width', b.width()!).width(b.width()!);
     emit('board:resize', undefined);
   }
 
   // Restore saved board width
-  const savedWidth = parseFloat(localStorage.getItem(STORAGE_KEY));
+  const savedWidth = parseFloat(localStorage.getItem(STORAGE_KEY) ?? '');
   if (!Number.isNaN(savedWidth) && savedWidth >= MIN_COL_WIDTH) {
     preferredLeftWidth = savedWidth;
     updateLayout();

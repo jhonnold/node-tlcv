@@ -1,7 +1,9 @@
 // public/js/components/navigation/index.js
 import { Chess } from 'chess.js';
 import $ from 'jquery';
+import type { MoveMetaData } from '../../../../shared/types';
 import { on, emit } from '../../events/index';
+import type { GameEventData } from '../../events/index';
 import { getActiveTab } from '../tabs/index';
 
 // State
@@ -9,10 +11,10 @@ import { getActiveTab } from '../tabs/index';
 //   0 = starting position (before any moves)
 //   k (1..sanMoves.length) = position after the k-th half-move = fens[k-1]
 //   sanMoves.length = live position
-let sanMoves = []; // SAN strings from server
-let startFen = null; // starting FEN (null = standard)
-let fens = []; // computed FENs: fens[i] = position AFTER sanMoves[i]
-let lastMoves = []; // { from, to } for each half-move
+let sanMoves: string[] = []; // SAN strings from server
+let startFen: string | null = null; // starting FEN (null = standard)
+let fens: string[] = []; // computed FENs: fens[i] = position AFTER sanMoves[i]
+let lastMoves: { from: string; to: string }[] = []; // { from, to } for each half-move
 let navIndex = 0;
 let liveFen = 'start';
 
@@ -39,13 +41,13 @@ function rebuildFens() {
   });
 }
 
-function getFen(idx) {
+function getFen(idx: number) {
   if (idx === 0) return startFen || START_FEN;
   if (idx > 0 && idx <= fens.length) return fens[idx - 1];
   return liveFen;
 }
 
-function getLastMove(idx) {
+function getLastMove(idx: number) {
   if (idx === 0) return null;
   if (idx > 0 && idx <= lastMoves.length) return lastMoves[idx - 1];
   return null;
@@ -69,7 +71,7 @@ function getStartTurn() {
   return parts[1] || 'w';
 }
 
-function isActiveMove(moveIdx) {
+function isActiveMove(moveIdx: number) {
   return navIndex === moveIdx + 1;
 }
 
@@ -80,7 +82,7 @@ function scrollActiveIntoView() {
   const $active = $list.find('.move-entry.active');
   if ($active.length) {
     const listEl = $list[0];
-    const activeRow = $active[0].closest('tr');
+    const activeRow = $active[0].closest('tr')!;
     const listRect = listEl.getBoundingClientRect();
     const rowRect = activeRow.getBoundingClientRect();
     const activeTop = rowRect.top - listRect.top + listEl.scrollTop;
@@ -174,15 +176,15 @@ export function getNavIndex() {
   return navIndex;
 }
 
-export function goTo(idx) {
+export function goTo(idx: number) {
   navIndex = Math.max(0, Math.min(idx, sanMoves.length));
   renderMoveList();
   emitPosition();
 }
 
-function handleGameState(data) {
+function handleGameState(data: GameEventData) {
   const { game } = data;
-  sanMoves = (game.moves || []).map((m) => m.move);
+  sanMoves = (game.moves || []).map((m: MoveMetaData) => m.move);
   startFen = game.startFen || null;
   liveFen = game.fen;
   rebuildFens();
@@ -191,12 +193,12 @@ function handleGameState(data) {
   emitPosition();
 }
 
-function handleGameUpdate(data) {
+function handleGameUpdate(data: GameEventData) {
   const { game } = data;
   const wasLive = isLive();
   const prevLength = sanMoves.length;
 
-  sanMoves = (game.moves || []).map((m) => m.move);
+  sanMoves = (game.moves || []).map((m: MoveMetaData) => m.move);
   startFen = game.startFen || null;
   liveFen = game.fen;
 
@@ -220,7 +222,7 @@ export function init() {
   on('game:update', handleGameUpdate);
 
   $('#move-list').on('click', '.move-entry', function handleMoveClick() {
-    const idx = parseInt($(this).attr('data-idx'), 10);
+    const idx = parseInt($(this).attr('data-idx')!, 10);
     goTo(idx + 1);
   });
 

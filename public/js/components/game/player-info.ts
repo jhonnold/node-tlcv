@@ -1,41 +1,40 @@
 // public/js/components/game/player-info.js
 import $ from 'jquery';
+import type { SerializedGame, MoveMetaData } from '../../../../shared/types';
 import pv, { formatPv } from '../../utils/pv';
 
-function updateElText(el, val) {
+function updateElText(el: JQuery, val: string) {
   const curr = el.text();
   if (curr !== val) el.text(val);
 }
 
-function formatScore(score, color) {
-  let s = color === 'black' ? score * -1 : score;
+function formatScore(score: number, color: string) {
+  const s = color === 'black' ? score * -1 : score;
 
   if (s > 100000) {
-    s = 'M';
+    return 'M';
   } else if (s < -100000) {
-    s = '-M';
+    return '-M';
   } else {
-    s = s.toFixed(2);
+    return s.toFixed(2);
   }
-
-  return String(s);
 }
 
-function formatNodes(nodes) {
+function formatNodes(nodes: number) {
   return `${(nodes / 1000000).toFixed(2)}M`;
 }
 
-function formatNps(nodes, time) {
+function formatNps(nodes: number, time: number | null) {
   if (!time) return '--';
   return `${(nodes / time / 1000000).toFixed(2)}M`;
 }
 
-export function updateLiveInfo(game, color) {
+export function updateLiveInfo(game: SerializedGame, color: 'white' | 'black') {
   const { liveData } = game;
 
   updateElText($(`#${color}-name`), game[color].name);
   updateElText($(`#${color}-score`), formatScore(liveData.score, color));
-  updateElText($(`#${color}-depth`), liveData.depth);
+  updateElText($(`#${color}-depth`), String(liveData.depth));
   updateElText($(`#${color}-nodes`), formatNodes(liveData.nodes));
   updateElText(
     $(`#${color}-nps`),
@@ -44,7 +43,7 @@ export function updateLiveInfo(game, color) {
   $(`#${color}-pv`).html(pv(liveData, color));
 }
 
-export function updateHistoricalInfo(color, meta) {
+export function updateHistoricalInfo(color: string, meta: MoveMetaData | null) {
   if (!meta) {
     updateElText($(`#${color}-score`), '--');
     updateElText($(`#${color}-depth`), '--');
@@ -52,21 +51,21 @@ export function updateHistoricalInfo(color, meta) {
     updateElText($(`#${color}-nps`), '--');
     $(`#${color}-pv`).html('');
   } else {
-    updateElText($(`#${color}-score`), formatScore(meta.score, color));
-    updateElText($(`#${color}-depth`), String(meta.depth));
-    updateElText($(`#${color}-nodes`), formatNodes(meta.nodes));
-    updateElText($(`#${color}-nps`), formatNps(meta.nodes, meta.time));
-    $(`#${color}-pv`).html(formatPv(meta.pv, meta.pvMoveNumber, color));
+    updateElText($(`#${color}-score`), meta.score != null ? formatScore(meta.score, color) : '--');
+    updateElText($(`#${color}-depth`), meta.depth != null ? String(meta.depth) : '--');
+    updateElText($(`#${color}-nodes`), meta.nodes != null ? formatNodes(meta.nodes) : '--');
+    updateElText($(`#${color}-nps`), meta.nodes != null ? formatNps(meta.nodes, meta.time) : '--');
+    $(`#${color}-pv`).html(formatPv(meta.pv, meta.pvMoveNumber ?? 1, color));
   }
 }
 
-export function updateTitle(game) {
+export function updateTitle(game: SerializedGame) {
   const title = `${game.white.name} vs ${game.black.name} (${game.site})`;
   const curr = document.title;
   if (curr !== title) document.title = title;
 }
 
-export function updateOpening(game) {
+export function updateOpening(game: SerializedGame) {
   if (game.tablebase) {
     $('#caption').text(`Tablebase: ${game.tablebase}`);
   } else {
@@ -74,14 +73,14 @@ export function updateOpening(game) {
   }
 }
 
-export function updateSpectators(spectators) {
+export function updateSpectators(spectators: string[]) {
   $('#spectator-box').children().remove();
-  spectators.sort().forEach((name) => {
+  spectators.sort().forEach((name: string) => {
     $('#spectator-box').append($('<li>').append($('<p>').text(name)));
   });
 }
 
-export function updateMenu(menu) {
+export function updateMenu(menu: { [key: string]: string }) {
   const $schedule = $('#schedule');
   const $eventThread = $('#event-thread');
 
@@ -98,7 +97,7 @@ export function updateMenu(menu) {
   }
 }
 
-export function update(game) {
+export function update(game: SerializedGame) {
   updateTitle(game);
   updateOpening(game);
   $('#fen').text(game.fen);

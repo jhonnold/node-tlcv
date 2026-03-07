@@ -1,13 +1,15 @@
 import $ from 'jquery';
+import type { SerializedGame } from '../../../../shared/types';
 import { on } from '../../events/index';
+import type { GameEventData, NavPosition } from '../../events/index';
 import { updateTimers, stopAllTimers, hideTimers, forceRestartTimers } from './timers';
 import { update, updateHistoricalInfo, updateSpectators, updateMenu } from './player-info';
 import copyFen from '../../utils/fen';
 
 let live = true;
-let lastGameData = null;
+let lastGameData: SerializedGame | null = null;
 
-function getMoveMetaAtIndex(navIndex) {
+function getMoveMetaAtIndex(navIndex: number) {
   if (!lastGameData || navIndex <= 0) return { movedColor: null, movedMeta: null, otherColor: null, otherMeta: null };
 
   const moves = lastGameData.moves || [];
@@ -25,7 +27,7 @@ function getMoveMetaAtIndex(navIndex) {
   return { movedColor, movedMeta, otherColor, otherMeta };
 }
 
-function handleGameUpdate(data) {
+function handleGameUpdate(data: GameEventData) {
   const { game, spectators, menu } = data;
 
   lastGameData = game;
@@ -38,12 +40,12 @@ function handleGameUpdate(data) {
   updateMenu(menu);
 }
 
-function handleGameState(data) {
+function handleGameState(data: GameEventData) {
   live = true;
   handleGameUpdate(data);
 }
 
-function handleNavPosition({ isLive, index }) {
+function handleNavPosition({ isLive, index }: NavPosition) {
   const wasLive = live;
   live = isLive;
 
@@ -76,7 +78,7 @@ export function init() {
   on('nav:position', handleNavPosition);
 
   // Setup FEN copy
-  $('#copy-fen-btn').on('click', copyFen);
+  $('#copy-fen-btn').on('click', () => copyFen($('#fen').text()));
 }
 
 export function destroy() {

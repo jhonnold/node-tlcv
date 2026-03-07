@@ -1,6 +1,6 @@
 import $ from 'jquery';
 
-function close(connection) {
+function close(connection: string) {
   $.ajax({
     type: 'POST',
     url: '/admin/close',
@@ -12,7 +12,7 @@ function close(connection) {
   });
 }
 
-function addNew(connection) {
+function addNew(connection: string) {
   $.ajax({
     type: 'POST',
     url: '/admin/new',
@@ -28,7 +28,7 @@ $(document).ready(() => {
   $('#add-new').on('submit', (e) => {
     e.preventDefault();
 
-    const connection = $('#connection').val();
+    const connection = $('#connection').val() as string;
     if (!connection) return;
 
     addNew(connection);

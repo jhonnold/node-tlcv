@@ -49,7 +49,6 @@ export default {
           loader: 'ts-loader',
           options: {
             configFile: 'tsconfig.frontend.json',
-            transpileOnly: true,
           },
         },
       },

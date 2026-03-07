@@ -18,7 +18,7 @@ function toggle() {
   }, 50);
 }
 
-function handleKeyDown(e) {
+function handleKeyDown(e: JQuery.KeyDownEvent) {
   if (e.key === 'Escape' && active) {
     toggle();
   }

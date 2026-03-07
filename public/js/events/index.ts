@@ -38,7 +38,7 @@ export function on<K extends EventKey>(event: K, callback: (data: EventMap[K]) =
   if (!listeners.has(event)) {
     listeners.set(event, []);
   }
-  listeners.get(event).push(callback);
+  listeners.get(event)!.push(callback);
 
   return () => off(event, callback);
 }
