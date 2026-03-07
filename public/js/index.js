@@ -13,7 +13,7 @@ import { init as initNavigation } from './components/navigation/index.js';
 import { init as initResults } from './components/results/index.js';
 import { init as initGraphs } from './components/graphs/index.js';
 import { init as initFocus } from './components/focus/index.js';
-import { chatHeight } from './components/board/resize.js';
+import { chatHeight, updateLayout } from './components/board/resize.js';
 
 // Get port from URL
 const port = +window.location.pathname.replace(/\//g, '');
@@ -45,6 +45,7 @@ function setupSocketEvents() {
 }
 
 function handleWindowResize() {
+  updateLayout();
   resizeBoard();
   $('#chat-area').height(chatHeight());
 }

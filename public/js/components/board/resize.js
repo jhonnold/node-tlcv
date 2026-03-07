@@ -8,6 +8,34 @@ const VERTICAL_OFFSET = INFO_CARD_HEIGHT * 2 + GAP;
 const STORAGE_KEY = 'board-width';
 const MIN_COL_WIDTH = 475;
 const HANDLE_WIDTH = 16;
+const LAYOUT_PADDING = 24; // container padding (16px) + grid gaps (8px)
+
+let preferredLeftWidth = null;
+
+function getAvailableWidth() {
+  return Math.min(window.innerWidth, 2160) - HANDLE_WIDTH - LAYOUT_PADDING;
+}
+
+export function updateLayout() {
+  if (window.innerWidth <= 767 || preferredLeftWidth === null) return;
+
+  const mainLayout = $('.main-layout');
+  const available = getAvailableWidth();
+
+  let leftWidth = preferredLeftWidth;
+  let rightWidth = available - leftWidth;
+
+  // Right column shrinks first
+  if (rightWidth < MIN_COL_WIDTH) {
+    rightWidth = MIN_COL_WIDTH;
+    leftWidth = available - MIN_COL_WIDTH;
+  }
+
+  // Then left column shrinks
+  leftWidth = Math.max(MIN_COL_WIDTH, leftWidth);
+
+  mainLayout.css('grid-template-columns', `${leftWidth}px ${HANDLE_WIDTH}px ${rightWidth}px`);
+}
 
 export function chatHeight() {
   const boardHeight = $('#board').height();
@@ -40,13 +68,9 @@ export function initResize(board, pvBoardWhite, pvBoardBlack) {
   // Restore saved board width
   const savedWidth = parseFloat(localStorage.getItem(STORAGE_KEY));
   if (!Number.isNaN(savedWidth) && savedWidth >= MIN_COL_WIDTH) {
-    const availableWidth = Math.min(window.innerWidth, 2160) - HANDLE_WIDTH - 24;
-    const leftWidth = Math.min(savedWidth, availableWidth - MIN_COL_WIDTH);
-    if (leftWidth >= MIN_COL_WIDTH) {
-      const rightWidth = availableWidth - leftWidth;
-      mainLayout.css('grid-template-columns', `${leftWidth}px ${HANDLE_WIDTH}px ${rightWidth}px`);
-      resizeBoards();
-    }
+    preferredLeftWidth = savedWidth;
+    updateLayout();
+    resizeBoards();
   }
 
   function throttledResize() {
@@ -96,9 +120,10 @@ export function initResize(board, pvBoardWhite, pvBoardBlack) {
 
       const styles = window.getComputedStyle(mainLayout[0]);
       const leftWidth = parseFloat(styles.gridTemplateColumns.split(' ')[0]);
+      preferredLeftWidth = leftWidth;
       localStorage.setItem(STORAGE_KEY, leftWidth);
     }
   });
 }
 
-export default { initResize, chatHeight };
+export default { initResize, chatHeight, updateLayout };
