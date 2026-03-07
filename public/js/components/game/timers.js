@@ -16,10 +16,15 @@ function updateTimer(time, start, color) {
   $(`#${color}-think`).text(msToString(used));
 }
 
-function stopTimer(color) {
+function clearTimer(color) {
   clearInterval(timerIntervals.get(color));
   timerIntervals.delete(color);
-  $(`#${color}-time`).text($(`#${color}-time`).find('mark').text());
+}
+
+function stopTimer(color) {
+  clearTimer(color);
+  const mark = $(`#${color}-time`).find('mark');
+  if (mark.length) $(`#${color}-time`).text(mark.text());
 }
 
 function startTimer(game, color) {
@@ -51,9 +56,24 @@ export function updateTimers(data) {
   }
 }
 
+export function forceRestartTimers(data) {
+  clearTimer('white');
+  clearTimer('black');
+  updateTimers(data);
+}
+
 export function stopAllTimers() {
   stopTimer('white');
   stopTimer('black');
 }
 
-export default { updateTimers, stopAllTimers };
+export function hideTimers() {
+  clearTimer('white');
+  clearTimer('black');
+  $('#white-time').text('--:--');
+  $('#white-think').text('');
+  $('#black-time').text('--:--');
+  $('#black-think').text('');
+}
+
+export default { updateTimers, forceRestartTimers, stopAllTimers, hideTimers };

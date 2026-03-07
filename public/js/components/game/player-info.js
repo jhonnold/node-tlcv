@@ -7,24 +7,56 @@ function updateElText(el, val) {
   if (curr !== val) el.text(val);
 }
 
-export function updateInfo(game, color) {
-  let { score } = game[color];
-  if (color === 'black') score *= -1;
+function formatScore(score, color) {
+  let s = color === 'black' ? score * -1 : score;
 
-  if (score > 100000) {
-    score = 'M';
-  } else if (score < -100000) {
-    score = '-M';
+  if (s > 100000) {
+    s = 'M';
+  } else if (s < -100000) {
+    s = '-M';
   } else {
-    score = score.toFixed(2);
+    s = s.toFixed(2);
   }
 
-  updateElText($(`#${color}-name`), game[color].name);
-  updateElText($(`#${color}-score`), score);
-  updateElText($(`#${color}-depth`), game[color].depth);
-  updateElText($(`#${color}-nodes`), `${(game[color].nodes / 1000000).toFixed(2)}M`);
-  updateElText($(`#${color}-nps`), `${(game[color].nodes / game[color].usedTime / 1000).toFixed(2)}M`);
+  return String(s);
+}
+
+function formatNodes(nodes) {
+  return `${(nodes / 1000000).toFixed(2)}M`;
+}
+
+function formatNps(nodes, time) {
+  if (!time) return '--';
+  return `${(nodes / time / 1000000).toFixed(2)}M`;
+}
+
+export function updateInfo(game, color) {
+  const player = game[color];
+
+  updateElText($(`#${color}-name`), player.name);
+  updateElText($(`#${color}-score`), formatScore(player.score, color));
+  updateElText($(`#${color}-depth`), player.depth);
+  updateElText($(`#${color}-nodes`), formatNodes(player.nodes));
+  updateElText($(`#${color}-nps`), `${(player.nodes / player.usedTime / 1000).toFixed(2)}M`);
   $(`#${color}-pv`).html(pv(game, color));
+}
+
+export function updateHistoricalInfo(color, meta) {
+  if (!meta) {
+    updateElText($(`#${color}-score`), '--');
+    updateElText($(`#${color}-depth`), '--');
+    updateElText($(`#${color}-nodes`), '--');
+    updateElText($(`#${color}-nps`), '--');
+  } else {
+    updateElText($(`#${color}-score`), formatScore(meta.score, color));
+    updateElText($(`#${color}-depth`), String(meta.depth));
+    updateElText($(`#${color}-nodes`), formatNodes(meta.nodes));
+    updateElText($(`#${color}-nps`), formatNps(meta.nodes, meta.time));
+  }
+}
+
+export function hidePv(color) {
+  $(`#${color}-pv`).html('');
 }
 
 export function updateTitle(game) {
@@ -73,4 +105,13 @@ export function update(game) {
   $('#fen').text(game.fen);
 }
 
-export default { updateInfo, updateTitle, updateOpening, updateSpectators, updateMenu, update };
+export default {
+  updateInfo,
+  updateHistoricalInfo,
+  hidePv,
+  updateTitle,
+  updateOpening,
+  updateSpectators,
+  updateMenu,
+  update,
+};

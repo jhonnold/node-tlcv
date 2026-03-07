@@ -33,8 +33,10 @@ function handleGameUpdate(data) {
   lastGameData = game;
 
   // Board position is controlled by nav:position event
-  pvBoardWhite.position(game.white.pvFen, false);
-  pvBoardBlack.position(game.black.pvFen, false);
+  if (live) {
+    pvBoardWhite.position(game.white.pvFen, false);
+    pvBoardBlack.position(game.black.pvFen, false);
+  }
 
   drawArrows();
 }
@@ -55,10 +57,23 @@ function highlightSquares(lastMove) {
   }
 }
 
+const EMPTY_FEN = '8/8/8/8/8/8/8/8';
+
 function handleNavPosition({ fen, isLive, lastMove }) {
+  const wasLive = live;
   live = isLive;
   board.position(fen);
   highlightSquares(lastMove);
+
+  if (!isLive) {
+    pvBoardWhite.position(EMPTY_FEN, false);
+    pvBoardBlack.position(EMPTY_FEN, false);
+  } else if (!wasLive && lastGameData) {
+    // Restore PV boards when returning to live
+    pvBoardWhite.position(lastGameData.white.pvFen, false);
+    pvBoardBlack.position(lastGameData.black.pvFen, false);
+  }
+
   drawArrows();
 }
 
@@ -79,9 +94,9 @@ export function init() {
   pvBoardWhite = Chessboard('white-pv-board', pvBoardSettings);
   pvBoardBlack = Chessboard('black-pv-board', pvBoardSettings);
 
-  // Click PV boards to copy their FEN
-  $('#white-pv-board').on('click', () => lastGameData && copyFen(lastGameData.white.pvFen));
-  $('#black-pv-board').on('click', () => lastGameData && copyFen(lastGameData.black.pvFen));
+  // Click PV boards to copy their FEN (only when live)
+  $('#white-pv-board').on('click', () => live && lastGameData && copyFen(lastGameData.white.pvFen));
+  $('#black-pv-board').on('click', () => live && lastGameData && copyFen(lastGameData.black.pvFen));
 
   // Initialize resize
   initResize(board, pvBoardWhite, pvBoardBlack);
