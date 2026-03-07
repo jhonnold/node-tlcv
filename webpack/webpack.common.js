@@ -3,8 +3,6 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import autoprefixer from 'autoprefixer';
 import path from 'path';
-import webpack from 'webpack';
-
 const PAGES = [
   {
     page: 'index.ejs',
@@ -26,11 +24,11 @@ export default {
       'reset-css',
       'mini.css',
       'chessboardjs/www/css/chessboard.css',
-      './public/js/index.js',
+      './public/js/index.ts',
       './public/css/main.css',
     ],
-    admin: ['reset-css', 'mini.css', './public/js/admin.js', './public/css/main.css'],
-    broadcasts: ['reset-css', 'mini.css', './public/js/broadcasts.js', './public/css/main.css'],
+    admin: ['reset-css', 'mini.css', './public/js/admin.ts', './public/css/main.css'],
+    broadcasts: ['reset-css', 'mini.css', './public/js/broadcasts.ts', './public/css/main.css'],
     ['dark-theme']: ['./public/css/dark-theme.css'],
   },
   output: {
@@ -40,14 +38,20 @@ export default {
     clean: true,
   },
   resolve: {
-    extensions: ['.js'],
+    extensions: ['.ts', '.js'],
   },
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.ts$/,
         exclude: /node_modules/,
-        use: { loader: 'babel-loader' },
+        use: {
+          loader: 'ts-loader',
+          options: {
+            configFile: 'tsconfig.frontend.json',
+            transpileOnly: true,
+          },
+        },
       },
       {
         test: /\.css$/,
@@ -68,7 +72,6 @@ export default {
     ],
   },
   plugins: [
-    new webpack.ProvidePlugin({ $: 'jquery' }),
     new MiniCssExtractPlugin({
       filename: '[name].css',
       chunkFilename: '[id].css',

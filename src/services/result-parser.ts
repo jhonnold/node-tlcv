@@ -1,22 +1,5 @@
-export type H2HCell = {
-  results: string;
-  wins: number;
-  draws: number;
-  losses: number;
-};
-
-export type StandingsRow = {
-  rank: number;
-  name: string;
-  games: number;
-  points: number;
-  h2h: H2HCell[];
-};
-
-export type ParsedResults = {
-  standings: StandingsRow[];
-  totalGames: number;
-};
+import type { H2HCell, StandingsRow, ParsedResults } from '../../shared/types.js';
+export type { H2HCell, StandingsRow, ParsedResults } from '../../shared/types.js';
 
 function parseH2HCell(raw: string): H2HCell {
   const content = raw.replace(/\s/g, '');

@@ -1,8 +1,8 @@
 // public/js/components/navigation/index.js
 import { Chess } from 'chess.js';
-import $ from '../../$/index.js';
-import { on, emit } from '../../events/index.js';
-import { getActiveTab } from '../tabs/index.js';
+import $ from 'jquery';
+import { on, emit } from '../../events/index';
+import { getActiveTab } from '../tabs/index';
 
 // State
 // navIndex ranges from 0 to sanMoves.length inclusive:
@@ -234,7 +234,7 @@ export function init() {
     const tab = getActiveTab();
     if (tab !== 'moves' && tab !== 'graphs') return;
 
-    const el = document.activeElement;
+    const el = document.activeElement as HTMLElement | null;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
 
     if (e.key === 'ArrowLeft') {

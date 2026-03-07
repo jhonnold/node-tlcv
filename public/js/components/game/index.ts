@@ -1,8 +1,8 @@
-// public/js/components/game/index.js
-import { on } from '../../events/index.js';
-import { updateTimers, stopAllTimers, hideTimers, forceRestartTimers } from './timers.js';
-import { update, updateHistoricalInfo, updateSpectators, updateMenu } from './player-info.js';
-import copyFen from '../../utils/fen.js';
+import $ from 'jquery';
+import { on } from '../../events/index';
+import { updateTimers, stopAllTimers, hideTimers, forceRestartTimers } from './timers';
+import { update, updateHistoricalInfo, updateSpectators, updateMenu } from './player-info';
+import copyFen from '../../utils/fen';
 
 let live = true;
 let lastGameData = null;

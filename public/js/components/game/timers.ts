@@ -1,5 +1,5 @@
 // public/js/components/game/timers.js
-import $ from '../../$/index.js';
+import $ from 'jquery';
 
 const timerIntervals = new Map();
 

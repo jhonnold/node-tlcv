@@ -1,6 +1,6 @@
 // public/js/components/game/player-info.js
-import $ from '../../$/index.js';
-import pv, { formatPv } from '../../utils/pv.js';
+import $ from 'jquery';
+import pv, { formatPv } from '../../utils/pv';
 
 function updateElText(el, val) {
   const curr = el.text();

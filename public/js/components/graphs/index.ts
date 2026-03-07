@@ -1,10 +1,10 @@
 // public/js/components/graphs/index.js
 import { Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip } from 'chart.js';
-import { on } from '../../events/index.js';
-import { getActiveTab } from '../tabs/index.js';
-import { goTo, getNavIndex } from '../navigation/index.js';
-import GRAPH_TYPES from './graph-types.js';
-import { init as initSelector, setActive } from './selector.js';
+import { on } from '../../events/index';
+import { getActiveTab } from '../tabs/index';
+import { goTo, getNavIndex } from '../navigation/index';
+import GRAPH_TYPES from './graph-types';
+import { init as initSelector, setActive } from './selector';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip);
 
@@ -73,7 +73,7 @@ function destroyChart() {
 }
 
 function createChart() {
-  const canvas = document.getElementById('graphs-chart');
+  const canvas = document.getElementById('graphs-chart') as HTMLCanvasElement | null;
   if (!canvas) return;
 
   const primaryColor = getCssVar('--primaryColor');

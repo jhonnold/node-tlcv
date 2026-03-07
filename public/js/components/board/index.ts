@@ -1,9 +1,9 @@
-// public/js/components/board/index.js
+import $ from 'jquery';
 import Chessboard from 'chessboardjs';
-import { on } from '../../events/index.js';
-import { drawMove, clearArrows } from './arrows.js';
-import { initResize } from './resize.js';
-import copyFen from '../../utils/fen.js';
+import { on } from '../../events/index';
+import { drawMove, clearArrows } from './arrows';
+import { initResize } from './resize';
+import copyFen from '../../utils/fen';
 
 let board = null;
 let pvBoardWhite = null;

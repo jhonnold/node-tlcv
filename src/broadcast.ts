@@ -1,18 +1,14 @@
 import Connection from './connection.js';
 import GameService from './game-service.js';
-import { ChessGame, SerializedGame } from './chess-game.js';
+import { ChessGame } from './chess-game.js';
 import { BroadcastState } from './broadcast-state.js';
 import { emitUpdate, emitChat } from './socket-io-adapter.js';
 import { ParsedResults } from './services/result-parser.js';
+import type { SerializedBroadcast } from '../shared/types.js';
+
+export type { SerializedBroadcast } from '../shared/types.js';
 
 export const username = 'tlcv.net';
-
-export type SerializedBroadcast = {
-  game: SerializedGame;
-  spectators: Array<string>;
-  chat: Array<string>;
-  menu: { [key: string]: string };
-};
 
 export class Broadcast {
   readonly host: string;

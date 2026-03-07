@@ -1,6 +1,6 @@
 // public/js/components/results/index.js
-import $, { ajax } from '../../$/index.js';
-import { on } from '../../events/index.js';
+import $ from 'jquery';
+import { on } from '../../events/index';
 
 function getPort() {
   return +window.location.pathname.replace(/\//g, '');
@@ -70,7 +70,7 @@ function fetchAndRender() {
   const $container = $('#results-container');
   $container.html('<p class="results-loading">Loading results...</p>');
 
-  ajax({
+  $.ajax({
     url: `/${getPort()}/result-table/json`,
     method: 'GET',
     dataType: 'json',

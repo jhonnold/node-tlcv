@@ -1,19 +1,19 @@
 // public/js/index.js - Main entry point
 import { io } from 'socket.io-client';
-import $ from './$/index.js';
-import { emit } from './events/index.js';
+import $ from 'jquery';
+import { emit } from './events/index';
 
 // Import components
-import { init as initTheme } from './components/theme/index.js';
-import { init as initGame } from './components/game/index.js';
-import { init as initBoard, resize as resizeBoard } from './components/board/index.js';
-import { init as initChat, setSocket, username } from './components/chat/index.js';
-import { init as initTabs } from './components/tabs/index.js';
-import { init as initNavigation } from './components/navigation/index.js';
-import { init as initResults } from './components/results/index.js';
-import { init as initGraphs } from './components/graphs/index.js';
-import { init as initFocus } from './components/focus/index.js';
-import { chatHeight, updateLayout } from './components/board/resize.js';
+import { init as initTheme } from './components/theme/index';
+import { init as initGame } from './components/game/index';
+import { init as initBoard, resize as resizeBoard } from './components/board/index';
+import { init as initChat, setSocket, username } from './components/chat/index';
+import { init as initTabs } from './components/tabs/index';
+import { init as initNavigation } from './components/navigation/index';
+import { init as initResults } from './components/results/index';
+import { init as initGraphs } from './components/graphs/index';
+import { init as initFocus } from './components/focus/index';
+import { chatHeight, updateLayout } from './components/board/resize';
 
 // Get port from URL
 const port = +window.location.pathname.replace(/\//g, '');

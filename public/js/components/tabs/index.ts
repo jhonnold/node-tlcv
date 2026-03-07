@@ -1,6 +1,6 @@
 // public/js/components/tabs/index.js
-import $ from '../../$/index.js';
-import { emit } from '../../events/index.js';
+import $ from 'jquery';
+import { emit } from '../../events/index';
 
 let activeTab = 'chat';
 

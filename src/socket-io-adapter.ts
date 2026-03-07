@@ -1,11 +1,9 @@
 import { Server, Socket } from 'socket.io';
 import broadcasts, { Broadcast } from './broadcast.js';
 import { logger, uniqueName } from './util/index.js';
+import { EmitType } from '../shared/types.js';
 
-export enum EmitType {
-  UPDATE = 'update',
-  CHAT = 'new-chat',
-}
+export { EmitType } from '../shared/types.js';
 
 const io = new Server();
 

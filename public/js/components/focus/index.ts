@@ -1,7 +1,7 @@
 // public/js/components/focus/index.js
-import $ from '../../$/index.js';
-import { resize as resizeBoard } from '../board/index.js';
-import { chatHeight } from '../board/resize.js';
+import $ from 'jquery';
+import { resize as resizeBoard } from '../board/index';
+import { chatHeight } from '../board/resize';
 
 let active = false;
 

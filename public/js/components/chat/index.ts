@@ -1,7 +1,7 @@
 // public/js/components/chat/index.js
-import $ from '../../$/index.js';
-import { on } from '../../events/index.js';
-import username from './messaging.js';
+import $ from 'jquery';
+import { on } from '../../events/index';
+import username from './messaging';
 
 export { username };
 let socket = null;

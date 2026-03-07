@@ -6,7 +6,7 @@
   },
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "project": "tsconfig.json",
+    "project": "tsconfig.backend.json",
     "sourceType": "module"
   },
   "plugins": ["@typescript-eslint"],
@@ -17,5 +17,22 @@
     "plugin:@typescript-eslint/recommended",
     "prettier"
   ],
-  "rules": {}
+  "rules": {},
+  "overrides": [
+    {
+      "files": ["public/**/*.ts", "shared/**/*.ts"],
+      "env": {
+        "browser": true,
+        "jquery": true,
+        "node": false
+      },
+      "parserOptions": {
+        "project": "tsconfig.frontend.json"
+      },
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
+      }
+    }
+  ]
 }

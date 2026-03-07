@@ -1,6 +1,6 @@
 // public/js/components/board/resize.js
-import $ from '../../$/index.js';
-import { emit } from '../../events/index.js';
+import $ from 'jquery';
+import { emit } from '../../events/index';
 
 const INFO_CARD_HEIGHT = 155;
 const GAP = 32;
@@ -62,7 +62,7 @@ export function initResize(board, pvBoardWhite, pvBoardBlack) {
 
     const b = $('#board');
     $('#arrow-board').attr('height', b.height()).height(b.height()).attr('width', b.width()).width(b.width());
-    emit('board:resize');
+    emit('board:resize', undefined);
   }
 
   // Restore saved board width
@@ -121,7 +121,7 @@ export function initResize(board, pvBoardWhite, pvBoardBlack) {
       const styles = window.getComputedStyle(mainLayout[0]);
       const leftWidth = parseFloat(styles.gridTemplateColumns.split(' ')[0]);
       preferredLeftWidth = leftWidth;
-      localStorage.setItem(STORAGE_KEY, leftWidth);
+      localStorage.setItem(STORAGE_KEY, String(leftWidth));
     }
   });
 }

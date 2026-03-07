@@ -1,5 +1,5 @@
 // public/js/components/graphs/selector.js
-import $ from '../../$/index.js';
+import $ from 'jquery';
 
 export function setActive(typeId) {
   $('.graph-btn').each(function updateActiveClass() {

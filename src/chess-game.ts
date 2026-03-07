@@ -1,34 +1,11 @@
 import { Chess, Move, validateFen } from 'chess.js';
 import dayjs from 'dayjs';
 import { logger } from './util/index.js';
+import type { MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
+
+export type { MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
 
 const EMPTY_FEN = '8/8/8/8/8/8/8/8 w - - 0 1';
-
-export type MoveMetaData = {
-  color: 'w' | 'b';
-  number: number;
-  move: string;
-  depth: number | null;
-  score: number | null;
-  nodes: number | null;
-  time: number | null;
-  pv: string[] | null;
-  pvFen: string | null;
-  pvMoveNumber: number | null;
-  pvFollowup: string | null;
-};
-
-export type SerializedLiveData = {
-  color: 'w' | 'b';
-  depth: number;
-  score: number;
-  nodes: number;
-  usedTime: number;
-  pv: Array<string>;
-  pvAlg: Array<string>;
-  pvFen: string;
-  pvMoveNumber: number;
-};
 
 export class LiveData {
   color: 'w' | 'b';
@@ -79,25 +56,6 @@ export class LiveData {
     };
   }
 }
-
-export type SerializedPlayer = {
-  name: string;
-  clockTime: number;
-  startTime: number;
-};
-
-export type SerializedGame = {
-  site: string;
-  white: SerializedPlayer;
-  black: SerializedPlayer;
-  liveData: SerializedLiveData;
-  fen: string;
-  opening: string;
-  tablebase: string;
-  stm: 'w' | 'b';
-  moves: MoveMetaData[];
-  startFen: string | null;
-};
 
 export class Player {
   name: string;
