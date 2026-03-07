@@ -220,6 +220,7 @@ class GameService {
           pv: this.game[color].pv.length ? [...this.game[color].pv] : null,
           pvFen: this.game[color].pvFen,
           pvMoveNumber: this.game[color].pvMoveNumber,
+          pvFollowup: this.game[color].pvAlg[1] || null,
         });
 
         // Set the PGN comment for this move
@@ -239,6 +240,7 @@ class GameService {
           pv: null,
           pvFen: null,
           pvMoveNumber: null,
+          pvFollowup: null,
         });
 
         this.game.instance.setComment('(Book)');

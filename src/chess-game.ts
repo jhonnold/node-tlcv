@@ -13,6 +13,7 @@ export type MoveMetaData = {
   pv: string[] | null;
   pvFen: string | null;
   pvMoveNumber: number | null;
+  pvFollowup: string | null;
 };
 
 export type SerializedPlayer = {

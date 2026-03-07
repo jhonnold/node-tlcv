@@ -10,20 +10,27 @@ let pvBoardWhite = null;
 let pvBoardBlack = null;
 let live = true;
 let lastGameData = null;
+let navFollowup = null;
+
+const SECONDARY_ARROW_COLOR = '#F3AE4888';
 
 function drawArrows() {
   clearArrows();
-  if (!live || !lastGameData) return;
+  if (!lastGameData) return;
+
+  if (!live) {
+    if (navFollowup) drawMove(navFollowup, SECONDARY_ARROW_COLOR);
+    return;
+  }
 
   const theme = localStorage.getItem('theme') || 'light';
   const mainArrowColor = theme === 'dark' ? '#68C07BEE' : '#114F8AEE';
-  const secondaryArrowColor = theme === 'dark' ? '#F3AE4888' : '#F3AE4888';
 
   const { pvAlg: stmPvAlg = [] } = lastGameData[lastGameData.stm === 'w' ? 'white' : 'black'];
   const { pvAlg: xstmPvAlg = [] } = lastGameData[lastGameData.stm === 'w' ? 'black' : 'white'];
 
   const sameMove = stmPvAlg[0] === xstmPvAlg[1] ? 1 : 0;
-  if (xstmPvAlg[1]) drawMove(xstmPvAlg[1], secondaryArrowColor, 1 * sameMove);
+  if (xstmPvAlg[1]) drawMove(xstmPvAlg[1], SECONDARY_ARROW_COLOR, 1 * sameMove);
   if (stmPvAlg[0]) drawMove(stmPvAlg[0], mainArrowColor, -1 * sameMove);
 }
 
@@ -76,11 +83,20 @@ function getPvFenAtIndex(navIndex) {
   };
 }
 
+function getFollowupAtIndex(navIndex) {
+  if (!lastGameData || navIndex <= 0) return null;
+  const moves = lastGameData.moves || [];
+  if (navIndex > moves.length) return null;
+  return moves[navIndex - 1].pvFollowup || null;
+}
+
 function handleNavPosition({ fen, isLive, lastMove, index }) {
   const wasLive = live;
   live = isLive;
   board.position(fen);
   highlightSquares(lastMove);
+
+  navFollowup = isLive ? null : getFollowupAtIndex(index);
 
   if (!isLive) {
     const pvFens = getPvFenAtIndex(index);
