@@ -3,6 +3,7 @@ import { mkdirp } from 'mkdirp';
 import slugify from 'slugify';
 import { ChessGame } from '../chess-game.js';
 import { logger } from '../util/index.js';
+import { addFile } from './pgn-cache.js';
 
 export async function savePgn(game: ChessGame, port: number, gameNumber: number): Promise<void> {
   const { white, black, site } = game;
@@ -14,12 +15,10 @@ export async function savePgn(game: ChessGame, port: number, gameNumber: number)
   const filename = slugify(`${gameNumber}_${white.name}_vs_${black.name}`, '_').toLowerCase();
   const filepath = `${dirname}/${filename}.pgn`;
 
-  const rawDirname = `${dirname}/raw`;
-  const rawFilepath = `${rawDirname}/${gameNumber}.pgn`;
-
   try {
-    await mkdirp(rawDirname);
-    await Promise.all([fs.writeFile(filepath, pgn), fs.writeFile(rawFilepath, pgn)]);
+    await mkdirp(dirname);
+    await fs.writeFile(filepath, pgn);
+    addFile(siteSlug, gameNumber, `${filename}.pgn`);
   } catch (error) {
     logger.error(`Unable to write to ${filepath}! - ${error}`, { port });
   }

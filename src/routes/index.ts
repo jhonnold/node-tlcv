@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import slugify from 'slugify';
 import broadcasts, { Broadcast } from '../broadcast.js';
+import { getFiles } from '../services/pgn-cache.js';
 
 interface RequestWithBroadcast extends Request {
   broadcast: Broadcast;
@@ -69,7 +70,7 @@ router.get('/:port([0-9]+)/result-table/json', (req: Request, res: Response): vo
   res.status(200).json(broadcast.parsedResults);
 });
 
-router.get('/:port([0-9]+)/games/json', (req: Request, res: Response): void => {
+router.get('/:port([0-9]+)/games/json', async (req: Request, res: Response): Promise<void> => {
   const { broadcast } = req as RequestWithBroadcast;
 
   if (!broadcast.parsedGames) {
@@ -78,10 +79,11 @@ router.get('/:port([0-9]+)/games/json', (req: Request, res: Response): void => {
   }
 
   const siteSlug = slugify(broadcast.game.site, '_');
-  const games = broadcast.parsedGames.map((g) => ({
-    ...g,
-    pgnUrl: `/pgns/${siteSlug}/raw/${g.gameNumber}.pgn`,
-  }));
+  const pgnFiles = await getFiles(siteSlug);
+  const games = broadcast.parsedGames.map((g) => {
+    const filename = pgnFiles.get(g.gameNumber);
+    return { ...g, pgnUrl: filename ? `/pgns/${siteSlug}/${filename}` : undefined };
+  });
 
   res.status(200).json(games);
 });
