@@ -4,7 +4,6 @@ import $ from 'jquery';
 import type { MoveMetaData } from '../../../../shared/types';
 import { on, emit } from '../../events/index';
 import type { GameEventData } from '../../events/index';
-import { getActiveTab } from '../tabs/index';
 
 // State
 // navIndex ranges from 0 to sanMoves.length inclusive:
@@ -231,11 +230,8 @@ export function init() {
     if (tab === 'moves') scrollActiveIntoView();
   });
 
-  // Keyboard navigation - active on Moves and Eval tabs
+  // Keyboard navigation - active unless an editable element is focused
   $(document).on('keydown', (e) => {
-    const tab = getActiveTab();
-    if (tab !== 'moves' && tab !== 'graphs') return;
-
     const el = document.activeElement as HTMLElement | null;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
 
