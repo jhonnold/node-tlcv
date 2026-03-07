@@ -74,3 +74,10 @@ export type ParsedResults = {
   standings: StandingsRow[];
   totalGames: number;
 };
+
+export type GameRecord = {
+  gameNumber: number;
+  white: string;
+  black: string;
+  result: string;
+};

@@ -1,5 +1,5 @@
-import type { H2HCell, StandingsRow, ParsedResults } from '../../shared/types.js';
-export type { H2HCell, StandingsRow, ParsedResults } from '../../shared/types.js';
+import type { H2HCell, StandingsRow, ParsedResults, GameRecord } from '../../shared/types.js';
+export type { H2HCell, StandingsRow, ParsedResults, GameRecord } from '../../shared/types.js';
 
 function parseH2HCell(raw: string): H2HCell {
   const content = raw.replace(/\s/g, '');
@@ -122,4 +122,36 @@ export function parseResults(raw: string): ParsedResults {
   }
 
   return { standings, totalGames };
+}
+
+export function parseGames(raw: string): GameRecord[] {
+  if (!raw || !raw.trim()) return [];
+
+  const lines = raw.split('\n');
+
+  // Find the start of the games section
+  const headerIdx = lines.findIndex((l) => /game\s+no\./i.test(l));
+  if (headerIdx === -1) return [];
+
+  // Skip separator line(s) after header
+  let i = headerIdx + 1;
+  while (i < lines.length && /^[-\s]*$/.test(lines[i])) i++;
+
+  const games: GameRecord[] = [];
+  for (; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+
+    const match = /^\s*(\d+)\s+(.+?)\s{3,}(.+?)\s{3,}(1-0|0-1|1\/2-1\/2|\*)\s*$/.exec(line);
+    if (!match) continue;
+
+    games.push({
+      gameNumber: parseInt(match[1], 10),
+      white: match[2].trim(),
+      black: match[3].trim(),
+      result: match[4],
+    });
+  }
+
+  return games;
 }

@@ -11,6 +11,7 @@ import { init as initChat, setSocket, username } from './components/chat/index';
 import { init as initTabs } from './components/tabs/index';
 import { init as initNavigation } from './components/navigation/index';
 import { init as initResults } from './components/results/index';
+import { init as initGames } from './components/games/index';
 import { init as initGraphs } from './components/graphs/index';
 import { init as initFocus } from './components/focus/index';
 import { chatHeight, updateLayout } from './components/board/resize';
@@ -58,6 +59,7 @@ function init() {
   initTabs();
   initNavigation();
   initResults();
+  initGames();
   initGraphs();
   initChat();
   initFocus();

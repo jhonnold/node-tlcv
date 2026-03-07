@@ -304,6 +304,12 @@
   overflow: hidden;
 }
 
+#chat-area[data-active-tab='games'] #games-tab-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 #chat-area[data-active-tab='details'] #details-tab-panel {
   display: flex;
   flex-direction: column;
@@ -688,6 +694,49 @@ pre {
   .results-table td::before {
     content: none;
   }
+
+  /* Reset mini.css mobile table transforms for games table */
+  .games-table {
+    display: table;
+    border: 0;
+  }
+
+  .games-table thead,
+  .games-table thead th {
+    position: sticky;
+    height: auto;
+    width: auto;
+    margin: 0;
+    overflow: visible;
+    padding: 6px 8px 5px;
+    clip: auto;
+    clip-path: none;
+  }
+
+  .games-table tbody {
+    display: table-row-group;
+    border: 0;
+  }
+
+  .games-table tr {
+    display: table-row;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+  }
+
+  .games-table td {
+    display: table-cell;
+    border: 0;
+    text-align: left;
+  }
+
+  .games-table td::before {
+    content: none;
+  }
 }
 
 /* Moves card */
@@ -983,6 +1032,128 @@ pre {
 .results-loading,
 .results-error,
 .results-empty {
+  padding: 16px 8px;
+  color: var(--textColor);
+  opacity: 0.6;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Games tab */
+#games-container {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+  box-sizing: border-box;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+/* Games table - mini.css reset (same pattern as .move-table) */
+.games-table {
+  display: table;
+  width: 100%;
+  max-height: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed;
+  padding: 0;
+  flex-flow: unset;
+}
+
+.games-table thead,
+.games-table tbody {
+  display: table-header-group;
+  border: 0;
+  flex-flow: unset;
+  max-width: none;
+  flex: unset;
+  margin: 0;
+}
+
+.games-table tbody {
+  display: table-row-group;
+}
+
+.games-table tr {
+  display: table-row;
+  padding: 0;
+  flex-flow: unset;
+  flex: unset;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+
+.games-table th,
+.games-table td {
+  display: table-cell;
+  flex: unset;
+  overflow: visible;
+  text-overflow: clip;
+  background: transparent;
+  color: inherit;
+  border: 0;
+}
+
+.games-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--backgroundColor);
+  color: var(--textColor);
+  opacity: 1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 8px 5px;
+  border-bottom: 1px solid var(--surfaceColorHover);
+  z-index: 1;
+}
+
+.games-col-num {
+  width: 36px;
+  text-align: right;
+}
+
+.games-col-white,
+.games-col-black {
+  text-align: left;
+}
+
+.games-col-result {
+  width: 60px;
+  text-align: center;
+}
+
+.games-table tbody tr {
+  border-bottom: 1px solid var(--surfaceColorHover);
+}
+
+.games-table tbody td {
+  padding: 6px 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.games-table .games-num {
+  color: var(--secondaryColor);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-align: right;
+  padding-right: 8px !important;
+}
+
+.games-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.games-loading,
+.games-error,
+.games-empty {
   padding: 16px 8px;
   color: var(--textColor);
   opacity: 0.6;

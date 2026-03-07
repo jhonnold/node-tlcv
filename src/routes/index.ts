@@ -68,4 +68,15 @@ router.get('/:port([0-9]+)/result-table/json', (req: Request, res: Response): vo
   res.status(200).json(broadcast.parsedResults);
 });
 
+router.get('/:port([0-9]+)/games/json', (req: Request, res: Response): void => {
+  const { broadcast } = req as RequestWithBroadcast;
+
+  if (!broadcast.parsedGames) {
+    res.status(404).json({ error: 'No games available' });
+    return;
+  }
+
+  res.status(200).json(broadcast.parsedGames);
+});
+
 export default router;

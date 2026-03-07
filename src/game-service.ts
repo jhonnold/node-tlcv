@@ -6,7 +6,7 @@ import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
-import { parseResults } from './services/result-parser.js';
+import { parseResults, parseGames } from './services/result-parser.js';
 
 type Color = 'white' | 'black';
 
@@ -34,6 +34,7 @@ class GameService {
   private commandConfig: CommandConfig;
   private broadcast: Broadcast;
   private game: ChessGame;
+  private gamesParseTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(broadcast: Broadcast) {
     this.broadcast = broadcast;
@@ -281,6 +282,12 @@ class GameService {
   private onCTReset(): UpdateResult {
     this.broadcast.results = '';
     this.broadcast.parsedResults = null;
+    this.broadcast.parsedGames = null;
+
+    if (this.gamesParseTimer) {
+      clearTimeout(this.gamesParseTimer);
+      this.gamesParseTimer = null;
+    }
 
     return [EmitType.UPDATE, false];
   }
@@ -291,6 +298,15 @@ class GameService {
     if (/total\s+games\s*=/i.test(tokens[1])) {
       this.broadcast.parsedResults = parseResults(this.broadcast.results);
     }
+
+    // Debounce games parsing — games data arrives after the result table
+    // and the end of the stream is detected by a 100ms gap
+    if (this.gamesParseTimer) clearTimeout(this.gamesParseTimer);
+    this.gamesParseTimer = setTimeout(() => {
+      const games = parseGames(this.broadcast.results);
+      if (games.length > 0) this.broadcast.parsedGames = games;
+      this.gamesParseTimer = null;
+    }, 100);
 
     return [EmitType.UPDATE, false];
   }

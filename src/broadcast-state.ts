@@ -1,4 +1,4 @@
-import { ParsedResults } from './services/result-parser.js';
+import type { ParsedResults, GameRecord } from './services/result-parser.js';
 
 export class BroadcastState {
   readonly chat: Array<string>;
@@ -6,6 +6,7 @@ export class BroadcastState {
   readonly menu: Map<string, string>;
   results: string;
   parsedResults: ParsedResults | null;
+  parsedGames: GameRecord[] | null;
   browserCount: number;
 
   constructor() {
@@ -14,6 +15,7 @@ export class BroadcastState {
     this.menu = new Map<string, string>();
     this.results = '';
     this.parsedResults = null;
+    this.parsedGames = null;
     this.browserCount = 0;
   }
 

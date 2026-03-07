@@ -3,7 +3,7 @@ import GameService from './game-service.js';
 import { ChessGame } from './chess-game.js';
 import { BroadcastState } from './broadcast-state.js';
 import { emitUpdate, emitChat } from './socket-io-adapter.js';
-import { ParsedResults } from './services/result-parser.js';
+import type { ParsedResults, GameRecord } from './services/result-parser.js';
 import type { SerializedBroadcast } from '../shared/types.js';
 
 export type { SerializedBroadcast } from '../shared/types.js';
@@ -115,6 +115,14 @@ export class Broadcast {
 
   public set parsedResults(v: ParsedResults | null) {
     this.state.parsedResults = v;
+  }
+
+  public get parsedGames(): GameRecord[] | null {
+    return this.state.parsedGames;
+  }
+
+  public set parsedGames(v: GameRecord[] | null) {
+    this.state.parsedGames = v;
   }
 }
 
