@@ -1,6 +1,6 @@
 // public/js/components/game/player-info.js
 import $ from '../../$/index.js';
-import pv from '../../utils/pv.js';
+import pv, { formatPv } from '../../utils/pv.js';
 
 function updateElText(el, val) {
   const curr = el.text();
@@ -47,16 +47,14 @@ export function updateHistoricalInfo(color, meta) {
     updateElText($(`#${color}-depth`), '--');
     updateElText($(`#${color}-nodes`), '--');
     updateElText($(`#${color}-nps`), '--');
+    $(`#${color}-pv`).html('');
   } else {
     updateElText($(`#${color}-score`), formatScore(meta.score, color));
     updateElText($(`#${color}-depth`), String(meta.depth));
     updateElText($(`#${color}-nodes`), formatNodes(meta.nodes));
     updateElText($(`#${color}-nps`), formatNps(meta.nodes, meta.time));
+    $(`#${color}-pv`).html(formatPv(meta.pv, meta.pvMoveNumber, color));
   }
-}
-
-export function hidePv(color) {
-  $(`#${color}-pv`).html('');
 }
 
 export function updateTitle(game) {
@@ -108,7 +106,6 @@ export function update(game) {
 export default {
   updateInfo,
   updateHistoricalInfo,
-  hidePv,
   updateTitle,
   updateOpening,
   updateSpectators,

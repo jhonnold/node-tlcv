@@ -59,15 +59,33 @@ function highlightSquares(lastMove) {
 
 const EMPTY_FEN = '8/8/8/8/8/8/8/8';
 
-function handleNavPosition({ fen, isLive, lastMove }) {
+function getPvFenAtIndex(navIndex) {
+  if (!lastGameData || navIndex <= 0) return { white: EMPTY_FEN, black: EMPTY_FEN };
+
+  const moves = lastGameData.moves || [];
+  if (navIndex > moves.length) return { white: EMPTY_FEN, black: EMPTY_FEN };
+
+  const halfIdx = navIndex - 1;
+  const moved = moves[halfIdx];
+  const movedColor = moved.color === 'w' ? 'white' : 'black';
+  const otherColor = moved.color === 'w' ? 'black' : 'white';
+
+  return {
+    [movedColor]: moved.pvFen || EMPTY_FEN,
+    [otherColor]: halfIdx > 0 ? moves[halfIdx - 1].pvFen || EMPTY_FEN : EMPTY_FEN,
+  };
+}
+
+function handleNavPosition({ fen, isLive, lastMove, index }) {
   const wasLive = live;
   live = isLive;
   board.position(fen);
   highlightSquares(lastMove);
 
   if (!isLive) {
-    pvBoardWhite.position(EMPTY_FEN, false);
-    pvBoardBlack.position(EMPTY_FEN, false);
+    const pvFens = getPvFenAtIndex(index);
+    pvBoardWhite.position(pvFens.white, false);
+    pvBoardBlack.position(pvFens.black, false);
   } else if (!wasLive && lastGameData) {
     // Restore PV boards when returning to live
     pvBoardWhite.position(lastGameData.white.pvFen, false);

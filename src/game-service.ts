@@ -217,6 +217,9 @@ class GameService {
             this.game[color].startTime > 0
               ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000)
               : null,
+          pv: this.game[color].pv.length ? [...this.game[color].pv] : null,
+          pvFen: this.game[color].pvFen,
+          pvMoveNumber: this.game[color].pvMoveNumber,
         });
 
         // Set the PGN comment for this move
@@ -233,6 +236,9 @@ class GameService {
           score: null,
           nodes: null,
           time: null,
+          pv: null,
+          pvFen: null,
+          pvMoveNumber: null,
         });
 
         this.game.instance.setComment('(Book)');

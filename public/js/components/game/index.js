@@ -1,7 +1,7 @@
 // public/js/components/game/index.js
 import { on } from '../../events/index.js';
 import { updateTimers, stopAllTimers, hideTimers, forceRestartTimers } from './timers.js';
-import { update, updateHistoricalInfo, hidePv, updateSpectators, updateMenu } from './player-info.js';
+import { update, updateHistoricalInfo, updateSpectators, updateMenu } from './player-info.js';
 import copyFen from '../../utils/fen.js';
 
 let live = true;
@@ -64,8 +64,6 @@ function handleNavPosition({ isLive, index }) {
 
   // Historical position: show per-move data
   hideTimers();
-  hidePv('white');
-  hidePv('black');
 
   const { movedColor, movedMeta, otherColor, otherMeta } = getMoveMetaAtIndex(index);
   if (movedColor) {

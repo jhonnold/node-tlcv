@@ -10,6 +10,9 @@ export type MoveMetaData = {
   score: number | null;
   nodes: number | null;
   time: number | null;
+  pv: string[] | null;
+  pvFen: string | null;
+  pvMoveNumber: number | null;
 };
 
 export type SerializedPlayer = {
@@ -63,7 +66,7 @@ export class Player {
     this.lastMove = null;
     this.pv = new Array<string>();
     this.pvFen = '8/8/8/8/8/8/8/8 w - - 0 1';
-    this.pvMoveNumber = 0;
+    this.pvMoveNumber = 1;
     this.pvAlg = [];
   }
 
@@ -77,7 +80,7 @@ export class Player {
     this.startTime = 0;
     this.lastMove = null;
     this.pv = new Array<string>();
-    this.pvMoveNumber = 0;
+    this.pvMoveNumber = 1;
     this.pvAlg = [];
   }
 
