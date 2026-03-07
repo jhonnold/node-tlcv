@@ -30,15 +30,18 @@ function formatNps(nodes, time) {
   return `${(nodes / time / 1000000).toFixed(2)}M`;
 }
 
-export function updateInfo(game, color) {
-  const player = game[color];
+export function updateLiveInfo(game, color) {
+  const { liveData } = game;
 
-  updateElText($(`#${color}-name`), player.name);
-  updateElText($(`#${color}-score`), formatScore(player.score, color));
-  updateElText($(`#${color}-depth`), player.depth);
-  updateElText($(`#${color}-nodes`), formatNodes(player.nodes));
-  updateElText($(`#${color}-nps`), `${(player.nodes / player.usedTime / 1000).toFixed(2)}M`);
-  $(`#${color}-pv`).html(pv(game, color));
+  updateElText($(`#${color}-name`), game[color].name);
+  updateElText($(`#${color}-score`), formatScore(liveData.score, color));
+  updateElText($(`#${color}-depth`), liveData.depth);
+  updateElText($(`#${color}-nodes`), formatNodes(liveData.nodes));
+  updateElText(
+    $(`#${color}-nps`),
+    liveData.usedTime ? `${(liveData.nodes / liveData.usedTime / 1000).toFixed(2)}M` : '--',
+  );
+  $(`#${color}-pv`).html(pv(liveData, color));
 }
 
 export function updateHistoricalInfo(color, meta) {
@@ -97,14 +100,22 @@ export function updateMenu(menu) {
 
 export function update(game) {
   updateTitle(game);
-  updateInfo(game, 'white');
-  updateInfo(game, 'black');
   updateOpening(game);
   $('#fen').text(game.fen);
+
+  const liveColor = game.liveData.color === 'w' ? 'white' : 'black';
+  const otherColor = game.liveData.color === 'w' ? 'black' : 'white';
+
+  updateLiveInfo(game, liveColor);
+
+  updateElText($(`#${otherColor}-name`), game[otherColor].name);
+  const moves = game.moves || [];
+  const lastMeta = moves.length ? moves[moves.length - 1] : null;
+  updateHistoricalInfo(otherColor, lastMeta?.depth != null ? lastMeta : null);
 }
 
 export default {
-  updateInfo,
+  updateLiveInfo,
   updateHistoricalInfo,
   updateTitle,
   updateOpening,

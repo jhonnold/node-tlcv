@@ -19,14 +19,8 @@ function getMoveMetaAtIndex(navIndex) {
   const otherColor = moved.color === 'w' ? 'black' : 'white';
   const movedMeta = moved.depth !== null ? moved : null;
 
-  // Find the most recent meta for the other side before this point
-  let otherMeta = null;
-  for (let i = halfIdx - 1; i >= 0; i -= 1) {
-    if (moves[i].color !== moved.color && moves[i].depth !== null) {
-      otherMeta = moves[i];
-      break;
-    }
-  }
+  const other = halfIdx > 0 ? moves[halfIdx - 1] : null;
+  const otherMeta = other?.depth != null ? other : null;
 
   return { movedColor, movedMeta, otherColor, otherMeta };
 }

@@ -12,7 +12,6 @@ export function formatPv(pv, pvMoveNumber, color) {
   );
 }
 
-export default function pvString(game, color) {
-  const { pvMoveNumber: n, pv } = game[color];
-  return formatPv(pv, n, color);
+export default function pvString(liveData, color) {
+  return formatPv(liveData.pv, liveData.pvMoveNumber, color);
 }

@@ -109,6 +109,7 @@ class GameService {
     const color: Color = command === Command.WPLAYER ? 'white' : 'black';
     this.game[color].reset();
     this.game[color].name = name;
+    this.game.liveData.reset(this.game.instance.turn(), this.game.moveNumber);
     logger.info(`Updated game ${this.game.name} - Color: ${color}, Name: ${this.game[color].name}`, {
       port: this.broadcast.port,
     });
@@ -119,12 +120,15 @@ class GameService {
   private onPV(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
 
-    const color: Color = command === Command.WPV ? 'white' : 'black';
+    const colorCode: 'w' | 'b' = command === Command.WPV ? 'w' : 'b';
 
-    this.game[color].depth = parseInt(rest[0]);
-    this.game[color].score = parseInt(rest[1]) / 100;
-    this.game[color].nodes = parseInt(rest[3]);
-    this.game[color].usedTime = parseInt(rest[2]) * 10;
+    // Discard PV updates for the non-thinking color (handles stale post-move flush, issue #9)
+    if (colorCode !== this.game.liveData.color) return [EmitType.UPDATE, false];
+
+    this.game.liveData.depth = parseInt(rest[0]);
+    this.game.liveData.score = parseInt(rest[1]) / 100;
+    this.game.liveData.nodes = parseInt(rest[3]);
+    this.game.liveData.usedTime = parseInt(rest[2]) * 10;
 
     const pv = rest.slice(4);
 
@@ -133,11 +137,6 @@ class GameService {
 
     const parsed = new Array<string>();
     const pvAlg = new Array<string>();
-
-    // If the PV is not for the current STM then we undo the last move
-    // and attempt to parse the PV from that position. This will happen when
-    // the final pv is sent after the best move was sent. (See issue #9)
-    if (!color.startsWith(pvPlayout.turn())) pvPlayout.undo();
 
     for (let i = 0; i < pv.length; i++) {
       const alg = pv[i];
@@ -153,19 +152,19 @@ class GameService {
 
     // Only if we could parse at least 1 do
     if (parsed.length) {
-      this.game[color].pv = parsed;
-      this.game[color].pvAlg = pvAlg;
-      this.game[color].pvFen = pvPlayout.fen();
+      this.game.liveData.pv = parsed;
+      this.game.liveData.pvAlg = pvAlg;
+      this.game.liveData.pvFen = pvPlayout.fen();
     }
 
     logger.info(
-      `Updated game ${this.game.name} - Color: ${color}, Depth: ${this.game[color].depth}, Score: ${this.game[color].score}, Nodes: ${this.game[color].nodes}, UsedTime: ${this.game[color].usedTime}`,
+      `Updated game ${this.game.name} - Color: ${colorCode}, Depth: ${this.game.liveData.depth}, Score: ${this.game.liveData.score}, Nodes: ${this.game.liveData.nodes}, UsedTime: ${this.game.liveData.usedTime}`,
       { port: this.broadcast.port },
     );
     logger.info(
-      `Updated game ${this.game.name} - Color: ${color}, PVFen: ${this.game[color].pvFen}, PV: ${this.game[
-        color
-      ].pv.join(' ')}`,
+      `Updated game ${this.game.name} - Color: ${colorCode}, PVFen: ${
+        this.game.liveData.pvFen
+      }, PV: ${this.game.liveData.pv.join(' ')}`,
       {
         port: this.broadcast.port,
       },
@@ -191,10 +190,10 @@ class GameService {
 
     const color: Color = command === Command.WMOVE ? 'white' : 'black';
     const notColor: Color = command === Command.WMOVE ? 'black' : 'white';
+    const nextColorCode: 'w' | 'b' = command === Command.WMOVE ? 'b' : 'w';
 
     this.game.moveNumber = parseInt(rest[0].replace('.', ''));
-    if (color === 'white') this.game.black.pvMoveNumber = this.game.moveNumber;
-    else this.game.white.pvMoveNumber = this.game.moveNumber + 1;
+    const nextPvMoveNumber = color === 'white' ? this.game.moveNumber : this.game.moveNumber + 1;
 
     try {
       const move = this.game.instance.move(rest[1], { strict: false });
@@ -205,27 +204,27 @@ class GameService {
         port: this.broadcast.port,
       });
 
-      if (this.game[color].depth > 0) {
+      if (this.game.liveData.depth > 0) {
         this.game.moveMeta.push({
           color: colorCode,
           number: this.game.moveNumber,
           move: move.san,
-          depth: this.game[color].depth,
-          score: this.game[color].score,
-          nodes: this.game[color].nodes,
+          depth: this.game.liveData.depth,
+          score: this.game.liveData.score,
+          nodes: this.game.liveData.nodes,
           time:
             this.game[color].startTime > 0
               ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000)
               : null,
-          pv: this.game[color].pv.length ? [...this.game[color].pv] : null,
-          pvFen: this.game[color].pvFen,
-          pvMoveNumber: this.game[color].pvMoveNumber,
-          pvFollowup: this.game[color].pvAlg[1] || null,
+          pv: this.game.liveData.pv.length ? [...this.game.liveData.pv] : null,
+          pvFen: this.game.liveData.pvFen,
+          pvMoveNumber: this.game.liveData.pvMoveNumber,
+          pvFollowup: this.game.liveData.pvAlg[1] || null,
         });
 
         // Set the PGN comment for this move
-        const comment = `(${this.game[color].pv.join(' ')}) ${this.game[color].score.toFixed(2)}/${
-          this.game[color].depth
+        const comment = `(${this.game.liveData.pv.join(' ')}) ${this.game.liveData.score.toFixed(2)}/${
+          this.game.liveData.depth
         } ${Math.round((new Date().getTime() - this.game[color].startTime) / 1000)}`;
         this.game.instance.setComment(comment);
       } else {
@@ -245,6 +244,9 @@ class GameService {
 
         this.game.instance.setComment('(Book)');
       }
+
+      // Reset liveData for the next thinker
+      this.game.liveData.reset(nextColorCode, nextPvMoveNumber);
     } catch {
       logger.warn(
         `Failed to parse ${rest[1]} for game ${this.game.name}, fen ${this.game.instance.fen()}! Loading from FEN...`,
