@@ -92,11 +92,13 @@ export function init() {
 
   // Setup FEN copy
   $('#copy-fen-btn').on('click', () => copyFen($('#fen').text()));
+  $('#board-fen').on('click', () => copyFen($('#fen').text()));
 }
 
 export function destroy() {
   stopAllTimers();
   $('#copy-fen-btn').off('click');
+  $('#board-fen').off('click');
 }
 
 export default { init, destroy };

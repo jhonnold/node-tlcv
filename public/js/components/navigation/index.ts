@@ -59,6 +59,7 @@ function emitPosition() {
   const fen = getFen(navIndex);
   emit('nav:position', { fen, isLive: isLive(), index: navIndex, lastMove: getLastMove(navIndex) });
   $('#fen').text(fen);
+  $('#board-fen').text(fen);
 }
 
 function getStartMoveNumber() {

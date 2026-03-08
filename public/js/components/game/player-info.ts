@@ -66,11 +66,9 @@ export function updateTitle(game: SerializedGame) {
 }
 
 export function updateOpening(game: SerializedGame) {
-  if (game.tablebase) {
-    $('#caption').text(`Tablebase: ${game.tablebase}`);
-  } else {
-    $('#caption').text(`Opening: ${game.opening}`);
-  }
+  const text = game.tablebase ? `Tablebase: ${game.tablebase}` : `Opening: ${game.opening}`;
+  $('#caption').text(text);
+  $('#board-caption').text(text);
 }
 
 export function updateSpectators(spectators: string[]) {
@@ -101,6 +99,7 @@ export function update(game: SerializedGame) {
   updateTitle(game);
   updateOpening(game);
   $('#fen').text(game.fen);
+  $('#board-fen').text(game.fen);
 
   const liveColor = game.liveData.color === 'w' ? 'white' : 'black';
   const otherColor = game.liveData.color === 'w' ? 'black' : 'white';
