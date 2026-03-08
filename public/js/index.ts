@@ -2,6 +2,8 @@
 import { io } from 'socket.io-client';
 import $ from 'jquery';
 import { emit } from './events/index';
+import type { GameEventData } from './events/index';
+import type { SerializedBroadcast, BroadcastDelta } from '../../shared/types';
 
 // Import components
 import { init as initTheme } from './components/theme/index';
@@ -26,19 +28,48 @@ const socket = io({ autoConnect: false });
 // Pass socket to chat component
 setSocket(socket);
 
+// Cached state for delta merging
+let cachedState: GameEventData | null = null;
+
+function applyDelta(delta: BroadcastDelta): GameEventData | null {
+  if (!cachedState) return null;
+
+  if (delta.spectators !== undefined) cachedState.spectators = delta.spectators;
+  if (delta.menu !== undefined) cachedState.menu = delta.menu;
+
+  if (delta.game) {
+    const g = delta.game;
+    if (g.site !== undefined) cachedState.game.site = g.site;
+    if (g.white !== undefined) cachedState.game.white = g.white;
+    if (g.black !== undefined) cachedState.game.black = g.black;
+    if (g.startFen !== undefined) cachedState.game.startFen = g.startFen;
+    if (g.fen !== undefined) cachedState.game.fen = g.fen;
+    if (g.stm !== undefined) cachedState.game.stm = g.stm;
+    if (g.opening !== undefined) cachedState.game.opening = g.opening;
+    if (g.tablebase !== undefined) cachedState.game.tablebase = g.tablebase;
+    if (g.liveData !== undefined) cachedState.game.liveData = g.liveData;
+    if (g.resetMoves) cachedState.game.moves = [];
+    if (g.newMoves?.length) cachedState.game.moves = [...cachedState.game.moves, ...g.newMoves];
+  }
+
+  return cachedState;
+}
+
 function setupSocketEvents() {
   socket.on('connect', () => {
     socket.emit('join', { port, user: username() });
   });
 
-  socket.on('state', (data) => {
-    const { game: gameData, chat: chatData, ...rest } = data;
-    emit('game:state', { game: gameData, ...rest });
+  socket.on('state', (data: SerializedBroadcast) => {
+    const { chat: chatData, ...rest } = data;
+    cachedState = rest;
+    emit('game:state', rest);
     emit('chat:history', chatData);
   });
 
-  socket.on('update', (data) => {
-    emit('game:update', data);
+  socket.on('update', (delta: BroadcastDelta) => {
+    const merged = applyDelta(delta);
+    if (merged) emit('game:update', merged);
   });
 
   socket.on('new-chat', (data) => {

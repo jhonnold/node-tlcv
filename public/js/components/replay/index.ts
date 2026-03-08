@@ -25,7 +25,7 @@ function buildGameEventData(meta: StoredGameMeta): GameEventData {
         nodes: 0,
         usedTime: 0,
         pv: [],
-        pvAlg: [],
+        pvAlg: '',
         pvFen: EMPTY_FEN,
         pvMoveNumber: 1,
       },

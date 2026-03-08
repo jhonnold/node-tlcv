@@ -19,7 +19,7 @@ export type SerializedLiveData = {
   nodes: number;
   usedTime: number;
   pv: Array<string>;
-  pvAlg: Array<string>;
+  pvAlg: string;
   pvFen: string;
   pvMoveNumber: number;
 };
@@ -54,6 +54,26 @@ export enum EmitType {
   UPDATE = 'update',
   CHAT = 'new-chat',
 }
+
+export type GameDelta = {
+  site?: string;
+  white?: SerializedPlayer;
+  black?: SerializedPlayer;
+  startFen?: string | null;
+  fen?: string;
+  stm?: 'w' | 'b';
+  opening?: string;
+  tablebase?: string;
+  liveData?: SerializedLiveData;
+  newMoves?: MoveMetaData[];
+  resetMoves?: boolean;
+};
+
+export type BroadcastDelta = {
+  game?: GameDelta;
+  spectators?: Array<string>;
+  menu?: { [key: string]: string };
+};
 
 export type H2HCell = {
   results: string;

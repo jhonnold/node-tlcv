@@ -50,7 +50,7 @@ export class LiveData {
       nodes: this.nodes,
       usedTime: this.usedTime,
       pv: this.pv,
-      pvAlg: this.pvAlg,
+      pvAlg: this.pvAlg[0] ?? '',
       pvFen: this.pvFen,
       pvMoveNumber: this.pvMoveNumber,
     };

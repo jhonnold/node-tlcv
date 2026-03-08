@@ -43,14 +43,14 @@ function drawArrows() {
   const theme = localStorage.getItem('theme') || 'light';
   const mainArrowColor = theme === 'dark' ? '#68C07BEE' : '#114F8AEE';
 
-  const { pvAlg = [] } = lastGameData.liveData;
+  const { pvAlg = '' } = lastGameData.liveData;
   const moves = lastGameData.moves || [];
   const lastMeta = moves.length ? moves[moves.length - 1] : null;
   const followup = lastMeta?.pvFollowup || null;
 
-  const sameMove = pvAlg[0] === followup ? 1 : 0;
+  const sameMove = pvAlg === followup ? 1 : 0;
   if (followup) drawMove(followup, SECONDARY_ARROW_COLOR, 1 * sameMove);
-  if (pvAlg[0]) drawMove(pvAlg[0], mainArrowColor, -1 * sameMove);
+  if (pvAlg) drawMove(pvAlg, mainArrowColor, -1 * sameMove);
 }
 
 function handleGameUpdate(data: GameEventData) {

@@ -2,7 +2,7 @@ import { Chess } from 'chess.js';
 import slugify from 'slugify';
 import { ChessGame } from './chess-game.js';
 import { logger } from './util/index.js';
-import { Broadcast, SerializedBroadcast, username } from './broadcast.js';
+import { Broadcast, username } from './broadcast.js';
 import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
@@ -10,6 +10,7 @@ import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
 import { parseResults, parseGames } from './services/result-parser.js';
+import type { BroadcastDelta, GameDelta } from '../shared/types.js';
 
 type Color = 'white' | 'black';
 
@@ -28,8 +29,22 @@ type CommandConfig = {
   [key in Command]: ConfigItem;
 };
 
+type DirtyFlags = {
+  liveData: boolean;
+  clocks: boolean;
+  move: boolean;
+  players: boolean;
+  site: boolean;
+  spectators: boolean;
+  menu: boolean;
+};
+
+function freshFlags(): DirtyFlags {
+  return { liveData: false, clocks: false, move: false, players: false, site: false, spectators: false, menu: false };
+}
+
 export type GameServiceResult = {
-  update: SerializedBroadcast | null;
+  update: BroadcastDelta | null;
   chat: string[];
 };
 
@@ -38,6 +53,8 @@ class GameService {
   private broadcast: Broadcast;
   private game: ChessGame;
   private gamesParseTimer: ReturnType<typeof setTimeout> | null = null;
+  private dirty: DirtyFlags = freshFlags();
+  private moveCountBefore = 0;
 
   constructor(broadcast: Broadcast) {
     this.broadcast = broadcast;
@@ -91,18 +108,21 @@ class GameService {
 
     if (!this.game.loaded) {
       this.game.resetFromFen();
+      this.dirty.move = true;
+      this.dirty.liveData = true;
       logger.info(`Unloaded game ${this.game.name}, setting to FEN: ${this.game.instance.fen()}`, {
         port: this.broadcast.port,
       });
     } else if (this.game.fen.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq')) {
       // Reset everything on startpos
       this.game.reset();
+      this.dirty.move = true;
+      this.dirty.liveData = true;
       logger.info(`Received startpos for game ${this.game.name}, reseting the game.`, { port: this.broadcast.port });
     } else {
       logger.info(`Set backup FEN for ${this.game.name}: ${this.game.fen}`, { port: this.broadcast.port });
     }
 
-    // Never update on the FEN since we maintain our own state
     return [EmitType.UPDATE, false];
   }
 
@@ -118,7 +138,9 @@ class GameService {
       port: this.broadcast.port,
     });
 
-    return [EmitType.UPDATE, true];
+    this.dirty.players = true;
+    this.dirty.liveData = true;
+    return [EmitType.UPDATE, false];
   }
 
   private onPV(tokens: CommandTokens): UpdateResult {
@@ -174,7 +196,8 @@ class GameService {
       },
     );
 
-    return [EmitType.UPDATE, true];
+    this.dirty.liveData = true;
+    return [EmitType.UPDATE, false];
   }
 
   private onTime(tokens: CommandTokens): UpdateResult {
@@ -186,7 +209,9 @@ class GameService {
     logger.info(`Updated game ${this.game.name} - Color: ${color}, ClockTime: ${this.game[color].clockTime}`, {
       port: this.broadcast.port,
     });
-    return [EmitType.UPDATE, true];
+
+    this.dirty.clocks = true;
+    return [EmitType.UPDATE, false];
   }
 
   private async onMove(tokens: CommandTokens): Promise<UpdateResult> {
@@ -270,7 +295,9 @@ class GameService {
     if (opening) this.game.opening = opening;
     this.game.tablebase = tablebase;
 
-    return [EmitType.UPDATE, true];
+    this.dirty.move = true;
+    this.dirty.liveData = true;
+    return [EmitType.UPDATE, false];
   }
 
   private onSite(tokens: CommandTokens): UpdateResult {
@@ -284,7 +311,9 @@ class GameService {
     this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
 
     logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`, { port: this.broadcast.port });
-    return [EmitType.UPDATE, true];
+
+    this.dirty.site = true;
+    return [EmitType.UPDATE, false];
   }
 
   private onCTReset(): UpdateResult {
@@ -326,13 +355,15 @@ class GameService {
     if (username === tokens[1] || this.broadcast.spectators.has(tokens[1])) return [EmitType.UPDATE, false];
 
     this.broadcast.spectators.add(tokens[1]);
-    return [EmitType.UPDATE, true];
+    this.dirty.spectators = true;
+    return [EmitType.UPDATE, false];
   }
 
   private onDelUser(tokens: CommandTokens): UpdateResult {
     const result = this.broadcast.spectators.delete(tokens[1]);
 
-    return [EmitType.UPDATE, result];
+    if (result) this.dirty.spectators = true;
+    return [EmitType.UPDATE, false];
   }
 
   private onChat(tokens: CommandTokens): UpdateResult {
@@ -362,7 +393,9 @@ class GameService {
     logger.info(`Updated broadcast ${this.broadcast.port} Menu - Name: ${name}, Value: ${url}`, {
       port: this.broadcast.port,
     });
-    return [EmitType.UPDATE, true];
+
+    this.dirty.menu = true;
+    return [EmitType.UPDATE, false];
   }
 
   private async onResult(tokens: CommandTokens): Promise<UpdateResult> {
@@ -380,11 +413,75 @@ class GameService {
     return [EmitType.CHAT, true, message];
   }
 
+  private hasDirty(): boolean {
+    const d = this.dirty;
+    return d.liveData || d.clocks || d.move || d.players || d.site || d.spectators || d.menu;
+  }
+
+  private buildDelta(): BroadcastDelta {
+    const delta: BroadcastDelta = {};
+    const d = this.dirty;
+
+    if (d.liveData || d.clocks || d.move || d.players || d.site) {
+      const gameDelta: GameDelta = {};
+
+      if (d.players) {
+        gameDelta.white = this.game.white.toJSON();
+        gameDelta.black = this.game.black.toJSON();
+        gameDelta.startFen = this.game.startFen;
+        gameDelta.resetMoves = true;
+      }
+
+      if (d.clocks) {
+        gameDelta.white = this.game.white.toJSON();
+        gameDelta.black = this.game.black.toJSON();
+      }
+
+      if (d.site) {
+        gameDelta.site = this.game.site;
+      }
+
+      if (d.move) {
+        gameDelta.fen = this.game.instance.fen();
+        gameDelta.stm = this.game.instance.turn();
+        gameDelta.opening = this.game.opening;
+        gameDelta.tablebase = this.game.tablebase;
+
+        const newMoves = this.game.moveMeta.slice(this.moveCountBefore);
+        if (newMoves.length > 0) {
+          gameDelta.newMoves = newMoves;
+        }
+
+        // If moveMeta was cleared (resetFromFen / reset), signal a reset
+        if (this.game.moveMeta.length < this.moveCountBefore) {
+          gameDelta.resetMoves = true;
+          gameDelta.startFen = this.game.startFen;
+        }
+      }
+
+      if (d.liveData || d.move || d.players) {
+        gameDelta.liveData = this.game.liveData.toJSON();
+      }
+
+      delta.game = gameDelta;
+    }
+
+    if (d.spectators) {
+      delta.spectators = Array.from(this.broadcast.spectators);
+    }
+
+    if (d.menu) {
+      const menu: { [key: string]: string } = {};
+      for (const e of this.broadcast.menu.entries()) menu[e[0]] = e[1];
+      delta.menu = menu;
+    }
+
+    return delta;
+  }
+
   async onMessages(messages: string[]): Promise<GameServiceResult> {
-    // We collect results after processing all messages.
-    // updateEmit is the board result after the last processed message
-    // chatEmit is all the chats received across these messages
-    let updateEmit: SerializedBroadcast | null = null;
+    this.dirty = freshFlags();
+    this.moveCountBefore = this.game.moveMeta.length;
     const chatEmit: string[] = [];
 
     const processLowPrio = this.broadcast.browserCount > 0;
@@ -419,21 +516,16 @@ class GameService {
         commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
       );
 
-      if (updated) {
-        switch (emit) {
-          case EmitType.UPDATE:
-            updateEmit = this.broadcast.toJSON();
-            break;
-          case EmitType.CHAT:
-            chatEmit.push(updateData[0]);
-            break;
-        }
+      if (updated && emit === EmitType.CHAT) {
+        chatEmit.push(updateData[0]);
       }
     }
 
+    const update = this.hasDirty() ? this.buildDelta() : null;
+
     logger.info(`Successfully processed ${messages.length} message(s)`, { port: this.broadcast.port });
 
-    return { update: updateEmit, chat: chatEmit };
+    return { update, chat: chatEmit };
   }
 }
 

@@ -2,10 +2,15 @@ import { Server, Socket } from 'socket.io';
 import broadcasts, { Broadcast } from './broadcast.js';
 import { logger, uniqueName } from './util/index.js';
 import { EmitType } from '../shared/types.js';
+import type { BroadcastDelta } from '../shared/types.js';
 
 export { EmitType } from '../shared/types.js';
 
-const io = new Server();
+const io = new Server({
+  perMessageDeflate: {
+    threshold: 256,
+  },
+});
 
 io.on('connection', (socket: Socket) => {
   let broadcast: Broadcast | undefined;
@@ -41,7 +46,7 @@ io.on('connection', (socket: Socket) => {
 
     logger.info(`${originalUsername} changed their name to ${username}!`, { port: broadcast.port });
 
-    socket.emit('update', broadcast.toJSON());
+    socket.emit('state', broadcast.toJSON());
   });
 
   socket.on('disconnect', () => {
@@ -55,7 +60,7 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-export function emitUpdate(port: number, data: unknown): void {
+export function emitUpdate(port: number, data: BroadcastDelta): void {
   io.to(String(port)).emit(EmitType.UPDATE, data);
 }
 
