@@ -170,7 +170,7 @@
   width: 2px;
   height: 24px;
   border-radius: 1px;
-  background: var(--surfaceColorHover);
+  background: #9e9eaa;
   transition: background 0.15s;
 }
 
@@ -182,8 +182,13 @@
 
 .pv {
   overflow: hidden;
-
   white-space: nowrap;
+  margin-bottom: 0;
+  padding-bottom: var(--universal-margin);
+}
+
+small {
+  font-size: 0.875em;
 }
 
 .small-margin {
