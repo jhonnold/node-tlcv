@@ -10,27 +10,28 @@
   --textColor: #aaaaaa;
 }
 
-a.primary.button {
-  color: var(--backgroundColor);
-  background-color: var(--primaryColor);
-}
+a {
+  &:link {
+    color: var(--primaryColor);
+  }
 
-a.primary.button:hover {
-  background-color: #68c07b;
-}
+  &:visited {
+    color: var(--primaryColor);
+  }
 
-a:link {
-  color: var(--primaryColor);
-}
+  &.primary.button {
+    color: var(--backgroundColor);
+    background-color: var(--primaryColor);
 
-a:visited {
-  color: var(--primaryColor);
+    &:hover {
+      background-color: #68c07b;
+    }
+  }
 }
 
 body {
   font-family: 'Red Hat Text', sans-serif;
   font-weight: 500;
-
   color: var(--textColor);
   background-color: var(--backgroundColor);
 }
@@ -38,13 +39,12 @@ body {
 button.primary {
   font-family: 'Red Hat Text', sans-serif;
   font-weight: 500;
-
   color: var(--backgroundColor);
   background-color: var(--primaryColor);
-}
 
-button.primary:hover {
-  background-color: #68c07b;
+  &:hover {
+    background-color: #68c07b;
+  }
 }
 
 h3 small,
@@ -59,7 +59,6 @@ mark {
 
 strong {
   font-weight: 700;
-
   color: var(--secondaryColor);
 }
 
@@ -70,7 +69,6 @@ strong {
 
 .board-b72b1 {
   overflow: hidden;
-
   border-color: var(--surfaceColor);
   border-radius: 8px;
 }
@@ -87,25 +85,25 @@ strong {
 
 .info {
   border-right: 1px solid var(--surfaceColorHover);
+
+  &:last-of-type {
+    border: none;
+  }
 }
 
 .info-board .board-b72b1 {
   border-radius: 2px;
 }
 
-.info:last-of-type {
-  border: none;
-}
-
 .pv {
   font-weight: 300;
-
   color: var(--defaultWhite);
 }
 
 .small-margin {
   margin: calc(var(--universal-margin) / 4);
 }
+
 .white-1e1d7 {
   background-color: var(--boardLight);
   color: var(--boardDark);
@@ -115,10 +113,10 @@ strong {
   color: var(--defaultWhite);
   border-color: var(--surfaceColorHover);
   background-color: var(--surfaceColor);
-}
 
-#chat-area input:focus {
-  outline: 0 none;
+  &:focus {
+    outline: 0 none;
+  }
 }
 
 #chat-box {

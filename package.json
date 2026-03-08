@@ -59,6 +59,8 @@
     "prettier": "~2.3.2",
     "raw-loader": "^4.0.2",
     "rimraf": "~3.0.2",
+    "sass": "^1.97.3",
+    "sass-loader": "^16.0.7",
     "terser-webpack-plugin": "^5.3.17",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.1",
@@ -72,7 +74,7 @@
     "clean": "rimraf build",
     "dev-public": "webpack --watch --progress --config webpack/webpack.dev.js",
     "dev-server": "TS_NODE_PROJECT=tsconfig.backend.json nodemon --legacy-watch --watch src --watch shared -x node --loader ts-node/esm src/main.ts",
-    "format": "prettier --write {src,public,shared}/**/*.{ts,css,html}",
+    "format": "prettier --write {src,public,shared}/**/*.{ts,css,scss,html}",
     "prebuild": "webpack --config webpack/webpack.prod.js",
     "lint": "eslint --fix src public shared",
     "start": "node build/src/main.js",
@@ -88,7 +90,7 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "{src,public,shared}/**/*.{css,html}": [
+    "{src,public,shared}/**/*.{css,scss,html}": [
       "prettier --write"
     ]
   },

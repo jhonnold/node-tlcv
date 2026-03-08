@@ -1,0 +1,60 @@
+@use 'mixins' as *;
+
+@media screen and (max-width: 767px) {
+  #chat-area {
+    height: 400px !important;
+  }
+
+  #chat-area[data-active-tab='chat'] #chat-tab-panel {
+    grid-template-columns: auto 100px;
+  }
+
+  .main-layout {
+    display: flex;
+    flex-direction: column;
+    gap: calc(2 * var(--universal-margin));
+  }
+
+  .right-column {
+    display: contents;
+  }
+
+  #black-info {
+    order: -1;
+  }
+
+  #chat-area {
+    order: 1;
+  }
+
+  #resize-handle {
+    display: none;
+  }
+
+  .info-area {
+    grid-template-columns: auto;
+    grid-template-rows: 46.5px 120px;
+  }
+
+  .info-board {
+    display: none;
+  }
+
+  .move-table {
+    @include mini-table-mobile-reset;
+    td {
+      text-align: left;
+    }
+  }
+
+  .results-table {
+    @include mini-table-mobile-reset;
+  }
+
+  .games-table {
+    @include mini-table-mobile-reset;
+    td {
+      text-align: left;
+    }
+  }
+}

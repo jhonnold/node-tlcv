@@ -1,0 +1,93 @@
+@use 'mixins' as *;
+
+#moves-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+}
+
+#moves-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--surfaceColorHover);
+}
+
+#moves-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+#move-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.move-table {
+  @include mini-table-reset($width: 100%, $table-layout: true);
+
+  thead th {
+    @include sticky-th-header(0.7rem);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--surfaceColorHover);
+  }
+
+  tbody td {
+    padding: 6px 8px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .move-num {
+    color: var(--secondaryColor);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-align: right;
+    padding-right: 8px !important;
+  }
+}
+
+.move-col-num {
+  width: 36px;
+  text-align: right;
+}
+
+.move-col-white,
+.move-col-black {
+  text-align: left;
+}
+
+.move-placeholder {
+  color: var(--textColor);
+  opacity: 0.4;
+}
+
+.move-entry {
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--surfaceColorHover);
+  }
+
+  &.active {
+    background: var(--primaryColor);
+    color: var(--backgroundColor);
+    font-weight: 700;
+  }
+}

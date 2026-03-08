@@ -1,0 +1,17 @@
+.site-footer {
+  background-color: var(--surfaceColor);
+  border-top: 1px solid var(--surfaceColorHover);
+  padding: 12px 16px;
+  color: var(--textColor);
+  font-size: 0.75rem;
+}
+
+.site-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 2160px;
+  margin: 0 auto;
+  padding: 0 var(--universal-padding);
+}

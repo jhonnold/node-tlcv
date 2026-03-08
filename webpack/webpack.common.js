@@ -26,11 +26,11 @@ export default {
       'mini.css',
       'chessboardjs/www/css/chessboard.css',
       './public/js/index.ts',
-      './public/css/main.css',
+      './public/css/main.scss',
     ],
-    admin: ['reset-css', 'mini.css', './public/js/admin.ts', './public/css/main.css'],
-    broadcasts: ['reset-css', 'mini.css', './public/js/broadcasts.ts', './public/css/main.css'],
-    ['dark-theme']: ['./public/css/dark-theme.css'],
+    admin: ['reset-css', 'mini.css', './public/js/admin.ts', './public/css/main.scss'],
+    broadcasts: ['reset-css', 'mini.css', './public/js/broadcasts.ts', './public/css/main.scss'],
+    ['dark-theme']: ['./public/css/dark-theme.scss'],
   },
   output: {
     path: path.resolve('./build/public'),
@@ -67,6 +67,23 @@ export default {
               },
             },
           },
+        ],
+      },
+      {
+        test: /\.scss$/,
+        use: [
+          { loader: MiniCssExtractPlugin.loader },
+          { loader: 'css-loader' },
+          {
+            loader: 'postcss-loader',
+            options: {
+              postcssOptions: {
+                ident: 'postcss',
+                plugins: [autoprefixer],
+              },
+            },
+          },
+          { loader: 'sass-loader' },
         ],
       },
     ],

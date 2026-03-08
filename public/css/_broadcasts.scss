@@ -1,0 +1,52 @@
+.page-header {
+  text-align: center;
+  padding: 20px;
+}
+
+.broadcasts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.broadcast-card {
+  display: block;
+  background: var(--surfaceColor);
+  border: 1px solid var(--surfaceColorHover);
+  border-radius: 8px;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    background: var(--surfaceColorHover);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .players {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  .site {
+    color: var(--textColor);
+    font-size: 0.85em;
+    margin-bottom: 10px;
+  }
+
+  .viewers {
+    color: var(--textColor);
+    font-size: 0.9em;
+  }
+}
+
+.empty-message {
+  text-align: center;
+  padding: 40px;
+  color: var(--textColor);
+}

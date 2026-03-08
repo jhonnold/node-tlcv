@@ -1,0 +1,41 @@
+.main-layout {
+  display: grid;
+  grid-template-columns: minmax(475px, 1.5fr) 16px minmax(475px, 1fr);
+  gap: calc(var(--universal-margin) / 2);
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: calc(2 * var(--universal-margin));
+}
+
+#resize-handle {
+  width: 16px;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+
+  &::before,
+  &::after,
+  span {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 24px;
+    border-radius: 1px;
+    background: #9e9eaa;
+    transition: background 0.15s;
+  }
+
+  &:hover {
+    &::before,
+    &::after,
+    span {
+      background: var(--primaryColor);
+    }
+  }
+}

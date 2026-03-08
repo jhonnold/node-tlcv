@@ -1,0 +1,64 @@
+@use 'mixins' as *;
+
+#arrow-board {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+#black-info,
+#white-info {
+  flex-shrink: 0;
+}
+
+#board-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#board-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0 0;
+  gap: 6px;
+}
+
+#board-caption {
+  font-size: 0.85rem;
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--surfaceColorHover);
+  width: 100%;
+}
+
+#board-fen {
+  font-size: 0.8rem;
+  font-family: monospace;
+  cursor: pointer;
+  opacity: 0.6;
+  word-break: break-all;
+  text-align: center;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+#caption {
+  font-size: 0.75rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#copy-fen-btn,
+#pgn-btn {
+  @include icon-btn;
+  padding: 2px;
+  text-decoration: none;
+}

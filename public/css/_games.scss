@@ -1,0 +1,104 @@
+@use 'mixins' as *;
+
+#games-container {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+  box-sizing: border-box;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.games-table {
+  @include mini-table-reset($width: 100%, $table-layout: true);
+
+  thead th {
+    @include sticky-th-header(0.7rem);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--surfaceColorHover);
+  }
+
+  tbody td {
+    padding: 6px 8px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .games-num {
+    color: var(--secondaryColor);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-align: right;
+    padding-right: 8px !important;
+  }
+}
+
+.games-col-num {
+  width: 36px;
+  text-align: right;
+}
+
+.games-col-white,
+.games-col-black {
+  text-align: left;
+}
+
+.games-col-result {
+  width: 60px;
+  text-align: center;
+}
+
+.games-col-replay {
+  width: 36px;
+  text-align: center;
+}
+
+.games-col-pgn {
+  width: 36px;
+  text-align: center;
+}
+
+.games-replay {
+  text-align: center;
+}
+
+.games-replay-btn {
+  @include icon-btn;
+  margin: 0;
+  padding: 2px;
+  color: var(--primaryColor);
+  opacity: 0.7;
+  line-height: 0;
+}
+
+.games-pgn {
+  text-align: center;
+}
+
+.games-pgn-link {
+  color: var(--primaryColor);
+  opacity: 0.7;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:visited {
+    color: var(--primaryColor);
+  }
+}
+
+.games-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.games-loading,
+.games-error,
+.games-empty {
+  @include table-status-message;
+}

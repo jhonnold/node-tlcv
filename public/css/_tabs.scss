@@ -1,0 +1,65 @@
+#tab-bar {
+  display: flex;
+  flex-shrink: 0;
+  background-color: var(--surfaceColor);
+  border: 1px solid var(--surfaceColorHover);
+  border-radius: var(--universal-border-radius);
+  padding: 1px;
+  gap: 1px;
+  margin-bottom: 8px;
+}
+
+.tab-btn {
+  flex: 1;
+  text-align: center;
+  font-family: 'Red Hat Text', sans-serif;
+  font-weight: 500;
+  font-size: 0.8rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--universal-border-radius);
+  padding: 1px 6px;
+  cursor: pointer;
+  color: var(--textColor);
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s;
+
+  &.active {
+    opacity: 1;
+    background: var(--primaryColor);
+    color: var(--backgroundColor);
+  }
+
+  &:hover {
+    opacity: 1;
+    background: var(--surfaceColorHover);
+  }
+}
+
+#chat-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-panel {
+  display: none;
+  flex: 1;
+  min-height: 0;
+}
+
+#chat-area[data-active-tab='chat'] #chat-tab-panel {
+  display: grid;
+  grid-template-columns: auto 155px;
+  grid-template-rows: 40px auto 40px;
+  gap: var(--universal-margin);
+}
+
+#chat-area[data-active-tab='moves'] #moves-tab-panel,
+#chat-area[data-active-tab='results'] #results-tab-panel,
+#chat-area[data-active-tab='games'] #games-tab-panel,
+#chat-area[data-active-tab='details'] #details-tab-panel,
+#chat-area[data-active-tab='graphs'] #graphs-tab-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

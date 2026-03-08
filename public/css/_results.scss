@@ -1,0 +1,91 @@
+@use 'mixins' as *;
+
+#results-container {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+  box-sizing: border-box;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.results-table {
+  @include mini-table-reset($width: auto);
+  white-space: nowrap;
+
+  thead th {
+    @include sticky-th-header(0.65rem);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--surfaceColorHover);
+  }
+
+  tbody td {
+    padding: 6px 8px;
+    vertical-align: middle;
+  }
+
+  .results-rank {
+    color: var(--secondaryColor);
+  }
+
+  .results-points {
+    color: var(--secondaryColor);
+  }
+}
+
+.results-col-rank,
+.results-rank {
+  width: 24px;
+  text-align: right;
+  padding-right: 6px !important;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.results-col-name,
+.results-name {
+  text-align: left;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.results-col-games,
+.results-games {
+  text-align: right;
+  padding-right: 8px !important;
+}
+
+.results-col-points,
+.results-points {
+  text-align: right;
+  padding-right: 8px !important;
+  font-weight: 700;
+}
+
+.results-col-h2h,
+.results-h2h-cell {
+  text-align: center;
+  width: 24px;
+  min-width: 24px;
+  font-size: 0.65rem;
+  font-family: monospace;
+}
+
+.h2h-self {
+  background: var(--surfaceColorHover) !important;
+}
+
+.h2h-empty {
+  color: var(--textColor);
+  opacity: 0.2;
+}
+
+.results-loading,
+.results-error,
+.results-empty {
+  @include table-status-message;
+}

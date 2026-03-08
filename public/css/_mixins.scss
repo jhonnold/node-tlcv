@@ -1,0 +1,129 @@
+@mixin mini-table-reset($width: 100%, $table-layout: false) {
+  display: table;
+  width: $width;
+  max-height: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  padding: 0;
+  flex-flow: unset;
+
+  @if $table-layout {
+    table-layout: fixed;
+  }
+
+  thead,
+  tbody {
+    display: table-header-group;
+    border: 0;
+    flex-flow: unset;
+    max-width: none;
+    flex: unset;
+    margin: 0;
+  }
+
+  tbody {
+    display: table-row-group;
+  }
+
+  tr {
+    display: table-row;
+    padding: 0;
+    flex-flow: unset;
+    flex: unset;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  th,
+  td {
+    display: table-cell;
+    flex: unset;
+    overflow: visible;
+    text-overflow: clip;
+    background: transparent;
+    color: inherit;
+    border: 0;
+  }
+}
+
+@mixin mini-table-mobile-reset {
+  display: table;
+  border: 0;
+
+  thead,
+  thead th {
+    position: sticky;
+    height: auto;
+    width: auto;
+    margin: 0;
+    overflow: visible;
+    padding: 6px 8px 5px;
+    clip: auto;
+    clip-path: none;
+  }
+
+  tbody {
+    display: table-row-group;
+    border: 0;
+  }
+
+  tr {
+    display: table-row;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+  }
+
+  td {
+    display: table-cell;
+    border: 0;
+  }
+
+  td::before {
+    content: none;
+  }
+}
+
+@mixin icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--textColor);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+@mixin sticky-th-header($font-size: 0.7rem) {
+  position: sticky;
+  top: 0;
+  background: var(--backgroundColor);
+  color: var(--textColor);
+  opacity: 1;
+  font-size: $font-size;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 8px 5px;
+  border-bottom: 1px solid var(--surfaceColorHover);
+  z-index: 1;
+}
+
+@mixin table-status-message {
+  padding: 16px 8px;
+  color: var(--textColor);
+  opacity: 0.6;
+  font-size: 0.85rem;
+  text-align: center;
+}

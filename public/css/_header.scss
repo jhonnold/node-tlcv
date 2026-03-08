@@ -1,0 +1,60 @@
+@use 'mixins' as *;
+
+.site-header {
+  background-color: var(--surfaceColor);
+  border-bottom: 1px solid var(--surfaceColorHover);
+  padding: 12px 16px;
+  color: var(--textColor);
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 2160px;
+  margin: 0 auto;
+  padding: 0 var(--universal-padding);
+
+  .header-btn:first-of-type {
+    margin-left: auto;
+  }
+}
+
+.site-header-brand {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--textColor);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color 0.15s;
+
+  &:visited {
+    color: var(--textColor);
+  }
+
+  &:hover {
+    color: var(--primaryColor);
+  }
+}
+
+.site-header-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-btn {
+  @include icon-btn;
+  padding: 4px;
+  flex-shrink: 0;
+  border-radius: var(--universal-border-radius);
+  transition: opacity 0.15s, background 0.15s;
+
+  &:hover {
+    opacity: 1;
+    background: var(--surfaceColorHover);
+  }
+}

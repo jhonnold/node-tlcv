@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Red+Hat+Text:wght@300;500;700&display=swap');
+
+body {
+  font-family: 'Red Hat Text', sans-serif;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  color: var(--textColor);
+  background-color: var(--backgroundColor);
+  width: 100%;
+}
+
+a {
+  &:link {
+    color: var(--primaryColor);
+  }
+
+  &:visited {
+    color: var(--secondaryColor);
+  }
+
+  &.primary.button {
+    color: var(--backgroundColor);
+    background-color: var(--primaryColor);
+
+    &:hover {
+      background-color: var(--secondaryColor);
+    }
+  }
+}
+
+button.primary {
+  font-family: 'Red Hat Text', sans-serif;
+  font-weight: 500;
+  color: var(--backgroundColor);
+  background-color: var(--primaryColor);
+
+  &:hover {
+    background-color: var(--secondaryColor);
+  }
+}
+
+mark {
+  color: var(--backgroundColor);
+  background-color: var(--primaryColor);
+}
+
+pre {
+  margin: var(--universal-margin) 0;
+  border-left-color: var(--primaryColor);
+}
+
+small {
+  font-size: 0.875em;
+}
+
+strong {
+  font-weight: 700;
+  color: var(--secondaryColor);
+}
+
+h3 small,
+h6 small {
+  color: var(--textColor);
+}
+
+.container {
+  max-width: 2160px;
+  padding: var(--universal-padding);
+  flex: 1;
+}
+
+.small-margin {
+  margin: calc(var(--universal-margin) / 4);
+}
+
+.card {
+  color: var(--textColor);
+  border-color: var(--surfaceColorHover);
+  background-color: var(--surfaceColor);
+}

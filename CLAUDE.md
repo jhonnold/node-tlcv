@@ -61,9 +61,20 @@ The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
 - `types.ts` - Shared type definitions used by both backend and frontend (SerializedGame, MoveMetaData, etc.)
 - `chessboard.d.ts` - Type declarations for chessboardjs
 
+**Styles** (`public/css/`): SCSS with partials, compiled by webpack via `sass-loader`:
+- `main.scss` - Entry point that `@use`s all partials
+- `dark-theme.scss` - Standalone dark theme overrides (separate webpack entry)
+- `_variables.scss` - CSS custom properties (`:root` tokens)
+- `_mixins.scss` - Reusable mixins (`mini-table-reset`, `icon-btn`, `sticky-th-header`, `table-status-message`)
+- `_base.scss` - Global element styles, Google Fonts import
+- `_chessboard.scss`, `_layout.scss`, `_board.scss`, `_info-area.scss` - Board/layout components
+- `_header.scss`, `_footer.scss` - Site chrome
+- `_tabs.scss`, `_chat.scss`, `_moves.scss`, `_results.scss`, `_games.scss`, `_graphs.scss`, `_details.scss` - Tab panels
+- `_replay.scss`, `_broadcasts.scss`, `_focus.scss` - Feature-specific styles
+- `_responsive.scss` - Mobile breakpoint (`max-width: 767px`)
+
 **Assets**:
 - `public/img/` - Chess piece SVGs
-- `public/css/` - Main and dark theme stylesheets
 
 ### Key Classes
 
@@ -99,7 +110,8 @@ Socket.IO events:
 - TypeScript strict mode, ESNext target
 - Split tsconfigs: `tsconfig.backend.json` (backend + shared), `tsconfig.frontend.json` (frontend + shared)
 - Prettier for formatting (120 char width, single quotes, trailing commas, semicolons), ESLint for linting
-- Husky + lint-staged pre-commit hooks (runs eslint --fix + prettier --write on staged `.ts`/`.css`/`.html` files)
+- SCSS for styles — partials use `@use 'mixins' as *` for mixin access; CSS custom properties for runtime theming
+- Husky + lint-staged pre-commit hooks (runs eslint --fix + prettier --write on staged `.ts`/`.scss`/`.css`/`.html` files)
 - Node >= 18 required
 - ES modules (`"type": "module"` in package.json) — use `.js` extensions in backend imports even for `.ts` source files
 - Webpack bundles frontend assets (configs in `webpack/`)
@@ -156,3 +168,6 @@ Environment variables:
 - **PV color guard**: `onPV()` discards PV updates for the non-thinking color to prevent stale post-move flush from corrupting live data.
 - **Message batching**: The `MessageBuffer` drains every 100ms, so `GameService.onMessages()` receives batches. Low-priority commands are de-duplicated (last value wins) within a batch.
 - **FEN backup recovery**: If `chess.js` fails to parse a move, the game reloads from the most recent FEN command — the `fen` field on `ChessGame` is kept as a backup for this purpose.
+- **Sass `@use` ordering**: `@use` rules must appear before all other rules in a `.scss` file. CSS `@import url()` (e.g., Google Fonts) counts as "other rules" — place font imports in a partial like `_base.scss`, not alongside `@use` statements.
+- **Dual CSS/SCSS webpack rules**: `webpack.common.js` has separate rules for `.css` (third-party packages: reset-css, mini.css, chessboardjs) and `.scss` (project styles). Only project styles go through `sass-loader`.
+- **Dark theme isolation**: `dark-theme.scss` is a standalone webpack entry with no `@use` of project partials. It overrides CSS custom properties in `:root` and adds selector-level overrides. Do not add `@use` imports to it.
