@@ -1,14 +1,14 @@
 import { Chess, Move, validateFen } from 'chess.js';
 import dayjs from 'dayjs';
 import { logger } from './util/index.js';
-import type { MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
+import type { ColorCode, MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
 
-export type { MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
+export type { ColorCode, MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
 
 const EMPTY_FEN = '8/8/8/8/8/8/8/8 w - - 0 1';
 
 export class LiveData {
-  color: 'w' | 'b';
+  color: ColorCode;
   depth: number;
   score: number;
   nodes: number;
@@ -30,7 +30,7 @@ export class LiveData {
     this.pvMoveNumber = 1;
   }
 
-  reset(color: 'w' | 'b', pvMoveNumber: number): void {
+  reset(color: ColorCode, pvMoveNumber: number): void {
     this.color = color;
     this.depth = 0;
     this.score = 0;

@@ -1,53 +1,16 @@
 import fs from 'fs/promises';
 import { mkdirp } from 'mkdirp';
-import slugify from 'slugify';
 import type { ChessGame } from '../chess-game.js';
 import type { StoredGameMeta } from '../../shared/types.js';
-import { logger } from '../util/index.js';
+import { logger, siteSlug as toSiteSlug, gameFilenameSlug } from '../util/index.js';
+import { FileCache } from './file-cache.js';
 
-const cache = new Map<string, Map<number, string>>();
+const metaCache = new FileCache(/^(\d+)_.+\.meta\.json$/i);
 
-async function loadFromDisk(siteSlug: string): Promise<Map<number, string>> {
-  const map = new Map<number, string>();
-  const dir = `pgns/${siteSlug}`;
-
-  try {
-    const entries = await fs.readdir(dir);
-    for (const entry of entries) {
-      const match = /^(\d+)_.+\.meta\.json$/i.exec(entry);
-      if (match) map.set(parseInt(match[1], 10), entry);
-    }
-  } catch {
-    logger.info(`No PGN directory found for ${siteSlug}`);
-  }
-
-  return map;
-}
-
-async function getMetaFiles(siteSlug: string): Promise<Map<number, string>> {
-  let map = cache.get(siteSlug);
-  if (map) return map;
-
-  map = await loadFromDisk(siteSlug);
-  cache.set(siteSlug, map);
-  return map;
-}
-
-function addMetaFile(siteSlug: string, gameNumber: number, filename: string): void {
-  let map = cache.get(siteSlug);
-  if (!map) {
-    map = new Map();
-    cache.set(siteSlug, map);
-  }
-  map.set(gameNumber, filename);
-}
-
-export function invalidate(siteSlug: string): void {
-  cache.delete(siteSlug);
-}
+export const invalidate = metaCache.invalidate.bind(metaCache);
 
 export async function getMetaFile(siteSlug: string, gameNumber: number): Promise<StoredGameMeta | null> {
-  const files = await getMetaFiles(siteSlug);
+  const files = await metaCache.getFiles(siteSlug);
   const filename = files.get(gameNumber);
   if (!filename) return null;
 
@@ -60,7 +23,7 @@ export async function getMetaFile(siteSlug: string, gameNumber: number): Promise
 }
 
 export async function getMetaFileUrl(siteSlug: string, gameNumber: number): Promise<string | undefined> {
-  const files = await getMetaFiles(siteSlug);
+  const files = await metaCache.getFiles(siteSlug);
   const filename = files.get(gameNumber);
   return filename ? `/pgns/${siteSlug}/${filename}` : undefined;
 }
@@ -69,16 +32,16 @@ export async function saveGameMeta(game: ChessGame, port: number, gameNumber: nu
   const { white, black, site } = game;
   const meta: StoredGameMeta = { ...game.toJSON(), result };
 
-  const siteSlug = slugify(site, '_');
-  const dirname = `pgns/${siteSlug}`;
+  const slug = toSiteSlug(site);
+  const dirname = `pgns/${slug}`;
 
-  const filename = slugify(`${gameNumber}_${white.name}_vs_${black.name}`, '_').toLowerCase();
+  const filename = gameFilenameSlug(gameNumber, white.name, black.name);
   const filepath = `${dirname}/${filename}.meta.json`;
 
   try {
     await mkdirp(dirname);
     await fs.writeFile(filepath, JSON.stringify(meta));
-    addMetaFile(siteSlug, gameNumber, `${filename}.meta.json`);
+    metaCache.addFile(slug, gameNumber, `${filename}.meta.json`);
   } catch (error) {
     logger.error(`Unable to write meta to ${filepath}! - ${error}`, { port });
   }

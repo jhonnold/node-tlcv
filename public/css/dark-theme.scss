@@ -1,20 +1,18 @@
 :root {
   --primaryColor: #9fc0a2;
+  --primaryColorHover: #68c07b;
   --secondaryColor: #f5c276;
   --backgroundColor: #272a2c;
   --surfaceColor: #333538;
   --surfaceColorHover: #404246;
-  --defaultWhite: #f2f5f3;
   --boardDark: #71828f;
   --boardLight: #c7c7c7;
   --textColor: #aaaaaa;
+  --highlightColor: #99d69e66;
 }
 
 a {
-  &:link {
-    color: var(--primaryColor);
-  }
-
+  &:link,
   &:visited {
     color: var(--primaryColor);
   }
@@ -24,71 +22,30 @@ a {
     background-color: var(--primaryColor);
 
     &:hover {
-      background-color: #68c07b;
+      background-color: var(--primaryColorHover);
     }
   }
 }
 
-body {
-  font-family: 'Red Hat Text', sans-serif;
-  font-weight: 500;
-  color: var(--textColor);
-  background-color: var(--backgroundColor);
-}
-
 button.primary {
-  font-family: 'Red Hat Text', sans-serif;
+  font-family: var(--fontFamily);
   font-weight: 500;
   color: var(--backgroundColor);
   background-color: var(--primaryColor);
 
   &:hover {
-    background-color: #68c07b;
+    background-color: var(--primaryColorHover);
   }
 }
 
-h3 small,
-h6 small {
-  color: var(--textColor);
-}
-
-mark {
-  color: var(--backgroundColor);
-  background-color: var(--primaryColor);
-}
-
-strong {
-  font-weight: 700;
-  color: var(--secondaryColor);
-}
-
-.black-3c85d {
-  background-color: var(--boardDark);
-  color: var(--boardLight);
-}
-
-.board-b72b1 {
-  overflow: hidden;
-  border-color: var(--surfaceColor);
-  border-radius: 8px;
-}
-
 .card {
-  color: var(--defaultWhite);
+  color: #f2f5f3;
   border-color: var(--surfaceColorHover);
   background-color: var(--surfaceColor);
 }
 
 .highlight {
-  box-shadow: inset 0 0 0 1000px #99d69e66;
-}
-
-.info {
-  border-right: 1px solid var(--surfaceColorHover);
-
-  &:last-of-type {
-    border: none;
-  }
+  box-shadow: inset 0 0 0 1000px var(--highlightColor);
 }
 
 .info-board .board-b72b1 {
@@ -97,20 +54,11 @@ strong {
 
 .pv {
   font-weight: 300;
-  color: var(--defaultWhite);
-}
-
-.small-margin {
-  margin: calc(var(--universal-margin) / 4);
-}
-
-.white-1e1d7 {
-  background-color: var(--boardLight);
-  color: var(--boardDark);
+  color: #f2f5f3;
 }
 
 #chat-area input {
-  color: var(--defaultWhite);
+  color: #f2f5f3;
   border-color: var(--surfaceColorHover);
   background-color: var(--surfaceColor);
 

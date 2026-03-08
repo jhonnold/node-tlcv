@@ -1,3 +1,19 @@
+@mixin text-truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@mixin flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin flex-fill {
+  flex: 1;
+  min-height: 0;
+}
+
 @mixin mini-table-reset($width: 100%, $table-layout: false) {
   display: table;
   width: $width;
@@ -89,10 +105,11 @@
   }
 }
 
-@mixin icon-btn {
+@mixin icon-btn($padding: 4px) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: $padding;
   background: transparent;
   border: none;
   cursor: pointer;

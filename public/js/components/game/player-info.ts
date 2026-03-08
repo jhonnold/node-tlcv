@@ -1,19 +1,23 @@
 // public/js/components/game/player-info.js
 import $ from 'jquery';
 import type { SerializedGame, MoveMetaData } from '../../../../shared/types';
+import { colorName } from '../../../../shared/colors';
 import pv, { formatPv } from '../../utils/pv';
+import { updateFenDisplay } from '../../utils/fen';
 
 function updateElText(el: JQuery, val: string) {
   const curr = el.text();
   if (curr !== val) el.text(val);
 }
 
+const MATE_SCORE_THRESHOLD = 100000;
+
 function formatScore(score: number, color: string) {
   const s = color === 'black' ? score * -1 : score;
 
-  if (s > 100000) {
+  if (s > MATE_SCORE_THRESHOLD) {
     return 'M';
-  } else if (s < -100000) {
+  } else if (s < -MATE_SCORE_THRESHOLD) {
     return '-M';
   } else {
     return s.toFixed(2);
@@ -98,11 +102,10 @@ export function updateMenu(menu: { [key: string]: string }) {
 export function update(game: SerializedGame) {
   updateTitle(game);
   updateOpening(game);
-  $('#fen').text(game.fen);
-  $('#board-fen').text(game.fen);
+  updateFenDisplay(game.fen);
 
-  const liveColor = game.liveData.color === 'w' ? 'white' : 'black';
-  const otherColor = game.liveData.color === 'w' ? 'black' : 'white';
+  const liveColor = colorName(game.liveData.color);
+  const otherColor = colorName(game.liveData.color === 'w' ? 'b' : 'w');
 
   updateLiveInfo(game, liveColor);
 
@@ -111,13 +114,3 @@ export function update(game: SerializedGame) {
   const lastMeta = moves.length ? moves[moves.length - 1] : null;
   updateHistoricalInfo(otherColor, lastMeta?.depth != null ? lastMeta : null);
 }
-
-export default {
-  updateLiveInfo,
-  updateHistoricalInfo,
-  updateTitle,
-  updateOpening,
-  updateSpectators,
-  updateMenu,
-  update,
-};

@@ -6,6 +6,7 @@ import { on, emit } from '../../events/index';
 import type { GameEventData } from '../../events/index';
 import { getActiveTab } from '../tabs/index';
 import { isReplayMode } from '../replay/index';
+import { updateFenDisplay } from '../../utils/fen';
 
 // State
 // navIndex ranges from 0 to sanMoves.length inclusive:
@@ -58,8 +59,7 @@ function getLastMove(idx: number) {
 function emitPosition() {
   const fen = getFen(navIndex);
   emit('nav:position', { fen, isLive: isLive(), index: navIndex, lastMove: getLastMove(navIndex) });
-  $('#fen').text(fen);
-  $('#board-fen').text(fen);
+  updateFenDisplay(fen);
 }
 
 function getStartMoveNumber() {
@@ -277,5 +277,3 @@ export function init() {
     }
   });
 }
-
-export default { init };

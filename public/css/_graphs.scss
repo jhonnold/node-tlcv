@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 #graphs-layout {
   display: flex;
   flex-direction: row;
@@ -10,15 +12,13 @@
 }
 
 #graphs-chart-area {
-  flex: 1;
+  @include flex-fill;
   min-width: 0;
-  min-height: 0;
   position: relative;
 }
 
 #graph-selector {
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   gap: 4px;
   flex-shrink: 0;
   padding: 4px 0;
@@ -28,7 +28,7 @@
 }
 
 .graph-btn {
-  font-family: 'Red Hat Text', sans-serif;
+  font-family: var(--fontFamily);
   font-weight: 500;
   font-size: 0.75rem;
   background: transparent;

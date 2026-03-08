@@ -48,7 +48,6 @@
 
 .header-btn {
   @include icon-btn;
-  padding: 4px;
   flex-shrink: 0;
   border-radius: var(--universal-border-radius);
   transition: opacity 0.15s, background 0.15s;

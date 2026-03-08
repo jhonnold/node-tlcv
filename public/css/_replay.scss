@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 #replay-banner {
   display: flex;
   justify-content: space-between;
@@ -16,9 +18,7 @@
   }
 
   .replay-title {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    @include text-truncate;
   }
 }
 
@@ -29,7 +29,7 @@
   padding: 2px 10px;
   margin: 0;
   cursor: pointer;
-  font-family: 'Red Hat Text', sans-serif;
+  font-family: var(--fontFamily);
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: var(--universal-border-radius);

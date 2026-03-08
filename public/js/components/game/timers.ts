@@ -77,5 +77,3 @@ export function hideTimers() {
   $('#black-time').text('--:--');
   $('#black-think').text('');
 }
-
-export default { updateTimers, forceRestartTimers, stopAllTimers, hideTimers };

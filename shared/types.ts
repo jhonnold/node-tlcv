@@ -1,5 +1,7 @@
+export type ColorCode = 'w' | 'b';
+
 export type MoveMetaData = {
-  color: 'w' | 'b';
+  color: ColorCode;
   number: number;
   move: string;
   depth: number | null;
@@ -13,7 +15,7 @@ export type MoveMetaData = {
 };
 
 export type SerializedLiveData = {
-  color: 'w' | 'b';
+  color: ColorCode;
   depth: number;
   score: number;
   nodes: number;
@@ -38,7 +40,7 @@ export type SerializedGame = {
   fen: string;
   opening: string;
   tablebase: string;
-  stm: 'w' | 'b';
+  stm: ColorCode;
   moves: MoveMetaData[];
   startFen: string | null;
 };
@@ -61,7 +63,7 @@ export type GameDelta = {
   black?: SerializedPlayer;
   startFen?: string | null;
   fen?: string;
-  stm?: 'w' | 'b';
+  stm?: ColorCode;
   opening?: string;
   tablebase?: string;
   liveData?: SerializedLiveData;

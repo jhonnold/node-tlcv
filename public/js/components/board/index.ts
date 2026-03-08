@@ -2,6 +2,7 @@ import $ from 'jquery';
 import Chessboard from 'chessboardjs';
 import type { ChessboardInstance } from 'chessboardjs';
 import type { SerializedGame } from '../../../../shared/types';
+import { colorName } from '../../../../shared/colors';
 import { on } from '../../events/index';
 import type { GameEventData, NavPosition } from '../../events/index';
 import { drawMove, clearArrows } from './arrows';
@@ -17,11 +18,18 @@ let lastGameData: SerializedGame | null = null;
 let navFollowup: string | null = null;
 
 const SECONDARY_ARROW_COLOR = '#F3AE4888';
+const MAIN_ARROW_LIGHT = '#114F8AEE';
+const MAIN_ARROW_DARK = '#68C07BEE';
 const EMPTY_FEN = '8/8/8/8/8/8/8/8';
 
+function updatePvBoards(fens: { white: string; black: string }) {
+  pvBoardWhite!.position(fens.white, false);
+  pvBoardBlack!.position(fens.black, false);
+}
+
 function getLivePvFens(game: SerializedGame): { white: string; black: string } {
-  const liveColor = game.liveData.color === 'w' ? 'white' : 'black';
-  const otherColor = game.liveData.color === 'w' ? 'black' : 'white';
+  const liveColor = colorName(game.liveData.color);
+  const otherColor = colorName(game.liveData.color === 'w' ? 'b' : 'w');
   const moves = game.moves || [];
   const lastMeta = moves.length ? moves[moves.length - 1] : null;
 
@@ -41,7 +49,7 @@ function drawArrows() {
   }
 
   const theme = localStorage.getItem('theme') || 'light';
-  const mainArrowColor = theme === 'dark' ? '#68C07BEE' : '#114F8AEE';
+  const mainArrowColor = theme === 'dark' ? MAIN_ARROW_DARK : MAIN_ARROW_LIGHT;
 
   const { pvAlg = '' } = lastGameData.liveData;
   const moves = lastGameData.moves || [];
@@ -62,9 +70,7 @@ function handleGameUpdate(data: GameEventData) {
 
   // Board position is controlled by nav:position event
   if (live) {
-    const pvFens = getLivePvFens(game);
-    pvBoardWhite!.position(pvFens.white, false);
-    pvBoardBlack!.position(pvFens.black, false);
+    updatePvBoards(getLivePvFens(game));
   }
 
   drawArrows();
@@ -75,9 +81,7 @@ function handleGameState(data: GameEventData) {
   lastGameData = game;
 
   if (live) {
-    const pvFens = getLivePvFens(game);
-    pvBoardWhite!.position(pvFens.white, false);
-    pvBoardBlack!.position(pvFens.black, false);
+    updatePvBoards(getLivePvFens(game));
   }
 
   drawArrows();
@@ -103,8 +107,8 @@ function getPvFenAtIndex(navIndex: number): { white: string; black: string } {
 
   const halfIdx = navIndex - 1;
   const moved = moves[halfIdx];
-  const movedColor = moved.color === 'w' ? 'white' : 'black';
-  const otherColor = moved.color === 'w' ? 'black' : 'white';
+  const movedColor = colorName(moved.color);
+  const otherColor = colorName(moved.color === 'w' ? 'b' : 'w');
 
   return {
     [movedColor]: moved.pvFen || EMPTY_FEN,
@@ -128,14 +132,9 @@ function handleNavPosition({ fen, isLive, lastMove, index }: NavPosition) {
   navFollowup = isLive ? null : getFollowupAtIndex(index);
 
   if (!isLive) {
-    const pvFens = getPvFenAtIndex(index);
-    pvBoardWhite!.position(pvFens.white, false);
-    pvBoardBlack!.position(pvFens.black, false);
+    updatePvBoards(getPvFenAtIndex(index));
   } else if (!wasLive && lastGameData) {
-    // Restore PV boards when returning to live
-    const pvFens = getLivePvFens(lastGameData);
-    pvBoardWhite!.position(pvFens.white, false);
-    pvBoardBlack!.position(pvFens.black, false);
+    updatePvBoards(getLivePvFens(lastGameData));
   }
 
   drawArrows();
@@ -184,5 +183,3 @@ export function resize() {
 export function getBoards() {
   return { board, pvBoardWhite, pvBoardBlack };
 }
-
-export default { init, resize, getBoards };

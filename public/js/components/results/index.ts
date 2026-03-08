@@ -2,10 +2,7 @@
 import $ from 'jquery';
 import type { H2HCell, StandingsRow } from '../../../../shared/types';
 import { on } from '../../events/index';
-
-function getPort() {
-  return +window.location.pathname.replace(/\//g, '');
-}
+import { getPort } from '../../utils/url';
 
 function renderH2HCell(cell: H2HCell, isSelf: boolean) {
   const $td = $('<td>').addClass('results-h2h-cell');
@@ -91,5 +88,3 @@ export function init() {
     if (tab === 'results') fetchAndRender();
   });
 }
-
-export default { init };

@@ -32,7 +32,7 @@
     font-weight: 700;
     font-size: 0.75rem;
     text-align: right;
-    padding-right: 8px !important;
+    padding-right: 8px;
   }
 }
 
@@ -66,9 +66,8 @@
 }
 
 .games-replay-btn {
-  @include icon-btn;
+  @include icon-btn(2px);
   margin: 0;
-  padding: 2px;
   color: var(--primaryColor);
   opacity: 0.7;
   line-height: 0;

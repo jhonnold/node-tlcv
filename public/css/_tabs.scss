@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 #tab-bar {
   display: flex;
   flex-shrink: 0;
@@ -12,7 +14,7 @@
 .tab-btn {
   flex: 1;
   text-align: center;
-  font-family: 'Red Hat Text', sans-serif;
+  font-family: var(--fontFamily);
   font-weight: 500;
   font-size: 0.8rem;
   background: transparent;
@@ -37,14 +39,12 @@
 }
 
 #chat-area {
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
 }
 
 .tab-panel {
   display: none;
-  flex: 1;
-  min-height: 0;
+  @include flex-fill;
 }
 
 #chat-area[data-active-tab='chat'] #chat-tab-panel {
@@ -59,7 +59,6 @@
 #chat-area[data-active-tab='games'] #games-tab-panel,
 #chat-area[data-active-tab='details'] #details-tab-panel,
 #chat-area[data-active-tab='graphs'] #graphs-tab-panel {
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   overflow: hidden;
 }

@@ -15,14 +15,12 @@
 
 #board-container {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   justify-content: center;
 }
 
 #board-footer {
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   align-items: center;
   padding: 6px 0 0;
   gap: 6px;
@@ -51,14 +49,11 @@
 
 #caption {
   font-size: 0.75rem;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  @include text-truncate;
 }
 
 #copy-fen-btn,
 #pgn-btn {
-  @include icon-btn;
-  padding: 2px;
+  @include icon-btn(2px);
   text-decoration: none;
 }

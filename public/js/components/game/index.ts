@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import type { SerializedGame } from '../../../../shared/types';
+import { colorName } from '../../../../shared/colors';
 import { on } from '../../events/index';
 import type { GameEventData, NavPosition } from '../../events/index';
 import { updateTimers, stopAllTimers, hideTimers, forceRestartTimers } from './timers';
@@ -18,8 +19,8 @@ function getMoveMetaAtIndex(navIndex: number) {
 
   const halfIdx = navIndex - 1;
   const moved = moves[halfIdx];
-  const movedColor = moved.color === 'w' ? 'white' : 'black';
-  const otherColor = moved.color === 'w' ? 'black' : 'white';
+  const movedColor = colorName(moved.color);
+  const otherColor = colorName(moved.color === 'w' ? 'b' : 'w');
   const movedMeta = moved.depth !== null ? moved : null;
 
   const other = halfIdx > 0 ? moves[halfIdx - 1] : null;
@@ -100,5 +101,3 @@ export function destroy() {
   $('#copy-fen-btn').off('click');
   $('#board-fen').off('click');
 }
-
-export default { init, destroy };

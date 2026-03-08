@@ -46,5 +46,3 @@ export function init() {
 export function destroy() {
   $('#theme-toggle').off('click');
 }
-
-export default { init, destroy, setTheme, getTheme };

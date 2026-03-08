@@ -33,5 +33,3 @@ export function destroy() {
   $('#focus-toggle').off('click');
   $(document).off('keydown', handleKeyDown);
 }
-
-export default { init, destroy };

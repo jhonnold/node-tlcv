@@ -9,6 +9,7 @@ import type { SerializedBroadcast } from '../shared/types.js';
 export type { SerializedBroadcast } from '../shared/types.js';
 
 export const username = 'tlcv.net';
+const PING_INTERVAL_MS = 10000;
 
 export class Broadcast {
   readonly host: string;
@@ -18,7 +19,7 @@ export class Broadcast {
   private state: BroadcastState;
   private gameService: GameService;
   private conn: Connection;
-  private pings: NodeJS.Timeout;
+  private pings!: NodeJS.Timeout;
 
   constructor(host: string, ip: string, port: number) {
     this.host = host;
@@ -30,10 +31,13 @@ export class Broadcast {
     this.gameService = new GameService(this);
     this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this));
 
-    this.conn.send(`LOGONv15:${username}`);
-    this.pings = setInterval(() => this.conn.send('PING'), 10000);
-
+    this.connect();
     this.reloadResults();
+  }
+
+  private connect(): void {
+    this.conn.send(`LOGONv15:${username}`);
+    this.pings = setInterval(() => this.conn.send('PING'), PING_INTERVAL_MS);
   }
 
   private async processMessages(messages: string[]): Promise<void> {
@@ -58,8 +62,7 @@ export class Broadcast {
 
     setTimeout(() => {
       this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this));
-      this.conn.send(`LOGONv15:${username}`);
-      this.pings = setInterval(() => this.conn.send('PING'), 10000);
+      this.connect();
     }, 500);
   }
 

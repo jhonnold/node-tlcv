@@ -27,6 +27,15 @@
     vertical-align: middle;
   }
 
+  .results-rank,
+  .results-col-rank {
+    width: 24px;
+    text-align: right;
+    padding-right: 6px;
+    font-weight: 700;
+    font-size: 0.7rem;
+  }
+
   .results-rank {
     color: var(--secondaryColor);
   }
@@ -34,49 +43,40 @@
   .results-points {
     color: var(--secondaryColor);
   }
-}
 
-.results-col-rank,
-.results-rank {
-  width: 24px;
-  text-align: right;
-  padding-right: 6px !important;
-  font-weight: 700;
-  font-size: 0.7rem;
-}
+  .results-col-name,
+  .results-name {
+    text-align: left;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-.results-col-name,
-.results-name {
-  text-align: left;
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .results-col-games,
+  .results-games {
+    text-align: right;
+    padding-right: 8px;
+  }
 
-.results-col-games,
-.results-games {
-  text-align: right;
-  padding-right: 8px !important;
-}
+  .results-col-points,
+  .results-points {
+    text-align: right;
+    padding-right: 8px;
+    font-weight: 700;
+  }
 
-.results-col-points,
-.results-points {
-  text-align: right;
-  padding-right: 8px !important;
-  font-weight: 700;
-}
+  .results-col-h2h,
+  .results-h2h-cell {
+    text-align: center;
+    width: 24px;
+    min-width: 24px;
+    font-size: 0.65rem;
+    font-family: monospace;
+  }
 
-.results-col-h2h,
-.results-h2h-cell {
-  text-align: center;
-  width: 24px;
-  min-width: 24px;
-  font-size: 0.65rem;
-  font-family: monospace;
-}
-
-.h2h-self {
-  background: var(--surfaceColorHover) !important;
+  .h2h-self {
+    background: var(--surfaceColorHover);
+  }
 }
 
 .h2h-empty {

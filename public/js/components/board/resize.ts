@@ -130,5 +130,3 @@ export function initResize(
     }
   });
 }
-
-export default { initResize, chatHeight, updateLayout };

@@ -1,10 +1,8 @@
 @use 'mixins' as *;
 
 #moves-card {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  @include flex-col;
+  @include flex-fill;
   margin: 0;
 }
 
@@ -26,8 +24,7 @@
 }
 
 #move-list {
-  flex: 1;
-  min-height: 0;
+  @include flex-fill;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
@@ -57,7 +54,7 @@
     font-weight: 700;
     font-size: 0.75rem;
     text-align: right;
-    padding-right: 8px !important;
+    padding-right: 8px;
   }
 }
 

@@ -18,9 +18,10 @@ import { init as initReplay } from './components/replay/index';
 import { init as initGraphs } from './components/graphs/index';
 import { init as initFocus } from './components/focus/index';
 import { chatHeight, updateLayout } from './components/board/resize';
+import { getPort } from './utils/url';
 
 // Get port from URL
-const port = +window.location.pathname.replace(/\//g, '');
+const port = getPort();
 
 // Initialize socket
 const socket = io({ autoConnect: false });
@@ -38,18 +39,10 @@ function applyDelta(delta: BroadcastDelta): GameEventData | null {
   if (delta.menu !== undefined) cachedState.menu = delta.menu;
 
   if (delta.game) {
-    const g = delta.game;
-    if (g.site !== undefined) cachedState.game.site = g.site;
-    if (g.white !== undefined) cachedState.game.white = g.white;
-    if (g.black !== undefined) cachedState.game.black = g.black;
-    if (g.startFen !== undefined) cachedState.game.startFen = g.startFen;
-    if (g.fen !== undefined) cachedState.game.fen = g.fen;
-    if (g.stm !== undefined) cachedState.game.stm = g.stm;
-    if (g.opening !== undefined) cachedState.game.opening = g.opening;
-    if (g.tablebase !== undefined) cachedState.game.tablebase = g.tablebase;
-    if (g.liveData !== undefined) cachedState.game.liveData = g.liveData;
-    if (g.resetMoves) cachedState.game.moves = [];
-    if (g.newMoves?.length) cachedState.game.moves = [...cachedState.game.moves, ...g.newMoves];
+    const { resetMoves, newMoves, ...fields } = delta.game;
+    Object.assign(cachedState.game, fields);
+    if (resetMoves) cachedState.game.moves = [];
+    if (newMoves?.length) cachedState.game.moves = [...cachedState.game.moves, ...newMoves];
   }
 
   return cachedState;

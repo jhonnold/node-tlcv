@@ -108,5 +108,3 @@ export function destroy() {
   $('#chat-msg').off('keyup send');
   $('#username').off('blur');
 }
-
-export default { init, destroy, setSocket };

@@ -5,16 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Broadcasts - Lichess TV Chess</title>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FGG2Y6TFLR"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        window.dataLayer.push(arguments);
-      }
-      gtag('js', new Date());
-
-      gtag('config', 'G-FGG2Y6TFLR');
-    </script>
+    <%- include('../partials/analytics') %>
   </head>
   <body>
     <%- include('../partials/header', { showFocus: false }) %>
@@ -41,16 +32,6 @@
       </div>
       <% } %>
     </div>
-    <footer class="site-footer">
-      <div class="site-footer-inner">
-        <small>
-          Chessboard by <a href="https://chessboardjs.com/">chessboard.js</a>. Chess pieces by
-          <a href="https://en.wikipedia.org/wiki/User:Cburnett">Cburnett</a>. Broadcasts by
-          <a href="https://computerchess.org.uk/ccrl/4040/">Graham Banks, CCRL</a>. Hosting and Development by
-          <a href="https://github.com/jhonnold">Jay Honnold</a>. Have a question, recommendation, or concern? Reach
-          out <a href="https://github.com/jhonnold/node-tlcv/issues">here</a>.
-        </small>
-      </div>
-    </footer>
+    <%- include('../partials/footer') %>
   </body>
 </html>

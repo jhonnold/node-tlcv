@@ -90,5 +90,3 @@ export function init() {
   on('game:replay', (meta) => enterReplay(meta));
   on('replay:exit', () => exitReplay());
 }
-
-export default { init, isReplayMode };

@@ -1,87 +1,102 @@
 // public/js/components/board/arrows.js
 import $ from 'jquery';
 
-function transform(xy: number[], angle: number, xy0: number[]) {
-  const relX = xy[0] - xy0[0];
-  const relY = xy[1] - xy0[1];
-  const newRelX = Math.cos(angle) * relX - Math.sin(angle) * relY;
-  const newRelY = Math.sin(angle) * relX + Math.cos(angle) * relY;
-  return [xy0[0] + newRelX, xy0[1] + newRelY];
+const CHAR_CODE_A = 96; // 'a'.charCodeAt(0) - 1, so file 'a' = 1
+
+function rotatePoint(point: number[], angle: number, origin: number[]) {
+  const dx = point[0] - origin[0];
+  const dy = point[1] - origin[1];
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return [origin[0] + cos * dx - sin * dy, origin[1] + sin * dx + cos * dy];
 }
 
 function drawArrow(
-  context: CanvasRenderingContext2D,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  width: number,
+  ctx: CanvasRenderingContext2D,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+  shaftWidth: number,
   headWidth: number,
   headLength: number,
 ) {
-  const length = Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
-  let angle = Math.atan2(y1 - y0, x1 - x0);
-  angle -= Math.PI / 2;
+  const length = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+  const angle = Math.atan2(endY - startY, endX - startX) - Math.PI / 2;
 
-  const p0 = [x0, y0];
-  let p1 = [x0 + width / 2, y0];
-  let p2 = [x0 - width / 2, y0];
-  let p3 = [x0 + width / 2, y0 + length - headLength];
-  let p4 = [x0 - width / 2, y0 + length - headLength];
-  let p5 = [x0 + headWidth / 2, y0 + length - headLength];
-  let p6 = [x0 - headWidth / 2, y0 + length - headLength];
-  let p7 = [x0, y0 + length];
+  const origin = [startX, startY];
+  const halfShaft = shaftWidth / 2;
+  const shaftEnd = length - headLength;
 
-  p1 = transform(p1, angle, p0);
-  p2 = transform(p2, angle, p0);
-  p3 = transform(p3, angle, p0);
-  p4 = transform(p4, angle, p0);
-  p5 = transform(p5, angle, p0);
-  p6 = transform(p6, angle, p0);
-  p7 = transform(p7, angle, p0);
+  // Arrow shape points (before rotation): shaft right/left, head-base right/left, tip
+  const shaftTopRight = rotatePoint([startX + halfShaft, startY], angle, origin);
+  const shaftTopLeft = rotatePoint([startX - halfShaft, startY], angle, origin);
+  const shaftBottomRight = rotatePoint([startX + halfShaft, startY + shaftEnd], angle, origin);
+  const shaftBottomLeft = rotatePoint([startX - halfShaft, startY + shaftEnd], angle, origin);
+  const headRight = rotatePoint([startX + headWidth / 2, startY + shaftEnd], angle, origin);
+  const headLeft = rotatePoint([startX - headWidth / 2, startY + shaftEnd], angle, origin);
+  const tip = rotatePoint([startX, startY + length], angle, origin);
 
-  context.moveTo(p1[0], p1[1]);
-  context.beginPath();
-  context.lineTo(p3[0], p3[1]);
-  context.lineTo(p5[0], p5[1]);
-  context.lineTo(p7[0], p7[1]);
-  context.lineTo(p6[0], p6[1]);
-  context.lineTo(p4[0], p4[1]);
-  context.lineTo(p2[0], p2[1]);
-  context.lineTo(p1[0], p1[1]);
-  context.closePath();
-  context.arc(x0, y0, width / 2, angle - Math.PI, angle);
-  context.fill();
+  ctx.moveTo(shaftTopRight[0], shaftTopRight[1]);
+  ctx.beginPath();
+  ctx.lineTo(shaftBottomRight[0], shaftBottomRight[1]);
+  ctx.lineTo(headRight[0], headRight[1]);
+  ctx.lineTo(tip[0], tip[1]);
+  ctx.lineTo(headLeft[0], headLeft[1]);
+  ctx.lineTo(shaftBottomLeft[0], shaftBottomLeft[1]);
+  ctx.lineTo(shaftTopLeft[0], shaftTopLeft[1]);
+  ctx.lineTo(shaftTopRight[0], shaftTopRight[1]);
+  ctx.closePath();
+  ctx.arc(startX, startY, halfShaft, angle - Math.PI, angle);
+  ctx.fill();
 }
 
 export function drawMove(move: string, color: string, shift = 0) {
   const board = $('#board');
-  const breite = board.height()!;
+  const boardSize = board.height()!;
 
   const canvas = $('#arrow-board')[0] as HTMLCanvasElement;
   const ctx = canvas.getContext('2d');
 
   if (ctx === null) return;
 
-  const fromX = move.charCodeAt(0) - 96;
-  const fromY = Number(move.charAt(1));
-  const toX = move.charCodeAt(2) - 96;
-  const toY = Number(move.charAt(3));
+  const fromFile = move.charCodeAt(0) - CHAR_CODE_A;
+  const fromRank = Number(move.charAt(1));
+  const toFile = move.charCodeAt(2) - CHAR_CODE_A;
+  const toRank = Number(move.charAt(3));
 
-  const maxY = $('#arrow-board').height()!;
+  const canvasHeight = $('#arrow-board').height()!;
 
-  const b = breite / 8;
-  const c = b / 2;
-  const sx = fromX * b - c;
-  const sy = maxY - (fromY * b - c);
-  const ex = toX * b - c;
-  const ey = maxY - (toY * b - c);
-  const w = (b / 3.5) * 0.5;
-  const l = Math.sqrt((ex - sx) ** 2 + (ey - sy) ** 2);
-  const offset = transform([((ex - sx) * shift * w) / 4 / l, ((ey - sy) * shift * w) / 4 / l], 3.1415926 / 2, [0, 0]);
+  const squareSize = boardSize / 8;
+  const squareCenter = squareSize / 2;
+  const startX = fromFile * squareSize - squareCenter;
+  const startY = canvasHeight - (fromRank * squareSize - squareCenter);
+  const endX = toFile * squareSize - squareCenter;
+  const endY = canvasHeight - (toRank * squareSize - squareCenter);
+  const arrowWidth = (squareSize / 3.5) * 0.5;
+  const arrowLength = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+
+  // Perpendicular offset to separate overlapping arrows
+  const offset = rotatePoint(
+    [
+      ((endX - startX) * shift * arrowWidth) / 4 / arrowLength,
+      ((endY - startY) * shift * arrowWidth) / 4 / arrowLength,
+    ],
+    Math.PI / 2,
+    [0, 0],
+  );
 
   ctx.fillStyle = color;
-  drawArrow(ctx, sx + offset[0], sy + offset[1], ex + offset[0], ey + offset[1], w, 3.5 * w, b / 3);
+  drawArrow(
+    ctx,
+    startX + offset[0],
+    startY + offset[1],
+    endX + offset[0],
+    endY + offset[1],
+    arrowWidth,
+    3.5 * arrowWidth,
+    squareSize / 3,
+  );
 }
 
 export function clearArrows() {
@@ -90,5 +105,3 @@ export function clearArrows() {
   if (ctx === null) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
-
-export default { drawMove, clearArrows };

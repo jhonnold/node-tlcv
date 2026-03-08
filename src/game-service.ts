@@ -1,7 +1,6 @@
 import { Chess } from 'chess.js';
-import slugify from 'slugify';
 import { ChessGame } from './chess-game.js';
-import { logger } from './util/index.js';
+import { logger, siteSlug } from './util/index.js';
 import { Broadcast, username } from './broadcast.js';
 import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
@@ -10,7 +9,7 @@ import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
 import { parseResults, parseGames } from './services/result-parser.js';
-import type { BroadcastDelta, GameDelta } from '../shared/types.js';
+import type { BroadcastDelta, ColorCode, GameDelta } from '../shared/types.js';
 
 type Color = 'white' | 'black';
 
@@ -143,44 +142,45 @@ class GameService {
     return [EmitType.UPDATE, false];
   }
 
+  private playoutPV(pv: string[]): { san: string[]; alg: string[]; fen: string } | null {
+    const pvPlayout = new Chess();
+    pvPlayout.loadPgn(this.game.instance.pgn());
+
+    const san: string[] = [];
+    const alg: string[] = [];
+
+    for (const move of pv) {
+      try {
+        const result = pvPlayout.move(move, { strict: false });
+        san.push(result.san);
+        alg.push(`${result.from}${result.to}`);
+      } catch {
+        break;
+      }
+    }
+
+    return san.length ? { san, alg, fen: pvPlayout.fen() } : null;
+  }
+
   private onPV(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
 
-    const colorCode: 'w' | 'b' = command === Command.WPV ? 'w' : 'b';
+    const colorCode: ColorCode = command === Command.WPV ? 'w' : 'b';
 
     // Discard PV updates for the non-thinking color (handles stale post-move flush, issue #9)
     if (colorCode !== this.game.liveData.color) return [EmitType.UPDATE, false];
 
-    this.game.liveData.depth = parseInt(rest[0]);
-    this.game.liveData.score = parseInt(rest[1]) / 100;
-    this.game.liveData.nodes = parseInt(rest[3]);
-    this.game.liveData.usedTime = parseInt(rest[2]) * 10;
+    const [depthStr, scoreStr, timeStr, nodesStr, ...pv] = rest;
+    this.game.liveData.depth = parseInt(depthStr);
+    this.game.liveData.score = parseInt(scoreStr) / 100;
+    this.game.liveData.nodes = parseInt(nodesStr);
+    this.game.liveData.usedTime = parseInt(timeStr) * 10;
 
-    const pv = rest.slice(4);
-
-    const pvPlayout = new Chess();
-    pvPlayout.loadPgn(this.game.instance.pgn());
-
-    const parsed = new Array<string>();
-    const pvAlg = new Array<string>();
-
-    for (let i = 0; i < pv.length; i++) {
-      const alg = pv[i];
-      try {
-        const move = pvPlayout.move(alg, { strict: false });
-
-        parsed.push(move.san);
-        pvAlg.push(`${move.from}${move.to}`);
-      } catch {
-        break; // failed to parse a move
-      }
-    }
-
-    // Only if we could parse at least 1 do
-    if (parsed.length) {
-      this.game.liveData.pv = parsed;
-      this.game.liveData.pvAlg = pvAlg;
-      this.game.liveData.pvFen = pvPlayout.fen();
+    const playout = this.playoutPV(pv);
+    if (playout) {
+      this.game.liveData.pv = playout.san;
+      this.game.liveData.pvAlg = playout.alg;
+      this.game.liveData.pvFen = playout.fen;
     }
 
     logger.info(
@@ -219,14 +219,14 @@ class GameService {
 
     const color: Color = command === Command.WMOVE ? 'white' : 'black';
     const notColor: Color = command === Command.WMOVE ? 'black' : 'white';
-    const nextColorCode: 'w' | 'b' = command === Command.WMOVE ? 'b' : 'w';
+    const nextColorCode: ColorCode = command === Command.WMOVE ? 'b' : 'w';
 
     this.game.moveNumber = parseInt(rest[0].replace('.', ''));
     const nextPvMoveNumber = color === 'white' ? this.game.moveNumber : this.game.moveNumber + 1;
 
     try {
       const move = this.game.instance.move(rest[1], { strict: false });
-      const colorCode: 'w' | 'b' = color === 'white' ? 'w' : 'b';
+      const colorCode: ColorCode = color === 'white' ? 'w' : 'b';
 
       this.game[color].lastMove = move;
       logger.info(`Updated game ${this.game.name} - Color: ${color}, Last Move: ${this.game[color].lastMove?.san}`, {
@@ -304,7 +304,7 @@ class GameService {
     const site = tokens.slice(1).join(' ');
 
     if (this.game.site) {
-      const oldSlug = slugify(this.game.site, '_');
+      const oldSlug = siteSlug(this.game.site);
       invalidatePgnCache(oldSlug);
       invalidateMetaCache(oldSlug);
     }
@@ -385,8 +385,8 @@ class GameService {
 
     if (nameIdx === -1 || valueIdx === -1) return [EmitType.UPDATE, false];
 
-    const name = tokens[nameIdx].slice(6, -1).toLowerCase(); // chop NAME="
-    const url = tokens[valueIdx].slice(5, -1); // chop URL="
+    const name = tokens[nameIdx].slice('NAME="'.length, -1).toLowerCase();
+    const url = tokens[valueIdx].slice('URL="'.length, -1);
 
     this.broadcast.menu.set(name, url);
 
@@ -418,52 +418,57 @@ class GameService {
     return d.liveData || d.clocks || d.move || d.players || d.site || d.spectators || d.menu;
   }
 
+  private buildGameDelta(): GameDelta {
+    const d = this.dirty;
+    const gameDelta: GameDelta = {};
+
+    if (d.players) {
+      gameDelta.white = this.game.white.toJSON();
+      gameDelta.black = this.game.black.toJSON();
+      gameDelta.startFen = this.game.startFen;
+      gameDelta.resetMoves = true;
+    }
+
+    if (d.clocks) {
+      gameDelta.white = this.game.white.toJSON();
+      gameDelta.black = this.game.black.toJSON();
+    }
+
+    if (d.site) {
+      gameDelta.site = this.game.site;
+    }
+
+    if (d.move) {
+      gameDelta.fen = this.game.instance.fen();
+      gameDelta.stm = this.game.instance.turn();
+      gameDelta.opening = this.game.opening;
+      gameDelta.tablebase = this.game.tablebase;
+
+      const newMoves = this.game.moveMeta.slice(this.moveCountBefore);
+      if (newMoves.length > 0) {
+        gameDelta.newMoves = newMoves;
+      }
+
+      // If moveMeta was cleared (resetFromFen / reset), signal a reset
+      if (this.game.moveMeta.length < this.moveCountBefore) {
+        gameDelta.resetMoves = true;
+        gameDelta.startFen = this.game.startFen;
+      }
+    }
+
+    if (d.liveData || d.move || d.players) {
+      gameDelta.liveData = this.game.liveData.toJSON();
+    }
+
+    return gameDelta;
+  }
+
   private buildDelta(): BroadcastDelta {
     const delta: BroadcastDelta = {};
     const d = this.dirty;
 
     if (d.liveData || d.clocks || d.move || d.players || d.site) {
-      const gameDelta: GameDelta = {};
-
-      if (d.players) {
-        gameDelta.white = this.game.white.toJSON();
-        gameDelta.black = this.game.black.toJSON();
-        gameDelta.startFen = this.game.startFen;
-        gameDelta.resetMoves = true;
-      }
-
-      if (d.clocks) {
-        gameDelta.white = this.game.white.toJSON();
-        gameDelta.black = this.game.black.toJSON();
-      }
-
-      if (d.site) {
-        gameDelta.site = this.game.site;
-      }
-
-      if (d.move) {
-        gameDelta.fen = this.game.instance.fen();
-        gameDelta.stm = this.game.instance.turn();
-        gameDelta.opening = this.game.opening;
-        gameDelta.tablebase = this.game.tablebase;
-
-        const newMoves = this.game.moveMeta.slice(this.moveCountBefore);
-        if (newMoves.length > 0) {
-          gameDelta.newMoves = newMoves;
-        }
-
-        // If moveMeta was cleared (resetFromFen / reset), signal a reset
-        if (this.game.moveMeta.length < this.moveCountBefore) {
-          gameDelta.resetMoves = true;
-          gameDelta.startFen = this.game.startFen;
-        }
-      }
-
-      if (d.liveData || d.move || d.players) {
-        gameDelta.liveData = this.game.liveData.toJSON();
-      }
-
-      delta.game = gameDelta;
+      delta.game = this.buildGameDelta();
     }
 
     if (d.spectators) {
@@ -479,6 +484,28 @@ class GameService {
     return delta;
   }
 
+  private categorizeMessages(messages: string[]): { highPrio: [Command, string][]; lowPrio: Map<Command, string> } {
+    const highPrio: [Command, string][] = [];
+    const lowPrio = new Map<Command, string>();
+
+    for (const msg of messages) {
+      const [cmd, rest] = splitOnCommand(msg);
+      const config = this.commandConfig[cmd] as ConfigItem | undefined;
+      if (!config) {
+        logger.warn(`Unable to process ${cmd}!`, { port: this.broadcast.port });
+        continue;
+      }
+
+      if (config.lowPrio) {
+        lowPrio.set(cmd, rest);
+      } else {
+        highPrio.push([cmd, rest]);
+      }
+    }
+
+    return { highPrio, lowPrio };
+  }
+
   async onMessages(messages: string[]): Promise<GameServiceResult> {
     this.dirty = freshFlags();
     this.moveCountBefore = this.game.moveMeta.length;
@@ -490,26 +517,9 @@ class GameService {
         port: this.broadcast.port,
       });
 
-    const highPrioMessages: [Command, string][] = [];
-    const lowPriorityMessages = new Map<Command, string>();
+    const { highPrio, lowPrio } = this.categorizeMessages(messages);
 
-    messages
-      .map((msg) => splitOnCommand(msg))
-      .forEach(([cmd, rest]) => {
-        const config = this.commandConfig[cmd] as ConfigItem | undefined;
-        if (!config) {
-          logger.warn(`Unable to process ${cmd}!`, { port: this.broadcast.port });
-          return;
-        }
-
-        if (config.lowPrio) {
-          lowPriorityMessages.set(cmd, rest);
-        } else {
-          highPrioMessages.push([cmd, rest]);
-        }
-      });
-
-    for (const [cmd, rest] of [...highPrioMessages, ...(processLowPrio ? lowPriorityMessages : [])]) {
+    for (const [cmd, rest] of [...highPrio, ...(processLowPrio ? lowPrio : [])]) {
       const commandConfig = this.commandConfig[cmd];
 
       const [emit, updated, ...updateData] = await commandConfig.fn(

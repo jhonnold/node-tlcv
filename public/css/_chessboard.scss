@@ -15,11 +15,11 @@
 }
 
 .notation-322f9 {
-  font-family: 'Red Hat Text', sans-serif;
+  font-family: var(--fontFamily);
   font-size: 0.6rem;
   font-weight: 700;
 }
 
 .highlight {
-  box-shadow: inset 0 0 0 1000px #52b1dc6b;
+  box-shadow: inset 0 0 0 1000px var(--highlightColor);
 }

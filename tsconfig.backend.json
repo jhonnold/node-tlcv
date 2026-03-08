@@ -1,13 +1,10 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
     "moduleResolution": "node",
     "allowJs": false,
     "importHelpers": true,
     "sourceMap": true,
-    "strict": true,
-    "esModuleInterop": true,
     "typeRoots": ["./src/@types", "./node_modules/@types"],
     "rootDir": ".",
     "outDir": "build",

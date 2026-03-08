@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import type { ColorCode } from '../../shared/types.js';
 import { logger } from '../util/index.js';
 
 export type LichessExplorerResponse = {
@@ -44,7 +45,7 @@ export async function fetchOpening(name: string, instance: Chess): Promise<strin
   return null;
 }
 
-export async function fetchTablebase(name: string, fen: string, turn: 'w' | 'b'): Promise<string> {
+export async function fetchTablebase(name: string, fen: string, turn: ColorCode): Promise<string> {
   const url = `https://tablebase.lichess.ovh/standard?fen=${fen}`;
 
   logger.info(`Requesting tablebase for game ${name} from ${url}`, { port: name });
@@ -63,30 +64,35 @@ export async function fetchTablebase(name: string, fen: string, turn: 'w' | 'b')
     logger.info(`Received tb category response for game ${name}: ${category}`, { port: name });
 
     if (category) {
+      const outcome: Record<string, 'stm' | 'draw' | 'opp' | ''> = {
+        win: 'stm',
+        'maybe-win': 'stm',
+        'cursed-win': 'draw',
+        draw: 'draw',
+        'cursed-loss': 'draw',
+        loss: 'opp',
+        'maybe-loss': 'opp',
+        unknown: '',
+      };
+
+      const mapped = outcome[category];
       let result: string;
-      switch (category) {
-        case 'win':
-        case 'maybe-win':
-          result = turn === 'w' ? 'White Win' : 'Black Win';
-          break;
-        case 'cursed-win':
-        case 'draw':
-        case 'cursed-loss':
-          result = 'Draw';
-          break;
-        case 'loss':
-        case 'maybe-loss':
-          result = turn === 'w' ? 'Black Win' : 'White Win';
-          break;
-        case 'unknown':
-          result = '';
-          break;
-        default:
-          logger.warn(`Unknown tablebase category ${category} for game ${name}, setting tablebase to blank`, {
-            port: name,
-          });
-          result = '';
+
+      if (mapped === undefined) {
+        logger.warn(`Unknown tablebase category ${category} for game ${name}, setting tablebase to blank`, {
+          port: name,
+        });
+        result = '';
+      } else if (mapped === 'stm') {
+        result = turn === 'w' ? 'White Win' : 'Black Win';
+      } else if (mapped === 'opp') {
+        result = turn === 'w' ? 'Black Win' : 'White Win';
+      } else if (mapped === 'draw') {
+        result = 'Draw';
+      } else {
+        result = '';
       }
+
       logger.info(`Set tablebase for game ${name} to ${result}`, { port: name });
       return result;
     } else {

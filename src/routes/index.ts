@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import slugify from 'slugify';
 import broadcasts, { Broadcast } from '../broadcast.js';
+import { siteSlug } from '../util/index.js';
 import { getFiles } from '../services/pgn-cache.js';
 import { getMetaFile, getMetaFileUrl } from '../services/game-meta.js';
 
@@ -79,15 +79,15 @@ router.get('/:port([0-9]+)/games/json', async (req: Request, res: Response): Pro
     return;
   }
 
-  const siteSlug = slugify(broadcast.game.site, '_');
-  const pgnFiles = await getFiles(siteSlug);
+  const slug = siteSlug(broadcast.game.site);
+  const pgnFiles = await getFiles(slug);
   const games = await Promise.all(
     broadcast.parsedGames.map(async (g) => {
       const filename = pgnFiles.get(g.gameNumber);
-      const metaUrl = await getMetaFileUrl(siteSlug, g.gameNumber);
+      const metaUrl = await getMetaFileUrl(slug, g.gameNumber);
       return {
         ...g,
-        pgnUrl: filename ? `/pgns/${siteSlug}/${filename}` : undefined,
+        pgnUrl: filename ? `/pgns/${slug}/${filename}` : undefined,
         metaUrl,
       };
     }),
@@ -99,8 +99,8 @@ router.get('/:port([0-9]+)/games/json', async (req: Request, res: Response): Pro
 router.get('/:port([0-9]+)/games/:gameNumber([0-9]+)/meta', async (req: Request, res: Response): Promise<void> => {
   const { broadcast } = req as RequestWithBroadcast;
   const gameNumber = parseInt(req.params.gameNumber, 10);
-  const siteSlug = slugify(broadcast.game.site, '_');
-  const meta = await getMetaFile(siteSlug, gameNumber);
+  const slug = siteSlug(broadcast.game.site);
+  const meta = await getMetaFile(slug, gameNumber);
 
   if (!meta) {
     res.status(404).json({ error: 'No metadata available for this game' });
