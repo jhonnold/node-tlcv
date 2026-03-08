@@ -71,7 +71,7 @@
     "build": "tsc -p tsconfig.backend.json",
     "clean": "rimraf build",
     "dev-public": "webpack --watch --progress --config webpack/webpack.dev.js",
-    "dev-server": "TS_NODE_PROJECT=tsconfig.backend.json nodemon --legacy-watch -x node --loader ts-node/esm src/main.ts",
+    "dev-server": "TS_NODE_PROJECT=tsconfig.backend.json nodemon --legacy-watch --watch src --watch shared -x node --loader ts-node/esm src/main.ts",
     "format": "prettier --write {src,public,shared}/**/*.{ts,css,html}",
     "prebuild": "webpack --config webpack/webpack.prod.js",
     "lint": "eslint --fix src public shared",
