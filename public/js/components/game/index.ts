@@ -5,6 +5,7 @@ import type { GameEventData, NavPosition } from '../../events/index';
 import { updateTimers, stopAllTimers, hideTimers, forceRestartTimers } from './timers';
 import { update, updateHistoricalInfo, updateSpectators, updateMenu } from './player-info';
 import copyFen from '../../utils/fen';
+import { isReplayMode } from '../replay/index';
 
 let live = true;
 let lastGameData: SerializedGame | null = null;
@@ -28,6 +29,8 @@ function getMoveMetaAtIndex(navIndex: number) {
 }
 
 function handleGameUpdate(data: GameEventData) {
+  if (isReplayMode()) return;
+
   const { game, spectators, menu } = data;
 
   lastGameData = game;
@@ -41,8 +44,18 @@ function handleGameUpdate(data: GameEventData) {
 }
 
 function handleGameState(data: GameEventData) {
+  const { game, spectators, menu } = data;
+
   live = true;
-  handleGameUpdate(data);
+  lastGameData = game;
+  update(game);
+  if (isReplayMode()) {
+    hideTimers();
+  } else {
+    updateTimers(data);
+  }
+  updateSpectators(spectators);
+  updateMenu(menu);
 }
 
 function handleNavPosition({ isLive, index }: NavPosition) {

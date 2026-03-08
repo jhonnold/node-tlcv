@@ -31,4 +31,4 @@ build/
 
 .node-version
 .env
-*.pgn
+pgns/

@@ -6,6 +6,7 @@ import { getActiveTab } from '../tabs/index';
 import { goTo, getNavIndex } from '../navigation/index';
 import GRAPH_TYPES from './graph-types';
 import { init as initSelector, setActive } from './selector';
+import { isReplayMode } from '../replay/index';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip);
 
@@ -183,6 +184,7 @@ export function init() {
   });
 
   on('game:update', (data) => {
+    if (isReplayMode()) return;
     storeGameData(data.game);
     refreshChart();
   });

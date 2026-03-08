@@ -7,6 +7,7 @@ import type { GameEventData, NavPosition } from '../../events/index';
 import { drawMove, clearArrows } from './arrows';
 import { initResize } from './resize';
 import copyFen from '../../utils/fen';
+import { isReplayMode } from '../replay/index';
 
 let board: ChessboardInstance | null = null;
 let pvBoardWhite: ChessboardInstance | null = null;
@@ -53,6 +54,8 @@ function drawArrows() {
 }
 
 function handleGameUpdate(data: GameEventData) {
+  if (isReplayMode()) return;
+
   const { game } = data;
 
   lastGameData = game;
@@ -68,7 +71,16 @@ function handleGameUpdate(data: GameEventData) {
 }
 
 function handleGameState(data: GameEventData) {
-  handleGameUpdate(data);
+  const { game } = data;
+  lastGameData = game;
+
+  if (live) {
+    const pvFens = getLivePvFens(game);
+    pvBoardWhite!.position(pvFens.white, false);
+    pvBoardBlack!.position(pvFens.black, false);
+  }
+
+  drawArrows();
 }
 
 function handleThemeChange() {

@@ -1124,9 +1124,34 @@ pre {
   text-align: center;
 }
 
+.games-col-replay {
+  width: 36px;
+  text-align: center;
+}
+
 .games-col-pgn {
   width: 36px;
   text-align: center;
+}
+
+.games-replay {
+  text-align: center;
+}
+
+.games-replay-btn {
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--primaryColor);
+  opacity: 0.7;
+  transition: opacity 0.15s;
+  line-height: 0;
+}
+
+.games-replay-btn:hover {
+  opacity: 1;
 }
 
 .games-pgn {
@@ -1178,6 +1203,50 @@ pre {
   opacity: 0.6;
   font-size: 0.85rem;
   text-align: center;
+}
+
+/* Replay banner */
+#replay-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--universal-margin);
+  padding: 6px 10px;
+  background: var(--primaryColor);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: var(--universal-border-radius);
+  flex-shrink: 0;
+}
+
+#replay-banner[hidden] {
+  display: none;
+}
+
+#replay-banner .replay-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#replay-exit-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: #fff;
+  padding: 2px 10px;
+  margin: 0;
+  cursor: pointer;
+  font-family: 'Red Hat Text', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: var(--universal-border-radius);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+#replay-exit-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Broadcasts page */

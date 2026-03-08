@@ -5,6 +5,7 @@ import { logger } from './util/index.js';
 import { Broadcast, SerializedBroadcast, username } from './broadcast.js';
 import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
+import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
 import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
@@ -275,7 +276,11 @@ class GameService {
   private onSite(tokens: CommandTokens): UpdateResult {
     const site = tokens.slice(1).join(' ');
 
-    if (this.game.site) invalidatePgnCache(slugify(this.game.site, '_'));
+    if (this.game.site) {
+      const oldSlug = slugify(this.game.site, '_');
+      invalidatePgnCache(oldSlug);
+      invalidateMetaCache(oldSlug);
+    }
     this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
 
     logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`, { port: this.broadcast.port });
@@ -364,9 +369,11 @@ class GameService {
     const message = `[Server] - ${this.game.white.name} - ${this.game.black.name} (${tokens[1].trim()})`;
     this.broadcast.chat.push(message);
 
-    this.game.instance.header('Result', tokens[1].trim());
+    const result = tokens[1].trim();
+    this.game.instance.header('Result', result);
 
     await savePgn(this.game, this.broadcast.port, this.broadcast.currentGameNumber);
+    await saveGameMeta(this.game, this.broadcast.port, this.broadcast.currentGameNumber, result);
 
     this.broadcast.reloadResults();
 

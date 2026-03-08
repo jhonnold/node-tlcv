@@ -1,4 +1,4 @@
-import type { SerializedGame, SerializedBroadcast } from '../../../shared/types';
+import type { SerializedGame, SerializedBroadcast, StoredGameMeta } from '../../../shared/types';
 
 export type GameEventData = Omit<SerializedBroadcast, 'chat'> & { game: SerializedGame };
 
@@ -18,6 +18,8 @@ type EventMap = {
   'tab:change': { tab: string };
   'theme:change': { theme: string };
   'board:resize': undefined;
+  'game:replay': StoredGameMeta;
+  'replay:exit': undefined;
 };
 
 type EventKey = keyof EventMap;

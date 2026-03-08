@@ -5,6 +5,7 @@ import type { MoveMetaData } from '../../../../shared/types';
 import { on, emit } from '../../events/index';
 import type { GameEventData } from '../../events/index';
 import { getActiveTab } from '../tabs/index';
+import { isReplayMode } from '../replay/index';
 
 // State
 // navIndex ranges from 0 to sanMoves.length inclusive:
@@ -198,12 +199,14 @@ function handleGameState(data: GameEventData) {
   startFen = game.startFen || null;
   liveFen = game.fen;
   rebuildFens();
-  navIndex = sanMoves.length;
+  navIndex = isReplayMode() ? 0 : sanMoves.length;
   renderMoveList();
   emitPosition();
 }
 
 function handleGameUpdate(data: GameEventData) {
+  if (isReplayMode()) return;
+
   const { game } = data;
   const wasLive = isLive();
   const prevLength = sanMoves.length;

@@ -81,4 +81,7 @@ export type GameRecord = {
   black: string;
   result: string;
   pgnUrl?: string;
+  metaUrl?: string;
 };
+
+export type StoredGameMeta = SerializedGame & { result: string };
