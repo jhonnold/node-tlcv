@@ -27,12 +27,31 @@ The server uses Express for HTTP routing and Socket.IO for real-time client comm
 
 ### Backend Core Flow
 
-1. **main.ts** - Entry point; creates HTTP server, attaches Socket.IO, loads config connections
+1. **main.ts** - Entry point; creates HTTP server, attaches Socket.IO, initializes KibitzerManager, loads config connections, starts Stockfish engine
 2. **config/config.json** - Defines which chess server addresses/ports to connect to
 3. **Broadcast** (broadcast.ts) - Represents one chess broadcast/port; manages game state, spectators, chat
 4. **Transport** (transport/) - UDP socket layer; `udp-transport.ts` manages the socket, `message-buffer.ts` handles message ordering
 5. **GameService** (game-service.ts) - Parses commands from the chess server (FEN, WMOVE, BMOVE, WPV, CHAT, etc.) and updates game state
 6. **Socket.IO** (socket-io-adapter.ts) - Broadcasts state to web clients; handles client join/chat/disconnect
+7. **Kibitzer** (kibitzer/) - Local Stockfish analysis engine overlay
+
+### Kibitzer Subsystem
+
+The kibitzer runs a local Stockfish engine that independently analyzes the live position and overlays its analysis alongside the broadcast engine data.
+
+**Files** (`src/kibitzer/`):
+- `kibitzer-manager.ts` - Orchestrates targeting (picks highest-viewer broadcast), PV playout via chess.js, snapshot capture on moves, and 1-second client emit loop
+- `local-transport.ts` - Spawns Stockfish subprocess, manages UCI lifecycle (`uci` → `setoption` → `isready` → `go infinite`)
+- `uci-parser.ts` - Parses UCI `info` lines into `AnalysisInfo` structs; normalizes scores to white's perspective
+- `types.ts` - `KibitzerTransport` interface (pluggable — only `LocalTransport` exists today)
+- `index.ts` - Barrel export
+
+**Data flow**:
+1. Stockfish emits UCI `info` lines → `parseInfoLine()` normalizes score → `KibitzerManager.currentInfo` updated
+2. Every 1s: `emitKibitzerUpdate()` plays out PV via chess.js → emits `{ game: { kibitzerLiveData } }` delta to Socket.IO room
+3. On each move: `snapshotForMove()` captures current analysis into `moveMeta[n].kibitzer` before state reset, then `onPositionChange()` sends new FEN to engine
+
+**Targeting**: `poll()` runs every 10s, finds broadcast with most viewers. Hysteresis threshold of 2 prevents thrashing. Zero viewers globally pauses analysis. Only one broadcast is analyzed at a time.
 
 ### Frontend Architecture
 
@@ -58,7 +77,8 @@ The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
 - `admin.ts`, `broadcasts.ts` - Standalone page entry points
 
 **Shared types** (`shared/`):
-- `types.ts` - Shared type definitions used by both backend and frontend (SerializedGame, MoveMetaData, etc.)
+- `types.ts` - Shared type definitions used by both backend and frontend (SerializedGame, MoveMetaData, KibitzerMeta, etc.)
+- `colors.ts` - `colorName()` helper used by both backend and frontend
 - `chessboard.d.ts` - Type declarations for chessboardjs
 
 **Styles** (`public/css/`): SCSS with partials, compiled by webpack via `sass-loader`:
@@ -131,6 +151,9 @@ Environment variables:
 - `PGNS_DIR` - PGN output directory (default: "pgns")
 - `LICHESS_OAUTH_TOKEN` - Optional Lichess API bearer token for opening/tablebase lookups
 - `LOG_LEVEL` - Winston log level (default: "info")
+- `STOCKFISH_PATH` - Path to Stockfish binary (default: `stockfish` on `$PATH`)
+- `STOCKFISH_THREADS` - Stockfish thread count (default: "1")
+- `STOCKFISH_HASH` - Stockfish hash table size in MB (default: "256")
 
 ## Key Files
 
@@ -146,9 +169,11 @@ Environment variables:
 - `src/connection.ts` - Connection lifecycle management
 - `src/broadcast-manager.ts` - Broadcast creation, reconnection, and lifecycle orchestration
 - `src/config/config-store.ts` - Config read/write abstraction for connections
+- `src/kibitzer/` - Local Stockfish analysis engine (manager, transport, UCI parser)
 - `src/transport/` - UDP transport and message buffering
 - `src/services/` - External integrations (Lichess openings/tablebase, PGN saving, PGN cache, game metadata, result parsing)
 - `src/routes/` - Express route handlers (index, admin)
+- `src/util/` - Logger (Winston), request logging middleware, slug helpers, unique name generator
 
 **Shared**:
 - `shared/types.ts` - Shared types for backend and frontend
@@ -171,3 +196,6 @@ Environment variables:
 - **Sass `@use` ordering**: `@use` rules must appear before all other rules in a `.scss` file. CSS `@import url()` (e.g., Google Fonts) counts as "other rules" — place font imports in a partial like `_base.scss`, not alongside `@use` statements.
 - **Dual CSS/SCSS webpack rules**: `webpack.common.js` has separate rules for `.css` (third-party packages: reset-css, mini.css, chessboardjs) and `.scss` (project styles). Only project styles go through `sass-loader`.
 - **Dark theme isolation**: `dark-theme.scss` is a standalone webpack entry with no `@use` of project partials. It overrides CSS custom properties in `:root` and adds selector-level overrides. Do not add `@use` imports to it.
+- **Kibitzer score normalization**: UCI scores are always converted to white's perspective in `uci-parser.ts`. When it's black to move, the raw centipawn score is negated. Mate scores map to ±1,000,000 cp.
+- **Kibitzer single-broadcast targeting**: `KibitzerManager` analyzes only one broadcast at a time (the one with the most viewers). A hysteresis threshold of 2 prevents thrashing between broadcasts with similar viewer counts.
+- **Kibitzer subprocess lifecycle**: No automatic restart if Stockfish crashes — `LocalTransport.ready` becomes `false` and analysis silently stops.
