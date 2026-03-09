@@ -32,6 +32,8 @@ export class KibitzerManager {
       return;
     }
 
+    for (const transport of this.transports) transport.create();
+
     this.poll();
     this.pollTimer = setInterval(() => this.poll(), POLL_INTERVAL_MS);
     this.emitTimer = setInterval(() => this.emitKibitzerUpdates(), EMIT_INTERVAL_MS);
@@ -47,11 +49,8 @@ export class KibitzerManager {
       clearInterval(this.emitTimer);
       this.emitTimer = null;
     }
-    for (const [port, slot] of this.slots) {
-      slot.transport.stop();
-      logger.info(`Kibitzer: stopped transport for port ${port}`);
-    }
     this.slots.clear();
+    for (const transport of this.transports) transport.teardown();
     logger.info('KibitzerManager stopped');
   }
 
@@ -83,7 +82,7 @@ export class KibitzerManager {
     slot.currentInfo = null;
     slot.currentFen = fen;
     slot.dirty = false;
-    slot.transport.analyze(fen);
+    slot.transport.startAnalysis(fen);
   }
 
   /** Called by GameService.buildGameDelta() to get current live data. */
@@ -139,9 +138,7 @@ export class KibitzerManager {
   private poll(): void {
     const ranked: { port: number; count: number }[] = [];
     for (const [port, broadcast] of broadcasts) {
-      if (broadcast.browserCount > 0) {
-        ranked.push({ port, count: broadcast.browserCount });
-      }
+      ranked.push({ port, count: broadcast.browserCount });
     }
     ranked.sort((a, b) => b.count - a.count);
 
@@ -164,7 +161,7 @@ export class KibitzerManager {
     // Stop slots no longer desired or that need a different transport
     for (const [port, slot] of this.slots) {
       if (!desired.has(port) || desired.get(port) !== slot.transport) {
-        slot.transport.stop();
+        slot.transport.stopAnalysis();
         this.slots.delete(port);
         logger.info(`Kibitzer: stopped analyzing port ${port}`);
       }
@@ -193,13 +190,12 @@ export class KibitzerManager {
       slot.currentInfo = info;
       slot.dirty = true;
     });
-    transport.start();
 
     this.slots.set(port, slot);
 
     const fen = broadcast.game.instance.fen();
     slot.currentFen = fen;
-    transport.analyze(fen);
+    transport.startAnalysis(fen);
 
     logger.info(`Kibitzer: started analyzing port ${port} (${broadcast.browserCount} viewers)`);
   }

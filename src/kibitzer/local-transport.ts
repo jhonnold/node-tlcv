@@ -25,7 +25,7 @@ export class LocalTransport implements KibitzerTransport {
     this.engineName = 'Stockfish';
   }
 
-  start(): void {
+  create(): void {
     this.proc = spawn(this.enginePath, { stdio: ['pipe', 'pipe', 'pipe'] });
 
     this.proc.on('error', (err) => {
@@ -48,7 +48,7 @@ export class LocalTransport implements KibitzerTransport {
     this.send('uci');
   }
 
-  stop(): void {
+  teardown(): void {
     this.ready = false;
     this.callback = null;
     this.pendingFen = null;
@@ -63,7 +63,7 @@ export class LocalTransport implements KibitzerTransport {
     }
   }
 
-  analyze(fen: string): void {
+  startAnalysis(fen: string): void {
     if (!this.proc) return;
 
     const parts = fen.split(' ');
@@ -77,6 +77,11 @@ export class LocalTransport implements KibitzerTransport {
     this.send('stop');
     this.send(`position fen ${fen}`);
     this.send('go infinite');
+  }
+
+  stopAnalysis(): void {
+    this.pendingFen = null;
+    this.send('stop');
   }
 
   onAnalysis(callback: (info: AnalysisInfo) => void): void {
@@ -112,7 +117,7 @@ export class LocalTransport implements KibitzerTransport {
       if (this.pendingFen) {
         const fen = this.pendingFen;
         this.pendingFen = null;
-        this.analyze(fen);
+        this.startAnalysis(fen);
       }
       return;
     }

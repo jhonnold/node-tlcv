@@ -25,7 +25,7 @@ export class SshTransport implements KibitzerTransport {
     this.engineName = `Remote Engine @ ${config.host}`;
   }
 
-  start(): void {
+  create(): void {
     let privateKey: Buffer;
     try {
       privateKey = fs.readFileSync(this.config.privateKeyPath);
@@ -38,7 +38,7 @@ export class SshTransport implements KibitzerTransport {
 
     this.client.on('ready', () => {
       logger.info(`Kibitzer SSH: connected to ${this.config.host}`);
-      this.client!.exec(this.config.enginePath, (err, channel) => {
+      this.client!.exec(this.config.enginePath, { pty: true }, (err, channel) => {
         if (err) {
           logger.error(`Kibitzer SSH: exec failed: ${err.message}`);
           this.client?.end();
@@ -87,7 +87,7 @@ export class SshTransport implements KibitzerTransport {
     });
   }
 
-  stop(): void {
+  teardown(): void {
     this.ready = false;
     this.callback = null;
     this.pendingFen = null;
@@ -104,7 +104,7 @@ export class SshTransport implements KibitzerTransport {
     }, 1000);
   }
 
-  analyze(fen: string): void {
+  startAnalysis(fen: string): void {
     if (!this.channel) return;
 
     const parts = fen.split(' ');
@@ -118,6 +118,11 @@ export class SshTransport implements KibitzerTransport {
     this.send('stop');
     this.send(`position fen ${fen}`);
     this.send('go infinite');
+  }
+
+  stopAnalysis(): void {
+    this.pendingFen = null;
+    this.send('stop');
   }
 
   onAnalysis(callback: (info: AnalysisInfo) => void): void {
@@ -153,7 +158,7 @@ export class SshTransport implements KibitzerTransport {
       if (this.pendingFen) {
         const fen = this.pendingFen;
         this.pendingFen = null;
-        this.analyze(fen);
+        this.startAnalysis(fen);
       }
       return;
     }

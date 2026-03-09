@@ -3,9 +3,10 @@ import type { AnalysisInfo } from './uci-parser.js';
 export type { AnalysisInfo };
 
 export interface KibitzerTransport {
-  start(): void;
-  stop(): void;
-  analyze(fen: string): void;
+  create(): void;
+  teardown(): void;
+  startAnalysis(fen: string): void;
+  stopAnalysis(): void;
   onAnalysis(callback: (info: AnalysisInfo) => void): void;
   name(): string;
 }
