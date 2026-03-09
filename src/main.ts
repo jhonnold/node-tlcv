@@ -5,13 +5,16 @@ import { app } from './app.js';
 import { io } from './socket-io-adapter.js';
 import { logger } from './util/index.js';
 import { connect, setKibitzerManager } from './broadcast-manager.js';
-import { KibitzerManager } from './kibitzer/index.js';
+import { KibitzerManager, createTransports } from './kibitzer/index.js';
+import configStore from './config/config-store.js';
 
 const server = http.createServer(app);
 io.attach(server);
 
 (async () => {
-  const kibitzerManager = new KibitzerManager();
+  const config = await configStore.load();
+  const transports = createTransports(config.kibitzers ?? []);
+  const kibitzerManager = new KibitzerManager(transports);
 
   setKibitzerManager(kibitzerManager);
   await connect();

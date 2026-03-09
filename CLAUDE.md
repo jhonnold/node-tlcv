@@ -27,31 +27,33 @@ The server uses Express for HTTP routing and Socket.IO for real-time client comm
 
 ### Backend Core Flow
 
-1. **main.ts** - Entry point; creates HTTP server, attaches Socket.IO, initializes KibitzerManager, loads config connections, starts Stockfish engine
+1. **main.ts** - Entry point; creates HTTP server, attaches Socket.IO, loads kibitzer config, creates transports, initializes KibitzerManager, loads config connections
 2. **config/config.json** - Defines which chess server addresses/ports to connect to
 3. **Broadcast** (broadcast.ts) - Represents one chess broadcast/port; manages game state, spectators, chat
 4. **Transport** (transport/) - UDP socket layer; `udp-transport.ts` manages the socket, `message-buffer.ts` handles message ordering
 5. **GameService** (game-service.ts) - Parses commands from the chess server (FEN, WMOVE, BMOVE, WPV, CHAT, etc.) and updates game state
 6. **Socket.IO** (socket-io-adapter.ts) - Broadcasts state to web clients; handles client join/chat/disconnect
-7. **Kibitzer** (kibitzer/) - Local Stockfish analysis engine overlay
+7. **Kibitzer** (kibitzer/) - Analysis engine overlay (local or remote via SSH)
 
 ### Kibitzer Subsystem
 
-The kibitzer runs a local Stockfish engine that independently analyzes the live position and overlays its analysis alongside the broadcast engine data.
+The kibitzer runs chess engines (local or remote via SSH) that independently analyze the live position and overlay analysis alongside the broadcast engine data. Transports are configured in `config.json` under the `kibitzers` key.
 
 **Files** (`src/kibitzer/`):
-- `kibitzer-manager.ts` - Orchestrates targeting (picks highest-viewer broadcast), PV playout via chess.js, snapshot capture on moves, and 1-second client emit loop
-- `local-transport.ts` - Spawns Stockfish subprocess, manages UCI lifecycle (`uci` → `setoption` → `isready` → `go infinite`)
+- `kibitzer-manager.ts` - Orchestrates targeting (assigns transports to top broadcasts by viewers), manages per-broadcast transport slots, PV playout via chess.js, snapshot capture on moves, and 1-second client emit loop
+- `local-transport.ts` - Spawns a local engine subprocess, manages UCI lifecycle (`uci` → `setoption` → `isready` → `go infinite`)
+- `ssh-transport.ts` - Connects to a remote host via SSH (`ssh2`), runs the engine over the SSH channel, same UCI lifecycle as local
+- `transport-factory.ts` - `createTransports()` reads kibitzer configs, sorts by priority, constructs transport instances
 - `uci-parser.ts` - Parses UCI `info` lines into `AnalysisInfo` structs; normalizes scores to white's perspective
-- `types.ts` - `KibitzerTransport` interface (pluggable — only `LocalTransport` exists today)
+- `types.ts` - `KibitzerTransport` interface, `KibitzerConfig` discriminated union (`LocalKibitzerConfig | SshKibitzerConfig`)
 - `index.ts` - Barrel export
 
 **Data flow**:
-1. Stockfish emits UCI `info` lines → `parseInfoLine()` normalizes score → `KibitzerManager.currentInfo` updated
-2. Every 1s: `emitKibitzerUpdate()` plays out PV via chess.js → emits `{ game: { kibitzerLiveData } }` delta to Socket.IO room
+1. Engine emits UCI `info` lines → `parseInfoLine()` normalizes score → per-slot `currentInfo` updated
+2. Every 1s: `emitKibitzerUpdates()` iterates all active slots, plays out PV via chess.js → emits `{ game: { kibitzerLiveData } }` delta to Socket.IO room
 3. On each move: `snapshotForMove()` captures current analysis into `moveMeta[n].kibitzer` before state reset, then `onPositionChange()` sends new FEN to engine
 
-**Targeting**: `poll()` runs every 10s, finds broadcast with most viewers. Hysteresis threshold of 2 prevents thrashing. Zero viewers globally pauses analysis. Only one broadcast is analyzed at a time.
+**Targeting**: `poll()` runs every 10s (and once immediately at startup), ranks broadcasts by viewer count, assigns the top N transports (where N = number of configured kibitzers). Highest-priority transport gets the most-viewed broadcast. Hysteresis threshold of 2 gives currently-analyzed broadcasts a ranking bonus. Broadcasts with zero viewers are excluded.
 
 ### Frontend Architecture
 
@@ -141,9 +143,15 @@ Socket.IO events:
 Configuration is in `config/config.json`:
 ```json
 {
-  "connections": ["hostname:port", "hostname:port", ...]
+  "connections": ["hostname:port", "hostname:port", ...],
+  "kibitzers": [
+    { "type": "local", "priority": 10, "enginePath": "/usr/bin/stockfish", "threads": 4, "hash": 512 },
+    { "type": "ssh", "priority": 5, "host": "example.com", "username": "user", "privateKeyPath": "/path/to/key", "enginePath": "/usr/bin/stockfish", "threads": 8, "hash": 2048 }
+  ]
 }
 ```
+
+The `kibitzers` array is optional. Each entry has a `type` (`"local"` or `"ssh"`), a `priority` (higher = assigned to more-viewed broadcasts), and type-specific fields. SSH entries also require `host`, `username`, `privateKeyPath`, and `enginePath`. Both types accept optional `port` (SSH only, default 22), `threads` (default 1), and `hash` (default 256).
 
 Environment variables:
 - `TLCV_PASSWORD` - Admin panel password (required)
@@ -151,9 +159,6 @@ Environment variables:
 - `PGNS_DIR` - PGN output directory (default: "pgns")
 - `LICHESS_OAUTH_TOKEN` - Optional Lichess API bearer token for opening/tablebase lookups
 - `LOG_LEVEL` - Winston log level (default: "info")
-- `STOCKFISH_PATH` - Path to Stockfish binary (default: `stockfish` on `$PATH`)
-- `STOCKFISH_THREADS` - Stockfish thread count (default: "1")
-- `STOCKFISH_HASH` - Stockfish hash table size in MB (default: "256")
 
 ## Key Files
 
@@ -169,7 +174,7 @@ Environment variables:
 - `src/connection.ts` - Connection lifecycle management
 - `src/broadcast-manager.ts` - Broadcast creation, reconnection, and lifecycle orchestration
 - `src/config/config-store.ts` - Config read/write abstraction for connections
-- `src/kibitzer/` - Local Stockfish analysis engine (manager, transport, UCI parser)
+- `src/kibitzer/` - Analysis engine transports (local, SSH), manager, factory, UCI parser
 - `src/transport/` - UDP transport and message buffering
 - `src/services/` - External integrations (Lichess openings/tablebase, PGN saving, PGN cache, game metadata, result parsing)
 - `src/routes/` - Express route handlers (index, admin)
@@ -197,5 +202,5 @@ Environment variables:
 - **Dual CSS/SCSS webpack rules**: `webpack.common.js` has separate rules for `.css` (third-party packages: reset-css, mini.css, chessboardjs) and `.scss` (project styles). Only project styles go through `sass-loader`.
 - **Dark theme isolation**: `dark-theme.scss` is a standalone webpack entry with no `@use` of project partials. It overrides CSS custom properties in `:root` and adds selector-level overrides. Do not add `@use` imports to it.
 - **Kibitzer score normalization**: UCI scores are always converted to white's perspective in `uci-parser.ts`. When it's black to move, the raw centipawn score is negated. Mate scores map to ±1,000,000 cp.
-- **Kibitzer single-broadcast targeting**: `KibitzerManager` analyzes only one broadcast at a time (the one with the most viewers). A hysteresis threshold of 2 prevents thrashing between broadcasts with similar viewer counts.
-- **Kibitzer subprocess lifecycle**: No automatic restart if Stockfish crashes — `LocalTransport.ready` becomes `false` and analysis silently stops.
+- **Kibitzer priority-based targeting**: `KibitzerManager` assigns configured transports to the top broadcasts by viewer count. The number of simultaneous analyses equals the number of entries in the `kibitzers` config array. Highest-priority transport serves the most-viewed broadcast. A hysteresis threshold of 2 prevents thrashing — currently analyzed broadcasts get a bonus when ranking.
+- **Kibitzer transport lifecycle**: No automatic restart if an engine crashes or SSH connection drops — `ready` becomes `false` and analysis silently stops. Transports are single-use per assignment; `stop()` nulls the callback and pending state before teardown.
