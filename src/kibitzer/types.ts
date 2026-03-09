@@ -7,4 +7,5 @@ export interface KibitzerTransport {
   stop(): void;
   analyze(fen: string): void;
   onAnalysis(callback: (info: AnalysisInfo) => void): void;
+  name(): string;
 }

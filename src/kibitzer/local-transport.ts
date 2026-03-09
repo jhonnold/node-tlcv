@@ -6,9 +6,10 @@ import { parseInfoLine } from './uci-parser.js';
 import type { AnalysisInfo } from './uci-parser.js';
 import type { KibitzerTransport } from './types.js';
 
-const STOCKFISH_PATH = process.env.STOCKFISH_PATH ?? 'stockfish';
-const THREADS = process.env.STOCKFISH_THREADS ?? '1';
-const HASH = process.env.STOCKFISH_HASH ?? '256';
+const KIBITZER_PATH = process.env.KIBITZER_PATH ?? 'stockfish';
+const THREADS = process.env.KIBITZER_THREADS ?? '1';
+const HASH = process.env.KIBITZER_HASH ?? '256';
+const ENGINE_NAME = 'Stockfish 18';
 
 export class LocalTransport implements KibitzerTransport {
   private proc: ChildProcessWithoutNullStreams | null = null;
@@ -16,9 +17,10 @@ export class LocalTransport implements KibitzerTransport {
   private ready = false;
   private stm: 'w' | 'b' = 'w';
   private pendingFen: string | null = null;
+  private engineName: string = ENGINE_NAME;
 
   start(): void {
-    this.proc = spawn(STOCKFISH_PATH, { stdio: ['pipe', 'pipe', 'pipe'] });
+    this.proc = spawn(KIBITZER_PATH, { stdio: ['pipe', 'pipe', 'pipe'] });
 
     this.proc.on('error', (err) => {
       logger.error(`Kibitzer process error: ${err.message}`);
@@ -74,6 +76,10 @@ export class LocalTransport implements KibitzerTransport {
     this.callback = callback;
   }
 
+  name(): string {
+    return this.engineName;
+  }
+
   private send(cmd: string): void {
     if (this.proc?.stdin.writable) {
       this.proc.stdin.write(`${cmd}\n`);
@@ -81,6 +87,11 @@ export class LocalTransport implements KibitzerTransport {
   }
 
   private onLine(line: string): void {
+    if (line.startsWith('id name ')) {
+      this.engineName = line.slice('id name '.length);
+      return;
+    }
+
     if (line === 'uciok') {
       this.send(`setoption name Threads value ${THREADS}`);
       this.send(`setoption name Hash value ${HASH}`);

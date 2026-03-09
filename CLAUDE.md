@@ -40,18 +40,18 @@ The server uses Express for HTTP routing and Socket.IO for real-time client comm
 The kibitzer runs a local Stockfish engine that independently analyzes the live position and overlays its analysis alongside the broadcast engine data.
 
 **Files** (`src/kibitzer/`):
-- `kibitzer-manager.ts` - Orchestrates targeting (picks highest-viewer broadcast), PV playout via chess.js, snapshot capture on moves, and 1-second client emit loop
+- `kibitzer-manager.ts` - Orchestrates targeting (picks top N broadcasts by viewers), manages per-broadcast transport slots, PV playout via chess.js, snapshot capture on moves, and 1-second client emit loop
 - `local-transport.ts` - Spawns Stockfish subprocess, manages UCI lifecycle (`uci` → `setoption` → `isready` → `go infinite`)
 - `uci-parser.ts` - Parses UCI `info` lines into `AnalysisInfo` structs; normalizes scores to white's perspective
 - `types.ts` - `KibitzerTransport` interface (pluggable — only `LocalTransport` exists today)
 - `index.ts` - Barrel export
 
 **Data flow**:
-1. Stockfish emits UCI `info` lines → `parseInfoLine()` normalizes score → `KibitzerManager.currentInfo` updated
-2. Every 1s: `emitKibitzerUpdate()` plays out PV via chess.js → emits `{ game: { kibitzerLiveData } }` delta to Socket.IO room
+1. Stockfish emits UCI `info` lines → `parseInfoLine()` normalizes score → per-slot `currentInfo` updated
+2. Every 1s: `emitKibitzerUpdates()` iterates all active slots, plays out PV via chess.js → emits `{ game: { kibitzerLiveData } }` delta to Socket.IO room
 3. On each move: `snapshotForMove()` captures current analysis into `moveMeta[n].kibitzer` before state reset, then `onPositionChange()` sends new FEN to engine
 
-**Targeting**: `poll()` runs every 10s, finds broadcast with most viewers. Hysteresis threshold of 2 prevents thrashing. Zero viewers globally pauses analysis. Only one broadcast is analyzed at a time.
+**Targeting**: `poll()` runs every 10s, ranks broadcasts by viewer count, picks top N (`STOCKFISH_BROADCASTS`). Each targeted broadcast gets its own `LocalTransport` (Stockfish process). Hysteresis threshold of 2 gives currently-analyzed broadcasts a ranking bonus. Broadcasts with zero viewers are excluded.
 
 ### Frontend Architecture
 
@@ -151,9 +151,10 @@ Environment variables:
 - `PGNS_DIR` - PGN output directory (default: "pgns")
 - `LICHESS_OAUTH_TOKEN` - Optional Lichess API bearer token for opening/tablebase lookups
 - `LOG_LEVEL` - Winston log level (default: "info")
-- `STOCKFISH_PATH` - Path to Stockfish binary (default: `stockfish` on `$PATH`)
-- `STOCKFISH_THREADS` - Stockfish thread count (default: "1")
-- `STOCKFISH_HASH` - Stockfish hash table size in MB (default: "256")
+- `KIBITZER_PATH` - Path to kibitzer engine binary (default: `stockfish` on `$PATH`)
+- `KIBITZER_THREADS` - Kibitzer engine thread count (default: "1")
+- `KIBITZER_HASH` - Kibitzer engine hash table size in MB (default: "256")
+- `KIBITZER_BROADCASTS` - Number of broadcasts to analyze simultaneously (default: "1")
 
 ## Key Files
 
@@ -197,5 +198,5 @@ Environment variables:
 - **Dual CSS/SCSS webpack rules**: `webpack.common.js` has separate rules for `.css` (third-party packages: reset-css, mini.css, chessboardjs) and `.scss` (project styles). Only project styles go through `sass-loader`.
 - **Dark theme isolation**: `dark-theme.scss` is a standalone webpack entry with no `@use` of project partials. It overrides CSS custom properties in `:root` and adds selector-level overrides. Do not add `@use` imports to it.
 - **Kibitzer score normalization**: UCI scores are always converted to white's perspective in `uci-parser.ts`. When it's black to move, the raw centipawn score is negated. Mate scores map to ±1,000,000 cp.
-- **Kibitzer single-broadcast targeting**: `KibitzerManager` analyzes only one broadcast at a time (the one with the most viewers). A hysteresis threshold of 2 prevents thrashing between broadcasts with similar viewer counts.
+- **Kibitzer multi-broadcast targeting**: `KibitzerManager` analyzes the top N broadcasts by viewer count (configured via `STOCKFISH_BROADCASTS`, default 1). Each broadcast gets its own `LocalTransport` (Stockfish process). A hysteresis threshold of 2 prevents thrashing — currently analyzed broadcasts get a bonus when ranking.
 - **Kibitzer subprocess lifecycle**: No automatic restart if Stockfish crashes — `LocalTransport.ready` becomes `false` and analysis silently stops.

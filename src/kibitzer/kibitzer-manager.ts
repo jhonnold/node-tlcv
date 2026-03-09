@@ -9,30 +9,29 @@ import type { ColorCode, KibitzerMeta, SerializedKibitzerLiveData } from '../../
 const POLL_INTERVAL_MS = 10_000;
 const EMIT_INTERVAL_MS = 1_000;
 const SWITCH_THRESHOLD = 2;
-const ENGINE_NAME = 'Stockfish 18';
+const MAX_BROADCASTS = parseInt(process.env.KIBITZER_BROADCASTS ?? '1', 10);
+
+interface BroadcastSlot {
+  transport: KibitzerTransport;
+  currentInfo: AnalysisInfo | null;
+  currentFen: string | null;
+  dirty: boolean;
+}
 
 export class KibitzerManager {
-  private transport: KibitzerTransport;
-  private targetPort: number | null = null;
+  private slots = new Map<number, BroadcastSlot>();
   private pollTimer: NodeJS.Timeout | null = null;
   private emitTimer: NodeJS.Timeout | null = null;
-  private currentInfo: AnalysisInfo | null = null;
-  private currentFen: string | null = null;
-  private dirty = false;
+  private transportFactory: () => KibitzerTransport;
 
-  constructor(transport?: KibitzerTransport) {
-    this.transport = transport ?? new LocalTransport();
+  constructor(transportFactory?: () => KibitzerTransport) {
+    this.transportFactory = transportFactory ?? (() => new LocalTransport());
   }
 
   start(): void {
-    this.transport.onAnalysis((info) => {
-      this.currentInfo = info;
-      this.dirty = true;
-    });
-    this.transport.start();
     this.pollTimer = setInterval(() => this.poll(), POLL_INTERVAL_MS);
-    this.emitTimer = setInterval(() => this.emitKibitzerUpdate(), EMIT_INTERVAL_MS);
-    logger.info('KibitzerManager started');
+    this.emitTimer = setInterval(() => this.emitKibitzerUpdates(), EMIT_INTERVAL_MS);
+    logger.info(`KibitzerManager started (max broadcasts: ${MAX_BROADCASTS})`);
   }
 
   stop(): void {
@@ -44,24 +43,26 @@ export class KibitzerManager {
       clearInterval(this.emitTimer);
       this.emitTimer = null;
     }
-    this.transport.stop();
-    this.targetPort = null;
-    this.currentInfo = null;
-    this.currentFen = null;
+    for (const [port, slot] of this.slots) {
+      slot.transport.stop();
+      logger.info(`Kibitzer: stopped transport for port ${port}`);
+    }
+    this.slots.clear();
     logger.info('KibitzerManager stopped');
   }
 
   /** Called by GameService before liveData resets on a move. */
   snapshotForMove(port: number): KibitzerMeta | null {
-    if (port !== this.targetPort || !this.currentInfo || !this.currentFen) return null;
+    const slot = this.slots.get(port);
+    if (!slot || !slot.currentInfo || !slot.currentFen) return null;
 
-    const pv = this.playoutPV(this.currentInfo.pv);
-    const stm = this.extractStm();
+    const pv = this.playoutPV(slot.currentInfo.pv, slot.currentFen);
+    const stm = extractStm(slot.currentFen);
 
     return {
-      depth: this.currentInfo.depth,
-      score: this.currentInfo.score / 100, // convert cp to pawns
-      nodes: this.currentInfo.nodes,
+      depth: slot.currentInfo.depth,
+      score: slot.currentInfo.score / 100,
+      nodes: slot.currentInfo.nodes,
       stm,
       pv: pv?.san ?? null,
       pvAlg: pv?.alg[0] ?? null,
@@ -72,107 +73,142 @@ export class KibitzerManager {
 
   /** Called by GameService after a move is applied. */
   onPositionChange(port: number, fen: string): void {
-    if (port !== this.targetPort) return;
+    const slot = this.slots.get(port);
+    if (!slot) return;
 
-    this.currentInfo = null;
-    this.currentFen = fen;
-    this.dirty = false;
-    this.transport.analyze(fen);
+    slot.currentInfo = null;
+    slot.currentFen = fen;
+    slot.dirty = false;
+    slot.transport.analyze(fen);
   }
 
   /** Called by GameService.buildGameDelta() to get current live data. */
   getLiveData(port: number): SerializedKibitzerLiveData | null {
-    if (port !== this.targetPort || !this.currentInfo || !this.currentFen) return null;
+    const slot = this.slots.get(port);
+    if (!slot || !slot.currentInfo || !slot.currentFen) return null;
 
-    const pv = this.playoutPV(this.currentInfo.pv);
+    const pv = this.playoutPV(slot.currentInfo.pv, slot.currentFen);
 
     return {
-      depth: this.currentInfo.depth,
-      score: this.currentInfo.score / 100,
-      nodes: this.currentInfo.nodes,
-      stm: this.extractStm(),
+      depth: slot.currentInfo.depth,
+      score: slot.currentInfo.score / 100,
+      nodes: slot.currentInfo.nodes,
+      stm: extractStm(slot.currentFen),
       pv: pv?.san ?? [],
       pvAlg: pv?.alg[0] ?? '',
       pvFen: pv?.fen ?? '',
       pvMoveNumber: pv?.moveNumber ?? 1,
-      name: ENGINE_NAME,
+      name: slot.transport.name(),
     };
   }
 
   getTargetPort(): number | null {
-    return this.targetPort;
+    // Return the port with the most viewers among active slots (for backward compat)
+    let best: number | null = null;
+    let bestCount = 0;
+    for (const port of this.slots.keys()) {
+      const bc = broadcasts.get(port);
+      if (bc && bc.browserCount > bestCount) {
+        bestCount = bc.browserCount;
+        best = port;
+      }
+    }
+    return best;
   }
 
-  private emitKibitzerUpdate(): void {
-    if (!this.dirty || this.targetPort === null) return;
+  isTargeted(port: number): boolean {
+    return this.slots.has(port);
+  }
 
-    const broadcast = broadcasts.get(this.targetPort);
-    if (!broadcast || broadcast.browserCount === 0) return;
+  private emitKibitzerUpdates(): void {
+    for (const [port, slot] of this.slots) {
+      if (!slot.dirty) continue;
 
-    this.dirty = false;
-    const liveData = this.getLiveData(this.targetPort);
-    if (liveData) emitUpdate(this.targetPort, { game: { kibitzerLiveData: liveData } });
+      const broadcast = broadcasts.get(port);
+      if (!broadcast || broadcast.browserCount === 0) continue;
+
+      slot.dirty = false;
+      const liveData = this.getLiveData(port);
+      if (liveData) emitUpdate(port, { game: { kibitzerLiveData: liveData } });
+    }
   }
 
   private poll(): void {
-    let bestPort: number | null = null;
-    let bestCount = 0;
-
+    // Rank broadcasts by viewer count descending
+    const ranked: { port: number; count: number }[] = [];
     for (const [port, broadcast] of broadcasts) {
-      if (broadcast.browserCount > bestCount) {
-        bestCount = broadcast.browserCount;
-        bestPort = port;
+      if (broadcast.browserCount > 0) {
+        ranked.push({ port, count: broadcast.browserCount });
+      }
+    }
+    ranked.sort((a, b) => b.count - a.count);
+
+    const desired = new Set<number>();
+    const currentPorts = new Set(this.slots.keys());
+
+    // Pick top N, with hysteresis: current targets get a bonus
+    const candidates = ranked.map(({ port, count }) => ({
+      port,
+      effectiveCount: count + (currentPorts.has(port) ? SWITCH_THRESHOLD : 0),
+      actualCount: count,
+    }));
+    candidates.sort((a, b) => b.effectiveCount - a.effectiveCount);
+
+    for (let i = 0; i < Math.min(MAX_BROADCASTS, candidates.length); i++) {
+      desired.add(candidates[i].port);
+    }
+
+    // Stop transports for ports no longer in desired set
+    for (const port of currentPorts) {
+      if (!desired.has(port)) {
+        const slot = this.slots.get(port)!;
+        slot.transport.stop();
+        this.slots.delete(port);
+        logger.info(`Kibitzer: stopped analyzing port ${port}`);
       }
     }
 
-    // No viewers anywhere — stop analyzing
-    if (bestPort === null || bestCount === 0) {
-      if (this.targetPort !== null) {
-        logger.info('Kibitzer: no viewers on any broadcast, pausing');
-        this.targetPort = null;
-        this.currentInfo = null;
-        this.currentFen = null;
+    // Start transports for newly desired ports
+    for (const port of desired) {
+      if (!currentPorts.has(port)) {
+        this.startSlot(port);
       }
-      return;
     }
-
-    // Already targeting this port
-    if (bestPort === this.targetPort) return;
-
-    // Check hysteresis: new leader must exceed current by SWITCH_THRESHOLD
-    if (this.targetPort !== null) {
-      const currentBroadcast = broadcasts.get(this.targetPort);
-      const currentCount = currentBroadcast?.browserCount ?? 0;
-      if (bestCount < currentCount + SWITCH_THRESHOLD) return;
-    }
-
-    this.switchTo(bestPort);
   }
 
-  private switchTo(port: number): void {
+  private startSlot(port: number): void {
     const broadcast = broadcasts.get(port);
     if (!broadcast) return;
 
-    logger.info(`Kibitzer: switching to port ${port} (${broadcast.browserCount} viewers)`);
+    const transport = this.transportFactory();
+    const slot: BroadcastSlot = {
+      transport,
+      currentInfo: null,
+      currentFen: null,
+      dirty: false,
+    };
 
-    this.targetPort = port;
-    this.currentInfo = null;
+    transport.onAnalysis((info) => {
+      slot.currentInfo = info;
+      slot.dirty = true;
+    });
+    transport.start();
+
+    this.slots.set(port, slot);
 
     const fen = broadcast.game.instance.fen();
-    this.currentFen = fen;
-    this.transport.analyze(fen);
+    slot.currentFen = fen;
+    transport.analyze(fen);
+
+    logger.info(`Kibitzer: started analyzing port ${port} (${broadcast.browserCount} viewers)`);
   }
 
-  private extractStm(): ColorCode {
-    const parts = this.currentFen?.split(' ');
-    return (parts?.[1] === 'b' ? 'b' : 'w') as ColorCode;
-  }
-
-  private playoutPV(uciMoves: string[]): { san: string[]; alg: string[]; fen: string; moveNumber: number } | null {
-    if (!this.currentFen) return null;
-
+  private playoutPV(
+    uciMoves: string[],
+    fen: string,
+  ): { san: string[]; alg: string[]; fen: string; moveNumber: number } | null {
     try {
-      const chess = new Chess(this.currentFen);
+      const chess = new Chess(fen);
       const moveNumber = chess.moveNumber();
       const san: string[] = [];
       const alg: string[] = [];
@@ -192,4 +228,9 @@ export class KibitzerManager {
       return null;
     }
   }
+}
+
+function extractStm(fen: string | null): ColorCode {
+  const parts = fen?.split(' ');
+  return (parts?.[1] === 'b' ? 'b' : 'w') as ColorCode;
 }
