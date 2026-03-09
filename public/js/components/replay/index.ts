@@ -35,6 +35,7 @@ function buildGameEventData(meta: StoredGameMeta): GameEventData {
       stm: meta.stm,
       moves: meta.moves,
       startFen: meta.startFen,
+      kibitzerLiveData: null,
     },
     spectators: [],
     menu: {},

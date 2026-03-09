@@ -72,7 +72,7 @@ const GRAPH_TYPES: Record<string, GraphTypeConfig> = {
       };
     },
     formatTooltip(value: number, datasetIndex: number) {
-      const prefix = datasetIndex === 0 ? 'White' : 'Black';
+      const prefix = datasetIndex === 0 ? 'White' : datasetIndex === 1 ? 'Black' : 'Kibitzer';
       return `${prefix}: ${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
     },
   },

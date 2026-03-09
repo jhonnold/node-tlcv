@@ -1,6 +1,6 @@
 // public/js/components/game/player-info.js
 import $ from 'jquery';
-import type { SerializedGame, MoveMetaData } from '../../../../shared/types';
+import type { SerializedGame, MoveMetaData, SerializedKibitzerLiveData, KibitzerMeta } from '../../../../shared/types';
 import { colorName } from '../../../../shared/colors';
 import pv, { formatPv } from '../../utils/pv';
 import { updateFenDisplay } from '../../utils/fen';
@@ -113,4 +113,35 @@ export function update(game: SerializedGame) {
   const moves = game.moves || [];
   const lastMeta = moves.length ? moves[moves.length - 1] : null;
   updateHistoricalInfo(otherColor, lastMeta?.depth != null ? lastMeta : null);
+}
+
+function formatKibitzerScore(score: number) {
+  if (score > MATE_SCORE_THRESHOLD) return 'M';
+  if (score < -MATE_SCORE_THRESHOLD) return '-M';
+  return score >= 0 ? `+${score.toFixed(2)}` : score.toFixed(2);
+}
+
+export function updateKibitzerBar(liveData: SerializedKibitzerLiveData) {
+  updateElText($('#kibitzer-name'), liveData.name);
+  updateElText($('#kibitzer-score'), formatKibitzerScore(liveData.score));
+  $('#kibitzer-score').attr('title', `Depth: ${liveData.depth} | Nodes: ${formatNodes(liveData.nodes)}`);
+  const pvHtml = formatPv(liveData.pv, liveData.pvMoveNumber, colorName(liveData.stm));
+  $('#kibitzer-pv').html(pvHtml);
+  $('#kibitzer-bar').removeClass('kibitzer-inactive').prop('hidden', false);
+}
+
+export function updateKibitzerBarFromMeta(meta: KibitzerMeta) {
+  updateElText($('#kibitzer-name'), 'Kibitzer');
+  updateElText($('#kibitzer-score'), formatKibitzerScore(meta.score));
+  $('#kibitzer-score').attr('title', `Depth: ${meta.depth} | Nodes: ${formatNodes(meta.nodes)}`);
+  const pvHtml = formatPv(meta.pv, meta.pvMoveNumber ?? 1, colorName(meta.stm));
+  $('#kibitzer-pv').html(pvHtml);
+  $('#kibitzer-bar').removeClass('kibitzer-inactive').prop('hidden', false);
+}
+
+export function showKibitzerPlaceholder(message: string) {
+  $('#kibitzer-name').text(message);
+  $('#kibitzer-score').text('').removeAttr('title');
+  $('#kibitzer-pv').html('');
+  $('#kibitzer-bar').addClass('kibitzer-inactive').prop('hidden', false);
 }

@@ -1,7 +1,14 @@
 import { Chess, Move, validateFen } from 'chess.js';
 import dayjs from 'dayjs';
 import { logger } from './util/index.js';
-import type { ColorCode, MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
+import type {
+  ColorCode,
+  MoveMetaData,
+  SerializedLiveData,
+  SerializedPlayer,
+  SerializedGame,
+  SerializedKibitzerLiveData,
+} from '../shared/types.js';
 
 export type { ColorCode, MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
 
@@ -164,7 +171,7 @@ export class ChessGame {
     }
   }
 
-  toJSON(): SerializedGame {
+  toJSON(kibitzerLiveData?: SerializedKibitzerLiveData | null): SerializedGame {
     return {
       site: this.site,
       white: this.white.toJSON(),
@@ -176,6 +183,7 @@ export class ChessGame {
       stm: this.instance.turn(),
       moves: this.moveMeta,
       startFen: this.startFen,
+      kibitzerLiveData: kibitzerLiveData ?? null,
     };
   }
 }

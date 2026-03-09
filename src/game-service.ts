@@ -234,6 +234,8 @@ class GameService {
       });
 
       if (this.game.liveData.depth > 0) {
+        const kibitzerSnapshot = this.broadcast.kibitzerManager?.snapshotForMove(this.broadcast.port) ?? null;
+
         this.game.moveMeta.push({
           color: colorCode,
           number: this.game.moveNumber,
@@ -249,6 +251,8 @@ class GameService {
           pvFen: this.game.liveData.pvFen,
           pvMoveNumber: this.game.liveData.pvMoveNumber,
           pvFollowup: this.game.liveData.pvAlg[1] || null,
+          pvAlg: this.game.liveData.pvAlg[0] || null,
+          kibitzer: kibitzerSnapshot,
         });
 
         // Set the PGN comment for this move
@@ -269,6 +273,8 @@ class GameService {
           pvFen: null,
           pvMoveNumber: null,
           pvFollowup: null,
+          pvAlg: null,
+          kibitzer: null,
         });
 
         this.game.instance.setComment('(Book)');
@@ -286,6 +292,8 @@ class GameService {
 
     // start the timer for the other side
     this.game[notColor].startTime = new Date().getTime();
+
+    this.broadcast.kibitzerManager?.onPositionChange(this.broadcast.port, this.game.instance.fen());
 
     const [opening, tablebase] = await Promise.all([
       fetchOpening(this.game.name, this.game.instance),

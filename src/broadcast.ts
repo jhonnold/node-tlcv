@@ -5,6 +5,7 @@ import { BroadcastState } from './broadcast-state.js';
 import { emitUpdate, emitChat } from './socket-io-adapter.js';
 import type { ParsedResults, GameRecord } from './services/result-parser.js';
 import type { SerializedBroadcast } from '../shared/types.js';
+import type { KibitzerManager } from './kibitzer/kibitzer-manager.js';
 
 export type { SerializedBroadcast } from '../shared/types.js';
 
@@ -16,16 +17,18 @@ export class Broadcast {
   readonly ip: string;
   readonly port: number;
   readonly game: ChessGame;
+  readonly kibitzerManager: KibitzerManager | null;
   private state: BroadcastState;
   private gameService: GameService;
   private conn: Connection;
   private pings!: NodeJS.Timeout;
 
-  constructor(host: string, ip: string, port: number) {
+  constructor(host: string, ip: string, port: number, kibitzerManager?: KibitzerManager) {
     this.host = host;
     this.ip = ip;
     this.port = port;
 
+    this.kibitzerManager = kibitzerManager ?? null;
     this.state = new BroadcastState();
     this.game = new ChessGame(String(this.port));
     this.gameService = new GameService(this);
@@ -74,8 +77,9 @@ export class Broadcast {
   }
 
   toJSON(includeChat = false): SerializedBroadcast {
+    const kibitzerLiveData = this.kibitzerManager?.getLiveData(this.port) ?? null;
     return {
-      game: this.game.toJSON(),
+      game: this.game.toJSON(kibitzerLiveData),
       ...this.state.toJSON(includeChat),
     };
   }

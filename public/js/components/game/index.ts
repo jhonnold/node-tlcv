@@ -4,7 +4,15 @@ import { colorName } from '../../../../shared/colors';
 import { on } from '../../events/index';
 import type { GameEventData, NavPosition } from '../../events/index';
 import { updateTimers, stopAllTimers, hideTimers, forceRestartTimers } from './timers';
-import { update, updateHistoricalInfo, updateSpectators, updateMenu } from './player-info';
+import {
+  update,
+  updateHistoricalInfo,
+  updateSpectators,
+  updateMenu,
+  updateKibitzerBar,
+  updateKibitzerBarFromMeta,
+  showKibitzerPlaceholder,
+} from './player-info';
 import copyFen from '../../utils/fen';
 import { isReplayMode } from '../replay/index';
 
@@ -42,6 +50,12 @@ function handleGameUpdate(data: GameEventData) {
   }
   updateSpectators(spectators);
   updateMenu(menu);
+
+  if (live && game.kibitzerLiveData) {
+    updateKibitzerBar(game.kibitzerLiveData);
+  } else if (live) {
+    showKibitzerPlaceholder('No kibitzer active');
+  }
 }
 
 function handleGameState(data: GameEventData) {
@@ -57,6 +71,12 @@ function handleGameState(data: GameEventData) {
   }
   updateSpectators(spectators);
   updateMenu(menu);
+
+  if (game.kibitzerLiveData) {
+    updateKibitzerBar(game.kibitzerLiveData);
+  } else {
+    showKibitzerPlaceholder('No kibitzer active');
+  }
 }
 
 function handleNavPosition({ isLive, index }: NavPosition) {
@@ -68,6 +88,11 @@ function handleNavPosition({ isLive, index }: NavPosition) {
     if (!wasLive && lastGameData) {
       update(lastGameData);
       forceRestartTimers({ game: lastGameData });
+    }
+    if (lastGameData?.kibitzerLiveData) {
+      updateKibitzerBar(lastGameData.kibitzerLiveData);
+    } else {
+      showKibitzerPlaceholder('No kibitzer active');
     }
     return;
   }
@@ -83,6 +108,12 @@ function handleNavPosition({ isLive, index }: NavPosition) {
     // navIndex 0 (start position)
     updateHistoricalInfo('white', null);
     updateHistoricalInfo('black', null);
+  }
+
+  if (movedMeta?.kibitzer) {
+    updateKibitzerBarFromMeta(movedMeta.kibitzer);
+  } else {
+    showKibitzerPlaceholder('No kibitzer data');
   }
 }
 

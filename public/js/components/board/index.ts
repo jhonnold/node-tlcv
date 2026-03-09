@@ -1,7 +1,7 @@
 import $ from 'jquery';
 import Chessboard from 'chessboardjs';
 import type { ChessboardInstance } from 'chessboardjs';
-import type { SerializedGame } from '../../../../shared/types';
+import type { SerializedGame, ColorCode } from '../../../../shared/types';
 import { colorName } from '../../../../shared/colors';
 import { on } from '../../events/index';
 import type { GameEventData, NavPosition } from '../../events/index';
@@ -16,10 +16,14 @@ let pvBoardBlack: ChessboardInstance | null = null;
 let live = true;
 let lastGameData: SerializedGame | null = null;
 let navFollowup: string | null = null;
+let navKibitzerAlg: string | null = null;
+let navThinkingAlg: string | null = null;
+let navMoveColor: ColorCode | null = null;
 
-const SECONDARY_ARROW_COLOR = '#F3AE4888';
-const MAIN_ARROW_LIGHT = '#114F8AEE';
-const MAIN_ARROW_DARK = '#68C07BEE';
+const WHITE_ARROW_COLOR = '#DDDDDDDD';
+const BLACK_ARROW_COLOR = '#222222DD';
+const KIBITZER_ARROW_LIGHT = '#114F8ADD';
+const KIBITZER_ARROW_DARK = '#68C07BDD';
 const EMPTY_FEN = '8/8/8/8/8/8/8/8';
 
 function updatePvBoards(fens: { white: string; black: string }) {
@@ -39,26 +43,55 @@ function getLivePvFens(game: SerializedGame): { white: string; black: string } {
   } as { white: string; black: string };
 }
 
+function computeShifts(kMove: string, fMove: string, tMove: string): [number, number, number] {
+  const kf = kMove && fMove && kMove === fMove;
+  const kt = kMove && tMove && kMove === tMove;
+  const ft = fMove && tMove && fMove === tMove;
+
+  if (kf && ft) return [-2, 0, 2];
+  if (kf) return [-1, 1, 0];
+  if (kt) return [-1, 0, 1];
+  if (ft) return [0, -1, 1];
+  return [0, 0, 0];
+}
+
 function drawArrows() {
   clearArrows();
   if (!lastGameData) return;
 
-  if (!live) {
-    if (navFollowup) drawMove(navFollowup, SECONDARY_ARROW_COLOR);
-    return;
+  const theme = localStorage.getItem('theme') || 'light';
+  const kibitzerArrowColor = theme === 'dark' ? KIBITZER_ARROW_DARK : KIBITZER_ARROW_LIGHT;
+
+  let kMove: string;
+  let fMove: string;
+  let tMove: string;
+  let tMoveColor: string;
+  let fMoveColor: string;
+
+  if (live) {
+    const { pvAlg = '', color } = lastGameData.liveData;
+    const moves = lastGameData.moves || [];
+    const lastMeta = moves.length ? moves[moves.length - 1] : null;
+
+    kMove = lastGameData.kibitzerLiveData?.pvAlg || '';
+    fMove = lastMeta?.pvFollowup || '';
+    tMove = pvAlg;
+    tMoveColor = color === 'w' ? WHITE_ARROW_COLOR : BLACK_ARROW_COLOR;
+    fMoveColor = color === 'w' ? BLACK_ARROW_COLOR : WHITE_ARROW_COLOR;
+  } else {
+    kMove = navKibitzerAlg || '';
+    fMove = navFollowup || '';
+    tMove = navThinkingAlg || '';
+    tMoveColor = navMoveColor === 'w' ? WHITE_ARROW_COLOR : BLACK_ARROW_COLOR;
+    fMoveColor = navMoveColor === 'w' ? BLACK_ARROW_COLOR : WHITE_ARROW_COLOR;
   }
 
-  const theme = localStorage.getItem('theme') || 'light';
-  const mainArrowColor = theme === 'dark' ? MAIN_ARROW_DARK : MAIN_ARROW_LIGHT;
+  const [kShift, fShift, tShift] = computeShifts(kMove, fMove, tMove);
 
-  const { pvAlg = '' } = lastGameData.liveData;
-  const moves = lastGameData.moves || [];
-  const lastMeta = moves.length ? moves[moves.length - 1] : null;
-  const followup = lastMeta?.pvFollowup || null;
-
-  const sameMove = pvAlg === followup ? 1 : 0;
-  if (followup) drawMove(followup, SECONDARY_ARROW_COLOR, 1 * sameMove);
-  if (pvAlg) drawMove(pvAlg, mainArrowColor, -1 * sameMove);
+  // Draw order: Kibitzer (bottom), Followup, Thinking (top)
+  if (kMove) drawMove(kMove, kibitzerArrowColor, kShift);
+  if (fMove) drawMove(fMove, fMoveColor, fShift);
+  if (tMove) drawMove(tMove, tMoveColor, tShift);
 }
 
 function handleGameUpdate(data: GameEventData) {
@@ -123,6 +156,27 @@ function getFollowupAtIndex(navIndex: number) {
   return moves[navIndex - 1].pvFollowup || null;
 }
 
+function getKibitzerAlgAtIndex(navIndex: number): string | null {
+  if (!lastGameData || navIndex <= 0) return null;
+  const moves = lastGameData.moves || [];
+  if (navIndex >= moves.length) return null;
+  return moves[navIndex].kibitzer?.pvAlg || null;
+}
+
+function getThinkingAlgAtIndex(navIndex: number): string | null {
+  if (!lastGameData || navIndex <= 0) return null;
+  const moves = lastGameData.moves || [];
+  if (navIndex >= moves.length) return null;
+  return moves[navIndex].pvAlg || null;
+}
+
+function getNavMoveColor(navIndex: number): ColorCode | null {
+  if (!lastGameData || navIndex <= 0) return null;
+  const moves = lastGameData.moves || [];
+  if (navIndex >= moves.length) return null;
+  return moves[navIndex].color || null;
+}
+
 function handleNavPosition({ fen, isLive, lastMove, index }: NavPosition) {
   const wasLive = live;
   live = isLive;
@@ -130,6 +184,9 @@ function handleNavPosition({ fen, isLive, lastMove, index }: NavPosition) {
   highlightSquares(lastMove);
 
   navFollowup = isLive ? null : getFollowupAtIndex(index);
+  navKibitzerAlg = isLive ? null : getKibitzerAlgAtIndex(index);
+  navThinkingAlg = isLive ? null : getThinkingAlgAtIndex(index);
+  navMoveColor = isLive ? null : getNavMoveColor(index);
 
   if (!isLive) {
     updatePvBoards(getPvFenAtIndex(index));

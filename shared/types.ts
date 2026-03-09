@@ -1,5 +1,28 @@
 export type ColorCode = 'w' | 'b';
 
+export type KibitzerMeta = {
+  depth: number;
+  score: number;
+  nodes: number;
+  stm: ColorCode;
+  pv: string[] | null;
+  pvAlg: string | null;
+  pvFen: string | null;
+  pvMoveNumber: number | null;
+};
+
+export type SerializedKibitzerLiveData = {
+  depth: number;
+  score: number;
+  nodes: number;
+  stm: ColorCode;
+  pv: string[];
+  pvAlg: string;
+  pvFen: string;
+  pvMoveNumber: number;
+  name: string;
+};
+
 export type MoveMetaData = {
   color: ColorCode;
   number: number;
@@ -12,6 +35,8 @@ export type MoveMetaData = {
   pvFen: string | null;
   pvMoveNumber: number | null;
   pvFollowup: string | null;
+  pvAlg: string | null;
+  kibitzer: KibitzerMeta | null;
 };
 
 export type SerializedLiveData = {
@@ -43,6 +68,7 @@ export type SerializedGame = {
   stm: ColorCode;
   moves: MoveMetaData[];
   startFen: string | null;
+  kibitzerLiveData: SerializedKibitzerLiveData | null;
 };
 
 export type SerializedBroadcast = {
@@ -69,6 +95,7 @@ export type GameDelta = {
   liveData?: SerializedLiveData;
   newMoves?: MoveMetaData[];
   resetMoves?: boolean;
+  kibitzerLiveData?: SerializedKibitzerLiveData | null;
 };
 
 export type BroadcastDelta = {
