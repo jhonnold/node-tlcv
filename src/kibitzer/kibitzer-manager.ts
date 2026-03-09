@@ -2,14 +2,12 @@ import { Chess } from 'chess.js';
 import broadcasts from '../broadcast.js';
 import { emitUpdate } from '../socket-io-adapter.js';
 import { logger } from '../util/index.js';
-import { LocalTransport } from './local-transport.js';
 import type { KibitzerTransport, AnalysisInfo } from './types.js';
 import type { ColorCode, KibitzerMeta, SerializedKibitzerLiveData } from '../../shared/types.js';
 
 const POLL_INTERVAL_MS = 10_000;
 const EMIT_INTERVAL_MS = 1_000;
 const SWITCH_THRESHOLD = 2;
-const MAX_BROADCASTS = parseInt(process.env.KIBITZER_BROADCASTS ?? '1', 10);
 
 interface BroadcastSlot {
   transport: KibitzerTransport;
@@ -19,19 +17,25 @@ interface BroadcastSlot {
 }
 
 export class KibitzerManager {
+  private readonly transports: KibitzerTransport[];
   private slots = new Map<number, BroadcastSlot>();
   private pollTimer: NodeJS.Timeout | null = null;
   private emitTimer: NodeJS.Timeout | null = null;
-  private transportFactory: () => KibitzerTransport;
 
-  constructor(transportFactory?: () => KibitzerTransport) {
-    this.transportFactory = transportFactory ?? (() => new LocalTransport());
+  constructor(transports: KibitzerTransport[]) {
+    this.transports = transports;
   }
 
   start(): void {
+    if (this.transports.length === 0) {
+      logger.info('KibitzerManager: no transports configured, analysis disabled');
+      return;
+    }
+
+    this.poll();
     this.pollTimer = setInterval(() => this.poll(), POLL_INTERVAL_MS);
     this.emitTimer = setInterval(() => this.emitKibitzerUpdates(), EMIT_INTERVAL_MS);
-    logger.info(`KibitzerManager started (max broadcasts: ${MAX_BROADCASTS})`);
+    logger.info(`KibitzerManager started (${this.transports.length} transports)`);
   }
 
   stop(): void {
@@ -103,7 +107,6 @@ export class KibitzerManager {
   }
 
   getTargetPort(): number | null {
-    // Return the port with the most viewers among active slots (for backward compat)
     let best: number | null = null;
     let bestCount = 0;
     for (const port of this.slots.keys()) {
@@ -134,7 +137,6 @@ export class KibitzerManager {
   }
 
   private poll(): void {
-    // Rank broadcasts by viewer count descending
     const ranked: { port: number; count: number }[] = [];
     for (const [port, broadcast] of broadcasts) {
       if (broadcast.browserCount > 0) {
@@ -143,10 +145,9 @@ export class KibitzerManager {
     }
     ranked.sort((a, b) => b.count - a.count);
 
-    const desired = new Set<number>();
     const currentPorts = new Set(this.slots.keys());
 
-    // Pick top N, with hysteresis: current targets get a bonus
+    // Apply hysteresis: current targets get a bonus
     const candidates = ranked.map(({ port, count }) => ({
       port,
       effectiveCount: count + (currentPorts.has(port) ? SWITCH_THRESHOLD : 0),
@@ -154,33 +155,33 @@ export class KibitzerManager {
     }));
     candidates.sort((a, b) => b.effectiveCount - a.effectiveCount);
 
-    for (let i = 0; i < Math.min(MAX_BROADCASTS, candidates.length); i++) {
-      desired.add(candidates[i].port);
+    const desiredCount = Math.min(this.transports.length, candidates.length);
+    const desired = new Map<number, KibitzerTransport>();
+    for (let i = 0; i < desiredCount; i++) {
+      desired.set(candidates[i].port, this.transports[i]);
     }
 
-    // Stop transports for ports no longer in desired set
-    for (const port of currentPorts) {
-      if (!desired.has(port)) {
-        const slot = this.slots.get(port)!;
+    // Stop slots no longer desired or that need a different transport
+    for (const [port, slot] of this.slots) {
+      if (!desired.has(port) || desired.get(port) !== slot.transport) {
         slot.transport.stop();
         this.slots.delete(port);
         logger.info(`Kibitzer: stopped analyzing port ${port}`);
       }
     }
 
-    // Start transports for newly desired ports
-    for (const port of desired) {
-      if (!currentPorts.has(port)) {
-        this.startSlot(port);
+    // Start slots for newly desired ports
+    for (const [port, transport] of desired) {
+      if (!this.slots.has(port)) {
+        this.startSlot(port, transport);
       }
     }
   }
 
-  private startSlot(port: number): void {
+  private startSlot(port: number, transport: KibitzerTransport): void {
     const broadcast = broadcasts.get(port);
     if (!broadcast) return;
 
-    const transport = this.transportFactory();
     const slot: BroadcastSlot = {
       transport,
       currentInfo: null,

@@ -4,12 +4,7 @@ import { createInterface } from 'readline';
 import { logger } from '../util/index.js';
 import { parseInfoLine } from './uci-parser.js';
 import type { AnalysisInfo } from './uci-parser.js';
-import type { KibitzerTransport } from './types.js';
-
-const KIBITZER_PATH = process.env.KIBITZER_PATH ?? 'stockfish';
-const THREADS = process.env.KIBITZER_THREADS ?? '1';
-const HASH = process.env.KIBITZER_HASH ?? '256';
-const ENGINE_NAME = 'Stockfish 18';
+import type { KibitzerTransport, LocalKibitzerConfig } from './types.js';
 
 export class LocalTransport implements KibitzerTransport {
   private proc: ChildProcessWithoutNullStreams | null = null;
@@ -17,10 +12,21 @@ export class LocalTransport implements KibitzerTransport {
   private ready = false;
   private stm: 'w' | 'b' = 'w';
   private pendingFen: string | null = null;
-  private engineName: string = ENGINE_NAME;
+  private engineName: string;
+
+  private readonly enginePath: string;
+  private readonly threads: number;
+  private readonly hash: number;
+
+  constructor(config: LocalKibitzerConfig) {
+    this.enginePath = config.enginePath ?? 'stockfish';
+    this.threads = config.threads ?? 1;
+    this.hash = config.hash ?? 256;
+    this.engineName = 'Stockfish';
+  }
 
   start(): void {
-    this.proc = spawn(KIBITZER_PATH, { stdio: ['pipe', 'pipe', 'pipe'] });
+    this.proc = spawn(this.enginePath, { stdio: ['pipe', 'pipe', 'pipe'] });
 
     this.proc.on('error', (err) => {
       logger.error(`Kibitzer process error: ${err.message}`);
@@ -44,6 +50,8 @@ export class LocalTransport implements KibitzerTransport {
 
   stop(): void {
     this.ready = false;
+    this.callback = null;
+    this.pendingFen = null;
     if (this.proc) {
       this.send('quit');
       setTimeout(() => {
@@ -58,7 +66,6 @@ export class LocalTransport implements KibitzerTransport {
   analyze(fen: string): void {
     if (!this.proc) return;
 
-    // Extract side to move from FEN
     const parts = fen.split(' ');
     this.stm = (parts[1] ?? 'w') as 'w' | 'b';
 
@@ -93,15 +100,15 @@ export class LocalTransport implements KibitzerTransport {
     }
 
     if (line === 'uciok') {
-      this.send(`setoption name Threads value ${THREADS}`);
-      this.send(`setoption name Hash value ${HASH}`);
+      this.send(`setoption name Threads value ${this.threads}`);
+      this.send(`setoption name Hash value ${this.hash}`);
       this.send('isready');
       return;
     }
 
     if (line === 'readyok') {
       this.ready = true;
-      logger.info(`Kibitzer engine ready (Threads=${THREADS}, Hash=${HASH})`);
+      logger.info(`Kibitzer engine ready (Threads=${this.threads}, Hash=${this.hash})`);
       if (this.pendingFen) {
         const fen = this.pendingFen;
         this.pendingFen = null;

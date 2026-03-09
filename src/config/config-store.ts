@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { KibitzerConfig } from '../kibitzer/types.js';
 
 export interface AppConfig {
   connections: string[];
+  kibitzers?: KibitzerConfig[];
 }
 
 export class ConfigStore {
