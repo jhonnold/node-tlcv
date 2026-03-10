@@ -44,6 +44,20 @@ export class FileCache {
     map.set(gameNumber, filename);
   }
 
+  async loadAll(): Promise<void> {
+    try {
+      const entries = await fs.readdir('pgns', { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const map = await this.loadFromDisk(entry.name);
+          this.cache.set(entry.name, map);
+        }
+      }
+    } catch {
+      logger.info('No pgns directory found, skipping cache preload');
+    }
+  }
+
   invalidate(siteSlug: string): void {
     this.cache.delete(siteSlug);
   }
