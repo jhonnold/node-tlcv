@@ -88,29 +88,30 @@ function createChart() {
   if (!canvas) return;
 
   const primaryColor = getCssVar('--primaryColor');
-  const kibitzerColor = getCssVar('--kibitzerColor');
+  const graphWhiteColor = getCssVar('--graphWhiteColor');
+  const graphBlackColor = getCssVar('--graphBlackColor');
   const { labels, whiteData, blackData, kibitzerData, yAxis } = prepareChartPayload();
 
   const datasets = [
     {
       label: 'White',
       data: whiteData,
-      borderColor: primaryColor,
+      borderColor: graphWhiteColor,
       borderWidth: 1.5,
       pointRadius: buildPointRadii(whiteData),
       pointHoverRadius: 5,
-      pointBackgroundColor: primaryColor,
+      pointBackgroundColor: graphWhiteColor,
       tension: 0.3,
       spanGaps: true,
     },
     {
       label: 'Black',
       data: blackData,
-      borderColor: 'rgba(100, 100, 100, 1)',
+      borderColor: graphBlackColor,
       borderWidth: 1.5,
       pointRadius: buildPointRadii(blackData),
       pointHoverRadius: 5,
-      pointBackgroundColor: 'rgba(100, 100, 100, 1)',
+      pointBackgroundColor: graphBlackColor,
       tension: 0.3,
       spanGaps: true,
     },
@@ -120,11 +121,11 @@ function createChart() {
     datasets.push({
       label: 'Kibitzer',
       data: kibitzerData,
-      borderColor: kibitzerColor,
+      borderColor: primaryColor,
       borderWidth: 1,
       pointRadius: buildPointRadii(kibitzerData),
       pointHoverRadius: 4,
-      pointBackgroundColor: kibitzerColor,
+      pointBackgroundColor: primaryColor,
       tension: 0.3,
       spanGaps: true,
       // @ts-expect-error -- borderDash exists on line dataset but not on the generic union
