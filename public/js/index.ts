@@ -17,6 +17,7 @@ import { init as initGames } from './components/games/index';
 import { init as initReplay } from './components/replay/index';
 import { init as initGraphs } from './components/graphs/index';
 import { init as initFocus } from './components/focus/index';
+import { init as initFlip } from './components/flip/index';
 import { chatHeight, updateLayout } from './components/board/resize';
 import { getPort } from './utils/url';
 
@@ -89,6 +90,7 @@ function init() {
   initGraphs();
   initChat();
   initFocus();
+  initFlip();
 
   // Set initial chat-area height now that boards are created and resize restored
   handleWindowResize();

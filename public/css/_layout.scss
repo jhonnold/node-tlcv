@@ -9,6 +9,10 @@
   flex-direction: column;
   justify-content: center;
   gap: calc(2 * var(--universal-margin));
+
+  .board-flipped & {
+    flex-direction: column-reverse;
+  }
 }
 
 #resize-handle {

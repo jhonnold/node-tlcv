@@ -18,6 +18,7 @@ type EventMap = {
   'tab:change': { tab: string };
   'theme:change': { theme: string };
   'board:resize': undefined;
+  'board:flip': { flipped: boolean };
   'game:replay': StoredGameMeta;
   'replay:exit': undefined;
 };

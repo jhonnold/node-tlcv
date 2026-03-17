@@ -51,7 +51,7 @@ function drawArrow(
   ctx.fill();
 }
 
-export function drawMove(move: string, color: string, shift = 0) {
+export function drawMove(move: string, color: string, shift = 0, flipped = false) {
   const board = $('#board');
   const boardSize = board.height()!;
 
@@ -60,10 +60,17 @@ export function drawMove(move: string, color: string, shift = 0) {
 
   if (ctx === null) return;
 
-  const fromFile = move.charCodeAt(0) - CHAR_CODE_A;
-  const fromRank = Number(move.charAt(1));
-  const toFile = move.charCodeAt(2) - CHAR_CODE_A;
-  const toRank = Number(move.charAt(3));
+  let fromFile = move.charCodeAt(0) - CHAR_CODE_A;
+  let fromRank = Number(move.charAt(1));
+  let toFile = move.charCodeAt(2) - CHAR_CODE_A;
+  let toRank = Number(move.charAt(3));
+
+  if (flipped) {
+    fromFile = 9 - fromFile;
+    fromRank = 9 - fromRank;
+    toFile = 9 - toFile;
+    toRank = 9 - toRank;
+  }
 
   const canvasHeight = $('#arrow-board').height()!;
 

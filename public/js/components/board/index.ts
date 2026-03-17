@@ -14,6 +14,7 @@ let board: ChessboardInstance | null = null;
 let pvBoardWhite: ChessboardInstance | null = null;
 let pvBoardBlack: ChessboardInstance | null = null;
 let live = true;
+let flipped = false;
 let lastGameData: SerializedGame | null = null;
 let navFollowup: string | null = null;
 let navKibitzerAlg: string | null = null;
@@ -89,9 +90,9 @@ function drawArrows() {
   const [kShift, fShift, tShift] = computeShifts(kMove, fMove, tMove);
 
   // Draw order: Kibitzer (bottom), Followup, Thinking (top)
-  if (kMove) drawMove(kMove, kibitzerArrowColor, kShift);
-  if (fMove) drawMove(fMove, fMoveColor, fShift);
-  if (tMove) drawMove(tMove, tMoveColor, tShift);
+  if (kMove) drawMove(kMove, kibitzerArrowColor, kShift, flipped);
+  if (fMove) drawMove(fMove, fMoveColor, fShift, flipped);
+  if (tMove) drawMove(tMove, tMoveColor, tShift, flipped);
 }
 
 function handleGameUpdate(data: GameEventData) {
@@ -227,6 +228,14 @@ export function init() {
   on('theme:change', handleThemeChange);
   on('nav:position', handleNavPosition);
   on('board:resize', () => drawArrows());
+  on('board:flip', (data) => {
+    flipped = data.flipped;
+    const orientation = flipped ? 'black' : 'white';
+    board!.orientation(orientation);
+    pvBoardWhite!.orientation(orientation);
+    pvBoardBlack!.orientation(orientation);
+    drawArrows();
+  });
 }
 
 export function resize() {
