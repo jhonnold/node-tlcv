@@ -44,16 +44,22 @@ function getLivePvFens(game: SerializedGame): { white: string; black: string } {
   } as { white: string; black: string };
 }
 
-function computeShifts(kMove: string, fMove: string, tMove: string): [number, number, number] {
-  const kf = kMove && fMove && kMove === fMove;
-  const kt = kMove && tMove && kMove === tMove;
-  const ft = fMove && tMove && fMove === tMove;
+function parseHexColor(hex: string): [number, number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const a = hex.length >= 9 ? parseInt(hex.slice(7, 9), 16) : 255;
+  return [r, g, b, a];
+}
 
-  if (kf && ft) return [-2, 0, 2];
-  if (kf) return [-1, 1, 0];
-  if (kt) return [-1, 0, 1];
-  if (ft) return [0, -1, 1];
-  return [0, 0, 0];
+function blendColors(colors: string[]): string {
+  const parsed = colors.map(parseHexColor);
+  const n = parsed.length;
+  const r = Math.round(parsed.reduce((s, c) => s + c[0], 0) / n);
+  const g = Math.round(parsed.reduce((s, c) => s + c[1], 0) / n);
+  const b = Math.round(parsed.reduce((s, c) => s + c[2], 0) / n);
+  const a = Math.round(parsed.reduce((s, c) => s + c[3], 0) / n);
+  return `#${[r, g, b, a].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 
 function drawArrows() {
@@ -87,12 +93,20 @@ function drawArrows() {
     fMoveColor = navMoveColor === 'w' ? BLACK_ARROW_COLOR : WHITE_ARROW_COLOR;
   }
 
-  const [kShift, fShift, tShift] = computeShifts(kMove, fMove, tMove);
+  // Group arrows by move and blend overlapping colors
+  const arrowMap = new Map<string, string[]>();
+  const addArrow = (move: string, color: string) => {
+    const existing = arrowMap.get(move);
+    if (existing) existing.push(color);
+    else arrowMap.set(move, [color]);
+  };
+  if (kMove) addArrow(kMove, kibitzerArrowColor);
+  if (fMove) addArrow(fMove, fMoveColor);
+  if (tMove) addArrow(tMove, tMoveColor);
 
-  // Draw order: Kibitzer (bottom), Followup, Thinking (top)
-  if (kMove) drawMove(kMove, kibitzerArrowColor, kShift, flipped);
-  if (fMove) drawMove(fMove, fMoveColor, fShift, flipped);
-  if (tMove) drawMove(tMove, tMoveColor, tShift, flipped);
+  for (const [move, colors] of arrowMap) {
+    drawMove(move, colors.length === 1 ? colors[0] : blendColors(colors), flipped);
+  }
 }
 
 function handleGameUpdate(data: GameEventData) {

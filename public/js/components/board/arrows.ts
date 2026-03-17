@@ -51,7 +51,7 @@ function drawArrow(
   ctx.fill();
 }
 
-export function drawMove(move: string, color: string, shift = 0, flipped = false) {
+export function drawMove(move: string, color: string, flipped = false) {
   const board = $('#board');
   const boardSize = board.height()!;
 
@@ -81,29 +81,9 @@ export function drawMove(move: string, color: string, shift = 0, flipped = false
   const endX = toFile * squareSize - squareCenter;
   const endY = canvasHeight - (toRank * squareSize - squareCenter);
   const arrowWidth = (squareSize / 3.5) * 0.5;
-  const arrowLength = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
-
-  // Perpendicular offset to separate overlapping arrows
-  const offset = rotatePoint(
-    [
-      ((endX - startX) * shift * arrowWidth) / 4 / arrowLength,
-      ((endY - startY) * shift * arrowWidth) / 4 / arrowLength,
-    ],
-    Math.PI / 2,
-    [0, 0],
-  );
 
   ctx.fillStyle = color;
-  drawArrow(
-    ctx,
-    startX + offset[0],
-    startY + offset[1],
-    endX + offset[0],
-    endY + offset[1],
-    arrowWidth,
-    3.5 * arrowWidth,
-    squareSize / 3,
-  );
+  drawArrow(ctx, startX, startY, endX, endY, arrowWidth, 3.5 * arrowWidth, squareSize / 3);
 }
 
 export function clearArrows() {
