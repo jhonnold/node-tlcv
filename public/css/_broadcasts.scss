@@ -3,41 +3,6 @@
   padding: 20px;
 }
 
-.sort-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 10px;
-
-  label {
-    font-size: 0.85em;
-    color: var(--textColor);
-  }
-}
-
-.sort-btn {
-  font-family: var(--fontFamily);
-  font-size: 0.8em;
-  padding: 4px 12px;
-  border: 1px solid var(--surfaceColorHover);
-  border-radius: 4px;
-  background: var(--surfaceColor);
-  color: var(--textColor);
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: var(--surfaceColorHover);
-  }
-
-  &.active {
-    background: var(--primaryColor);
-    color: #fff;
-    border-color: var(--primaryColor);
-  }
-}
-
 .broadcasts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
@@ -55,11 +20,18 @@
   padding: 12px;
   text-decoration: none;
   color: inherit;
-  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+
+  &:link,
+  &:visited {
+    text-decoration: none;
+    color: inherit;
+  }
 
   &:hover {
     background: var(--surfaceColorHover);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02);
   }
 
   &.featured {
@@ -131,15 +103,16 @@
   height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .pc-white {
   background: #fff;
-  border: 1px solid #ccc;
 }
 
 .pc-black {
-  background: #333;
+  background: #222;
+  border-color: #222;
 }
 
 .player-name {
@@ -217,10 +190,6 @@
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-.kibitzer-badge {
-  color: var(--primaryColor);
 }
 
 .empty-message {

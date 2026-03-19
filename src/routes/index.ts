@@ -13,7 +13,7 @@ const router = Router();
 router.get('/', (_: Request, res: Response): void => {
   const broadcastList = Array.from(broadcasts.values())
     .map((b) => {
-      const kibitzerActive = b.kibitzerManager?.isTargeted(b.port) ?? false;
+      const kibitzerData = b.kibitzerManager?.getLiveData(b.port) ?? null;
 
       return {
         port: b.port,
@@ -23,12 +23,10 @@ router.get('/', (_: Request, res: Response): void => {
         blackTime: b.game.black.clockTime,
         site: b.game.site,
         fen: b.game.instance.fen(),
-        score: b.game.liveData.score,
-        scoreColor: b.game.liveData.color,
+        score: kibitzerData?.score ?? null,
         opening: b.game.opening,
         moveCount: b.game.moveMeta.length,
         viewerCount: b.browserCount,
-        kibitzerActive,
       };
     })
     .sort((a, b) => b.viewerCount - a.viewerCount);

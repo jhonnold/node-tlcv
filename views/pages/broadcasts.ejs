@@ -13,12 +13,6 @@
     <div class="container">
       <div class="page-header">
         <h1>Live Broadcasts</h1>
-        <div class="sort-controls">
-          <label>Sort by:</label>
-          <button type="button" class="sort-btn active" data-sort="viewers">Viewers</button>
-          <button type="button" class="sort-btn" data-sort="eval">Eval</button>
-          <button type="button" class="sort-btn" data-sort="moves">Moves</button>
-        </div>
       </div>
       <% if (broadcasts.length === 0) { %>
       <div class="empty-message">
@@ -37,11 +31,8 @@
             return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
           }
 
-          function normalizeScore(score, scoreColor) {
-            return scoreColor === 'b' ? -score : score;
-          }
-
           function formatScore(score) {
+            if (score === null) return '';
             if (score >= 1000) return '+M';
             if (score <= -1000) return '-M';
             var s = Math.abs(score).toFixed(1);
@@ -49,6 +40,7 @@
           }
 
           function evalPercent(score) {
+            if (score === null) return 50;
             var capped = Math.max(-5, Math.min(5, score));
             return Math.round(50 + (capped / 5) * 50);
           }
@@ -58,13 +50,8 @@
             'k': 'bK', 'q': 'bQ', 'r': 'bR', 'b': 'bB', 'n': 'bN', 'p': 'bP'
           };
         %>
-        <% broadcasts.forEach(function(broadcast, idx) {
-          var whiteScore = normalizeScore(broadcast.score, broadcast.scoreColor);
-        %>
-        <a href="/<%= broadcast.port %>" class="broadcast-card<%= idx === 0 ? ' featured' : '' %>"
-           data-viewers="<%= broadcast.viewerCount %>"
-           data-eval="<%= Math.abs(whiteScore) %>"
-           data-moves="<%= broadcast.moveCount %>">
+        <% broadcasts.forEach(function(broadcast, idx) { %>
+        <a href="/<%= broadcast.port %>" class="broadcast-card<%= idx === 0 ? ' featured' : '' %>">
           <div class="card-inner">
             <div class="mini-board">
               <%
@@ -106,9 +93,9 @@
               </div>
               <div class="eval-row">
                 <div class="eval-bar">
-                  <div class="eval-fill" style="width: <%= evalPercent(whiteScore) %>%"></div>
+                  <div class="eval-fill" style="width: <%= evalPercent(broadcast.score) %>%"></div>
                 </div>
-                <span class="eval-score"><%= formatScore(whiteScore) %></span>
+                <span class="eval-score"><%= formatScore(broadcast.score) %></span>
               </div>
               <div class="player-row">
                 <span class="player-color pc-white"></span>
@@ -124,11 +111,6 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   <%= broadcast.viewerCount %>
                 </span>
-                <% if (broadcast.kibitzerActive) { %>
-                <span class="kibitzer-badge" title="Live analysis active">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-                </span>
-                <% } %>
               </div>
             </div>
           </div>
