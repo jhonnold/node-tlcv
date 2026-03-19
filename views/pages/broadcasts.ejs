@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Broadcasts - Lichess TV Chess</title>
+    <meta http-equiv="refresh" content="30" />
+    <title>Live Broadcasts - CCRL Live</title>
     <%- include('../partials/analytics') %>
   </head>
   <body>
@@ -12,6 +13,12 @@
     <div class="container">
       <div class="page-header">
         <h1>Live Broadcasts</h1>
+        <div class="sort-controls">
+          <label>Sort by:</label>
+          <button type="button" class="sort-btn active" data-sort="viewers">Viewers</button>
+          <button type="button" class="sort-btn" data-sort="eval">Eval</button>
+          <button type="button" class="sort-btn" data-sort="moves">Moves</button>
+        </div>
       </div>
       <% if (broadcasts.length === 0) { %>
       <div class="empty-message">
@@ -20,13 +27,111 @@
       </div>
       <% } else { %>
       <div class="broadcasts-grid">
-        <% broadcasts.forEach(function(broadcast) { %>
-        <a href="/<%= broadcast.port %>" class="broadcast-card">
-          <div class="players">
-            <%= broadcast.white %> vs <%= broadcast.black %>
+        <%
+          function formatClock(ms) {
+            var totalSec = Math.floor(ms / 1000);
+            var h = Math.floor(totalSec / 3600);
+            var m = Math.floor((totalSec % 3600) / 60);
+            var s = totalSec % 60;
+            if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+            return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+          }
+
+          function normalizeScore(score, scoreColor) {
+            return scoreColor === 'b' ? -score : score;
+          }
+
+          function formatScore(score) {
+            if (score >= 1000) return '+M';
+            if (score <= -1000) return '-M';
+            var s = Math.abs(score).toFixed(1);
+            return (score >= 0 ? '+' : '-') + s;
+          }
+
+          function evalPercent(score) {
+            var capped = Math.max(-5, Math.min(5, score));
+            return Math.round(50 + (capped / 5) * 50);
+          }
+
+          var pieceMap = {
+            'K': 'wK', 'Q': 'wQ', 'R': 'wR', 'B': 'wB', 'N': 'wN', 'P': 'wP',
+            'k': 'bK', 'q': 'bQ', 'r': 'bR', 'b': 'bB', 'n': 'bN', 'p': 'bP'
+          };
+        %>
+        <% broadcasts.forEach(function(broadcast, idx) {
+          var whiteScore = normalizeScore(broadcast.score, broadcast.scoreColor);
+        %>
+        <a href="/<%= broadcast.port %>" class="broadcast-card<%= idx === 0 ? ' featured' : '' %>"
+           data-viewers="<%= broadcast.viewerCount %>"
+           data-eval="<%= Math.abs(whiteScore) %>"
+           data-moves="<%= broadcast.moveCount %>">
+          <div class="card-inner">
+            <div class="mini-board">
+              <%
+                var ranks = broadcast.fen.split(' ')[0].split('/');
+                ranks.forEach(function(rank, rankIdx) {
+              %>
+              <div class="board-rank">
+                <%
+                  var fileIdx = 0;
+                  for (var ci = 0; ci < rank.length; ci++) {
+                    var ch = rank[ci];
+                    if (ch >= '1' && ch <= '8') {
+                      for (var e = 0; e < parseInt(ch); e++) {
+                        var light = (rankIdx + fileIdx) % 2 === 0;
+                %>
+                <div class="sq <%= light ? 'sq-l' : 'sq-d' %>"></div>
+                <%
+                        fileIdx++;
+                      }
+                    } else {
+                      var light = (rankIdx + fileIdx) % 2 === 0;
+                %>
+                <div class="sq <%= light ? 'sq-l' : 'sq-d' %>">
+                  <img src="/img/<%= pieceMap[ch] %>.svg" alt="<%= ch %>" />
+                </div>
+                <%
+                      fileIdx++;
+                    }
+                  }
+                %>
+              </div>
+              <% }); %>
+            </div>
+            <div class="card-info">
+              <div class="player-row">
+                <span class="player-color pc-black"></span>
+                <span class="player-name"><%= broadcast.black %></span>
+                <span class="player-clock"><%= formatClock(broadcast.blackTime) %></span>
+              </div>
+              <div class="eval-row">
+                <div class="eval-bar">
+                  <div class="eval-fill" style="width: <%= evalPercent(whiteScore) %>%"></div>
+                </div>
+                <span class="eval-score"><%= formatScore(whiteScore) %></span>
+              </div>
+              <div class="player-row">
+                <span class="player-color pc-white"></span>
+                <span class="player-name"><%= broadcast.white %></span>
+                <span class="player-clock"><%= formatClock(broadcast.whiteTime) %></span>
+              </div>
+              <div class="card-meta">
+                <span class="opening"><%= broadcast.opening %></span>
+              </div>
+              <div class="card-footer">
+                <span class="move-count">Move <%= broadcast.moveCount %></span>
+                <span class="viewer-count">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <%= broadcast.viewerCount %>
+                </span>
+                <% if (broadcast.kibitzerActive) { %>
+                <span class="kibitzer-badge" title="Live analysis active">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                </span>
+                <% } %>
+              </div>
+            </div>
           </div>
-          <div class="site"><%= broadcast.site %></div>
-          <div class="viewers"><%= broadcast.viewerCount %> viewer<%= broadcast.viewerCount !== 1 ? 's' : '' %></div>
         </a>
         <% }); %>
       </div>
