@@ -11,13 +11,27 @@ interface RequestWithBroadcast extends Request {
 const router = Router();
 
 router.get('/', (_: Request, res: Response): void => {
-  const broadcastList = Array.from(broadcasts.values()).map((b) => ({
-    port: b.port,
-    white: b.game.white.name,
-    black: b.game.black.name,
-    site: b.game.site,
-    viewerCount: b.browserCount,
-  }));
+  const broadcastList = Array.from(broadcasts.values())
+    .map((b) => {
+      const kibitzerActive = b.kibitzerManager?.isTargeted(b.port) ?? false;
+
+      return {
+        port: b.port,
+        white: b.game.white.name,
+        black: b.game.black.name,
+        whiteTime: b.game.white.clockTime,
+        blackTime: b.game.black.clockTime,
+        site: b.game.site,
+        fen: b.game.instance.fen(),
+        score: b.game.liveData.score,
+        scoreColor: b.game.liveData.color,
+        opening: b.game.opening,
+        moveCount: b.game.moveMeta.length,
+        viewerCount: b.browserCount,
+        kibitzerActive,
+      };
+    })
+    .sort((a, b) => b.viewerCount - a.viewerCount);
 
   res.render('pages/broadcasts', { broadcasts: broadcastList });
 });
