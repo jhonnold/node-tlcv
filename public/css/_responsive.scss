@@ -57,4 +57,13 @@
       text-align: left;
     }
   }
+
+  .broadcasts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-board {
+    width: 80px;
+    height: 80px;
+  }
 }

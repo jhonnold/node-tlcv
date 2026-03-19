@@ -12,6 +12,8 @@
   --kibitzerColor: var(--textColor);
   --graphWhiteColor: #cecece;
   --graphBlackColor: #888888;
+  --evalBarWhite: #ccc;
+  --evalBarBlack: #111;
 }
 
 a {
@@ -76,4 +78,8 @@ button.primary {
 
 .tab-btn.active {
   color: var(--backgroundColor);
+}
+
+.pc-black {
+  background: #ddd;
 }
