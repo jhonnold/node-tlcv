@@ -34,8 +34,6 @@ export interface KibitzerStatus {
   engineName: string;
   targetPort: number | null;
   targetName: string | null;
-  depth: number | null;
-  nodes: number | null;
   host?: string;
   port?: number;
   username?: string;
@@ -127,7 +125,6 @@ export class KibitzerManager {
 
     return this.transports.map((entry) => {
       const targetPort = transportToPort.get(entry.transport) ?? null;
-      const slot = targetPort !== null ? this.slots.get(targetPort) : null;
       const broadcast = targetPort !== null ? broadcasts.get(targetPort) : null;
 
       return {
@@ -141,8 +138,6 @@ export class KibitzerManager {
         engineName: entry.transport.name(),
         targetPort,
         targetName: broadcast?.game.site ?? null,
-        depth: slot?.currentInfo?.depth ?? null,
-        nodes: slot?.currentInfo?.nodes ?? null,
         ...(entry.config.type === 'ssh'
           ? {
               host: entry.config.host,

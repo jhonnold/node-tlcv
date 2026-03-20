@@ -20,6 +20,7 @@ io.attach(server);
   const config = await configStore.load();
   const kibitzers = config.kibitzers ?? [];
 
+  // Backfill IDs for configs created before runtime management was added
   let needsSave = false;
   for (const k of kibitzers) {
     if (!k.id) {
