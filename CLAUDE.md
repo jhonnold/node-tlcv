@@ -27,7 +27,7 @@ The server uses Express for HTTP routing and Socket.IO for real-time client comm
 
 ### Backend Core Flow
 
-1. **main.ts** - Entry point; creates HTTP server, attaches Socket.IO, loads kibitzer config, creates transports, initializes KibitzerManager, loads config connections
+1. **main.ts** - Entry point; creates HTTP server, attaches Socket.IO, assigns kibitzer config IDs if missing, initializes KibitzerManager with configs, loads config connections
 2. **config/config.json** - Defines which chess server addresses/ports to connect to
 3. **Broadcast** (broadcast.ts) - Represents one chess broadcast/port; manages game state, spectators, chat
 4. **Transport** (transport/) - UDP socket layer; `udp-transport.ts` manages the socket, `message-buffer.ts` handles message ordering
@@ -43,7 +43,7 @@ The kibitzer runs chess engines (local or remote via SSH) that independently ana
 - `kibitzer-manager.ts` - Orchestrates targeting (assigns transports to top broadcasts by viewers), manages per-broadcast transport slots, PV playout via chess.js, snapshot capture on moves, and 1-second client emit loop
 - `local-transport.ts` - Spawns a local engine subprocess, manages UCI lifecycle (`uci` → `setoption` → `isready` → `go infinite`)
 - `ssh-transport.ts` - Connects to a remote host via SSH (`ssh2`), runs the engine over the SSH channel, same UCI lifecycle as local
-- `transport-factory.ts` - `createTransports()` reads kibitzer configs, sorts by priority, constructs transport instances
+- `transport-factory.ts` - `createTransport()` creates a single transport instance from a `KibitzerConfig`
 - `uci-parser.ts` - Parses UCI `info` lines into `AnalysisInfo` structs; normalizes scores to white's perspective
 - `types.ts` - `KibitzerTransport` interface, `KibitzerConfig` discriminated union (`LocalKibitzerConfig | SshKibitzerConfig`)
 - `index.ts` - Barrel export
@@ -115,6 +115,8 @@ The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
 - `/:port/games/json` - Returns game records as JSON (with PGN/meta URLs)
 - `/:port/games/:gameNumber/meta` - Returns metadata sidecar for a specific game
 - `/admin` - Admin panel (basic auth, username: admin)
+- `POST /admin/kibitzers` - Add a new kibitzer transport at runtime
+- `DELETE /admin/kibitzers/:id` - Remove a kibitzer transport at runtime
 
 ### Client-Server Communication
 
@@ -145,13 +147,13 @@ Configuration is in `config/config.json`:
 {
   "connections": ["hostname:port", "hostname:port", ...],
   "kibitzers": [
-    { "type": "local", "priority": 10, "enginePath": "/usr/bin/stockfish", "threads": 4, "hash": 512 },
-    { "type": "ssh", "priority": 5, "host": "example.com", "username": "user", "privateKeyPath": "/path/to/key", "enginePath": "/usr/bin/stockfish", "threads": 8, "hash": 2048 }
+    { "id": "a1b2c3d4", "type": "local", "priority": 10, "enginePath": "/usr/bin/stockfish", "threads": 4, "hash": 512 },
+    { "id": "e5f6g7h8", "type": "ssh", "priority": 5, "host": "example.com", "username": "user", "privateKeyPath": "/path/to/key", "enginePath": "/usr/bin/stockfish", "threads": 8, "hash": 2048 }
   ]
 }
 ```
 
-The `kibitzers` array is optional. Each entry has a `type` (`"local"` or `"ssh"`), a `priority` (higher = assigned to more-viewed broadcasts), and type-specific fields. SSH entries also require `host`, `username`, `privateKeyPath`, and `enginePath`. Both types accept optional `port` (SSH only, default 22), `threads` (default 1), and `hash` (default 256).
+The `kibitzers` array is optional. Each entry has an `id` (auto-assigned at startup if missing), a `type` (`"local"` or `"ssh"`), a `priority` (higher = assigned to more-viewed broadcasts), and type-specific fields. SSH entries also require `host`, `username`, `privateKeyPath`, and `enginePath`. Both types accept optional `port` (SSH only, default 22), `threads` (default 1), and `hash` (default 256).
 
 Environment variables:
 - `TLCV_PASSWORD` - Admin panel password (required)
@@ -204,3 +206,6 @@ Environment variables:
 - **Kibitzer score normalization**: UCI scores are always converted to white's perspective in `uci-parser.ts`. When it's black to move, the raw centipawn score is negated. Mate scores map to ±1,000,000 cp.
 - **Kibitzer priority-based targeting**: `KibitzerManager` assigns configured transports to the top broadcasts by viewer count. The number of simultaneous analyses equals the number of entries in the `kibitzers` config array. Highest-priority transport serves the most-viewed broadcast. A hysteresis threshold of 2 prevents thrashing — currently analyzed broadcasts get a bonus when ranking.
 - **Kibitzer transport lifecycle**: Connection lifecycle (`create`/`teardown`) is separate from analysis lifecycle (`startAnalysis`/`stopAnalysis`). `create()` is called once at startup to establish the engine connection (SSH or local process) and UCI handshake. `teardown()` is only called during graceful shutdown. When moving between broadcasts, only `stopAnalysis()`/`startAnalysis()` are called — the underlying connection stays alive. No automatic restart if an engine crashes or SSH connection drops — `ready` becomes `false` and analysis silently stops.
+- **Kibitzer config IDs**: Each kibitzer config entry has a unique `id` field (8-char UUID prefix). Existing configs without IDs get them auto-assigned and saved on first startup. IDs are used for the admin DELETE route.
+- **Kibitzer runtime management**: `KibitzerManager` owns the full transport lifecycle from config. It accepts `KibitzerConfig[]` in the constructor and supports `addTransport(config)` / `removeTransport(id)` for runtime changes. The admin panel's "edit" is implemented as delete + re-add on the frontend.
+- **No test infrastructure**: This project has no test runner or test files. Verification is done via `npm run build` (TypeScript + webpack) and manual testing.
