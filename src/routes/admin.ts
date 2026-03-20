@@ -1,8 +1,11 @@
+import crypto from 'node:crypto';
 import { Router, Request, Response } from 'express';
 import basic from 'express-basic-auth';
 import broadcasts from '../broadcast.js';
 import { logger } from '../util/index.js';
-import { closeConnection, newConnection } from '../broadcast-manager.js';
+import { closeConnection, getKibitzerManager, newConnection } from '../broadcast-manager.js';
+import configStore from '../config/config-store.js';
+import type { KibitzerConfig } from '../kibitzer/types.js';
 
 const router = Router();
 
@@ -14,7 +17,11 @@ router.use(
 );
 
 router.get('/', (_: Request, res: Response) => {
-  res.render('pages/admin', { broadcasts: broadcasts.values() });
+  const kibitzerManager = getKibitzerManager();
+  res.render('pages/admin', {
+    broadcasts: broadcasts.values(),
+    kibitzers: kibitzerManager?.getStatus() ?? [],
+  });
 });
 
 router.post('/close', async (req: Request, res: Response) => {
@@ -39,6 +46,65 @@ router.post('/new', async (req: Request, res: Response) => {
     res.sendStatus(200);
   } catch (error) {
     logger.warn(`Unable to add connection ${connection}`);
+    logger.error(error);
+    res.sendStatus(400);
+  }
+});
+
+router.post('/kibitzers', async (req: Request, res: Response) => {
+  const body = req.body;
+
+  try {
+    const id = crypto.randomUUID().slice(0, 8);
+    let config: KibitzerConfig;
+
+    if (body.type === 'ssh') {
+      config = {
+        id,
+        type: 'ssh',
+        priority: Number(body.priority) || 1,
+        host: body.host,
+        port: body.port ? Number(body.port) : undefined,
+        username: body.username,
+        privateKeyPath: body.privateKeyPath,
+        enginePath: body.enginePath,
+        threads: body.threads ? Number(body.threads) : undefined,
+        hash: body.hash ? Number(body.hash) : undefined,
+      };
+    } else {
+      config = {
+        id,
+        type: 'local',
+        priority: Number(body.priority) || 1,
+        enginePath: body.enginePath || undefined,
+        threads: body.threads ? Number(body.threads) : undefined,
+        hash: body.hash ? Number(body.hash) : undefined,
+      };
+    }
+
+    await configStore.addKibitzer(config);
+    getKibitzerManager()?.addTransport(config);
+
+    logger.info(`Added kibitzer ${id} (${config.type})`);
+    res.sendStatus(200);
+  } catch (error) {
+    logger.warn('Unable to add kibitzer');
+    logger.error(error);
+    res.sendStatus(400);
+  }
+});
+
+router.delete('/kibitzers/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    getKibitzerManager()?.removeTransport(id);
+    await configStore.removeKibitzer(id);
+
+    logger.info(`Removed kibitzer ${id}`);
+    res.sendStatus(200);
+  } catch (error) {
+    logger.warn(`Unable to remove kibitzer ${id}`);
     logger.error(error);
     res.sendStatus(400);
   }
