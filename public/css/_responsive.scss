@@ -60,6 +60,16 @@
 
   .broadcasts-grid {
     grid-template-columns: 1fr;
+    padding: 8px;
+    gap: 10px;
+  }
+
+  .broadcast-card {
+    padding: 8px;
+  }
+
+  .card-inner {
+    gap: 10px;
   }
 
   .mini-board {
