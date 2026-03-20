@@ -76,7 +76,7 @@
                 data-engine-path="<%= k.enginePath %>"
                 <% if (k.type === 'ssh') { %>
                 data-host="<%= k.host %>"
-                data-port="<%= k.port %>"
+                data-port="<%= k.port ?? 22 %>"
                 data-username="<%= k.username %>"
                 data-private-key-path="<%= k.privateKeyPath %>"
                 <% } %>

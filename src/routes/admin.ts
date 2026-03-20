@@ -59,6 +59,11 @@ router.post('/kibitzers', async (req: Request, res: Response) => {
     let config: KibitzerConfig;
 
     if (body.type === 'ssh') {
+      if (!body.host || !body.username || !body.privateKeyPath || !body.enginePath) {
+        res.sendStatus(400);
+        return;
+      }
+
       config = {
         id,
         type: 'ssh',

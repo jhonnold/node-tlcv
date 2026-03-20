@@ -161,8 +161,11 @@ $(document).ready(() => {
       $.ajax({
         type: 'DELETE',
         url: `/admin/kibitzers/${editingId}`,
-        complete() {
+        success() {
           addKibitzer(data);
+        },
+        error() {
+          window.location.reload();
         },
       });
     } else {
