@@ -407,7 +407,9 @@ class GameService {
   }
 
   private async onResult(tokens: CommandTokens): Promise<UpdateResult> {
-    const message = `[Server] - ${this.game.white.name} - ${this.game.black.name} (${tokens[1].trim()})`;
+    const message = `[Server] - Game ${this.broadcast.currentGameNumber}: ${this.game.white.name} - ${
+      this.game.black.name
+    } (${tokens[1].trim()})`;
     this.broadcast.chat.push(message);
 
     const result = tokens[1].trim();
