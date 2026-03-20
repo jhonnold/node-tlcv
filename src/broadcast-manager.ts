@@ -12,6 +12,10 @@ export function setKibitzerManager(manager: KibitzerManager): void {
   _kibitzerManager = manager;
 }
 
+export function getKibitzerManager(): KibitzerManager | null {
+  return _kibitzerManager;
+}
+
 export async function connect(): Promise<void> {
   const connections = await configStore.getConnections();
 
