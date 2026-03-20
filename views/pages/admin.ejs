@@ -7,7 +7,7 @@
     <title>TLCV Admin Panel</title>
   </head>
   <body>
-    <div class="container" style="max-width: 960px; padding: 1rem">
+    <div class="container" style="max-width: 1200px; padding: 1rem">
       <h2>Broadcasts</h2>
       <table>
         <thead>
@@ -50,7 +50,6 @@
             <th>Threads</th>
             <th>Hash</th>
             <th>Target</th>
-            <th>Depth / Nodes</th>
             <th>Ready</th>
             <th>Actions</th>
           </tr>
@@ -64,7 +63,6 @@
             <td data-label="Threads"><%= k.threads %></td>
             <td data-label="Hash"><%= k.hash %> MB</td>
             <td data-label="Target"><%= k.targetName ? `${k.targetName} (${k.targetPort})` : '—' %></td>
-            <td data-label="Depth / Nodes"><%= k.depth != null ? `${k.depth} / ${k.nodes != null ? k.nodes.toLocaleString() : '—'}` : '—' %></td>
             <td data-label="Ready"><%= k.ready ? 'Y' : 'N' %></td>
             <td data-label="Actions">
               <button class="secondary kibitzer-edit"
