@@ -3,6 +3,7 @@ import type { AnalysisInfo } from './uci-parser.js';
 export type { AnalysisInfo };
 
 export interface KibitzerTransport {
+  readonly ready: boolean;
   create(): void;
   teardown(): void;
   startAnalysis(fen: string): void;
@@ -12,6 +13,7 @@ export interface KibitzerTransport {
 }
 
 export type LocalKibitzerConfig = {
+  id: string;
   type: 'local';
   priority: number;
   enginePath?: string;
@@ -20,6 +22,7 @@ export type LocalKibitzerConfig = {
 };
 
 export type SshKibitzerConfig = {
+  id: string;
   type: 'ssh';
   priority: number;
   host: string;
