@@ -9,7 +9,12 @@ import type { KibitzerTransport, LocalKibitzerConfig } from './types.js';
 export class LocalTransport implements KibitzerTransport {
   private proc: ChildProcessWithoutNullStreams | null = null;
   private callback: ((info: AnalysisInfo) => void) | null = null;
-  private ready = false;
+  private _ready = false;
+
+  get ready(): boolean {
+    return this._ready;
+  }
+
   private stm: 'w' | 'b' = 'w';
   private pendingFen: string | null = null;
   private engineName: string;
@@ -34,7 +39,7 @@ export class LocalTransport implements KibitzerTransport {
 
     this.proc.on('exit', (code) => {
       logger.info(`Kibitzer process exited with code ${code}`);
-      this.ready = false;
+      this._ready = false;
       this.proc = null;
     });
 
@@ -49,7 +54,7 @@ export class LocalTransport implements KibitzerTransport {
   }
 
   teardown(): void {
-    this.ready = false;
+    this._ready = false;
     this.callback = null;
     this.pendingFen = null;
     if (this.proc) {
@@ -69,7 +74,7 @@ export class LocalTransport implements KibitzerTransport {
     const parts = fen.split(' ');
     this.stm = (parts[1] ?? 'w') as 'w' | 'b';
 
-    if (!this.ready) {
+    if (!this._ready) {
       this.pendingFen = fen;
       return;
     }
@@ -112,7 +117,7 @@ export class LocalTransport implements KibitzerTransport {
     }
 
     if (line === 'readyok') {
-      this.ready = true;
+      this._ready = true;
       logger.info(`Kibitzer engine ready (Threads=${this.threads}, Hash=${this.hash})`);
       if (this.pendingFen) {
         const fen = this.pendingFen;

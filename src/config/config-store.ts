@@ -40,6 +40,20 @@ export class ConfigStore {
     config.connections = config.connections.filter((c) => c !== connection);
     await this.save(config);
   }
+
+  async addKibitzer(config: KibitzerConfig): Promise<void> {
+    const appConfig = await this.load();
+    const kibitzers = appConfig.kibitzers ?? [];
+    kibitzers.push(config);
+    appConfig.kibitzers = kibitzers;
+    await this.save(appConfig);
+  }
+
+  async removeKibitzer(id: string): Promise<void> {
+    const appConfig = await this.load();
+    appConfig.kibitzers = (appConfig.kibitzers ?? []).filter((k) => k.id !== id);
+    await this.save(appConfig);
+  }
 }
 
 const configStore = new ConfigStore();

@@ -11,7 +11,12 @@ export class SshTransport implements KibitzerTransport {
   private client: Client | null = null;
   private channel: ClientChannel | null = null;
   private callback: ((info: AnalysisInfo) => void) | null = null;
-  private ready = false;
+  private _ready = false;
+
+  get ready(): boolean {
+    return this._ready;
+  }
+
   private stm: 'w' | 'b' = 'w';
   private pendingFen: string | null = null;
   private engineName: string;
@@ -57,7 +62,7 @@ export class SshTransport implements KibitzerTransport {
 
         channel.on('close', () => {
           logger.info(`Kibitzer SSH: channel closed on ${this.config.host}`);
-          this.ready = false;
+          this._ready = false;
           this.channel = null;
         });
 
@@ -67,14 +72,14 @@ export class SshTransport implements KibitzerTransport {
 
     this.client.on('error', (err) => {
       logger.error(`Kibitzer SSH: connection error on ${this.config.host}: ${err.message}`);
-      this.ready = false;
+      this._ready = false;
       this.channel = null;
       this.client = null;
     });
 
     this.client.on('close', () => {
       logger.info(`Kibitzer SSH: connection closed on ${this.config.host}`);
-      this.ready = false;
+      this._ready = false;
       this.channel = null;
       this.client = null;
     });
@@ -88,7 +93,7 @@ export class SshTransport implements KibitzerTransport {
   }
 
   teardown(): void {
-    this.ready = false;
+    this._ready = false;
     this.callback = null;
     this.pendingFen = null;
     this.send('quit');
@@ -110,7 +115,7 @@ export class SshTransport implements KibitzerTransport {
     const parts = fen.split(' ');
     this.stm = (parts[1] ?? 'w') as 'w' | 'b';
 
-    if (!this.ready) {
+    if (!this._ready) {
       this.pendingFen = fen;
       return;
     }
@@ -153,7 +158,7 @@ export class SshTransport implements KibitzerTransport {
     }
 
     if (line === 'readyok') {
-      this.ready = true;
+      this._ready = true;
       logger.info(`Kibitzer SSH engine ready on ${this.config.host} (Threads=${this.threads}, Hash=${this.hash})`);
       if (this.pendingFen) {
         const fen = this.pendingFen;
