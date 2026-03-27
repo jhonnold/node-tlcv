@@ -92,6 +92,15 @@
   min-width: 0;
 }
 
+.tournament-title {
+  font-size: 0.75em;
+  font-weight: 600;
+  color: var(--primaryColor);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .player-row {
   display: flex;
   align-items: center;
