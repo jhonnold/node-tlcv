@@ -1,0 +1,118 @@
+.admin-section {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+
+  h2 {
+    font-size: 1.25rem;
+    margin-bottom: 12px;
+    color: var(--textColor);
+  }
+}
+
+.admin-divider {
+  max-width: 900px;
+  margin: 8px auto 24px;
+  border: none;
+  border-top: 1px solid var(--surfaceColorHover);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surfaceColor);
+  border: 1px solid var(--surfaceColorHover);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+
+  thead {
+    background: var(--surfaceColorHover);
+  }
+
+  th {
+    font-weight: 600;
+    font-size: 0.85em;
+    text-align: left;
+    padding: 10px 12px;
+    color: var(--textColor);
+  }
+
+  td {
+    padding: 10px 12px;
+    font-size: 0.9em;
+    color: var(--textColor);
+    border-top: 1px solid var(--surfaceColorHover);
+  }
+
+  tr:hover td {
+    background: var(--surfaceColorHover);
+  }
+
+  button.secondary {
+    font-family: var(--fontFamily);
+    font-size: 0.8em;
+    padding: 4px 10px;
+    border-radius: var(--universal-border-radius);
+    cursor: pointer;
+  }
+}
+
+.admin-form {
+  max-width: 500px;
+
+  label {
+    display: block;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-bottom: 4px;
+    margin-top: 12px;
+    color: var(--textColor);
+  }
+
+  input,
+  select {
+    width: 100%;
+    padding: 8px 10px;
+    font-family: var(--fontFamily);
+    font-size: 0.9em;
+    border: 1px solid var(--surfaceColorHover);
+    border-radius: var(--universal-border-radius);
+    background: var(--surfaceColor);
+    color: var(--textColor);
+    box-sizing: border-box;
+
+    &:focus {
+      outline: 2px solid var(--primaryColor);
+      outline-offset: -1px;
+    }
+  }
+
+  fieldset {
+    border: 1px solid var(--surfaceColorHover);
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--surfaceColor);
+  }
+
+  legend {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--textColor);
+    padding: 0 8px;
+  }
+
+  button[type='submit'] {
+    margin-top: 16px;
+  }
+
+  #ssh-fields {
+    display: none;
+  }
+
+  #kibitzer-cancel {
+    display: none;
+    margin-left: 0.5rem;
+  }
+}

@@ -4,132 +4,143 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>TLCV Admin Panel</title>
+    <title>Admin Panel - CCRL Live</title>
+    <%- include('../partials/analytics') %>
   </head>
   <body>
-    <div class="container" style="max-width: 1200px; padding: 1rem">
-      <h2>Broadcasts</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Site</th>
-            <th>Host</th>
-            <th>Port</th>
-            <th>Close</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% for (const broadcast of broadcasts) {%>
-          <tr>
-            <td data-label="Site"><%= broadcast.game.site %></td>
-            <td data-label="Host"><%= broadcast.host %></td>
-            <td data-label="Port"><%= broadcast.port %></td>
-            <td data-label="Close">
-              <button class="secondary close" data-connection="<%= broadcast.connection %>">Close</button>
-            </td>
-          </tr>
-          <% } %>
-        </tbody>
-      </table>
-      <form id="add-new">
-        <label for="connection">Connection</label>
-        <input id="connection" name="connection" required placeholder="GrahamCCRL.dyndns.org:16000" />
-        <button type="submit" class="primary">Add new</button>
-      </form>
+    <%- include('../partials/header', { showFocus: false }) %>
+    <div class="container">
+      <div class="page-header">
+        <h1>Admin Panel</h1>
+      </div>
 
-      <hr />
+      <div class="admin-section">
+        <h2>Broadcasts</h2>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Site</th>
+              <th>Host</th>
+              <th>Port</th>
+              <th>Close</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% for (const broadcast of broadcasts) {%>
+            <tr>
+              <td data-label="Site"><%= broadcast.game.site %></td>
+              <td data-label="Host"><%= broadcast.host %></td>
+              <td data-label="Port"><%= broadcast.port %></td>
+              <td data-label="Close">
+                <button class="secondary close" data-connection="<%= broadcast.connection %>">Close</button>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+        <form id="add-new" class="admin-form">
+          <label for="connection">Connection</label>
+          <input id="connection" name="connection" required placeholder="GrahamCCRL.dyndns.org:16000" />
+          <button type="submit" class="primary">Add new</button>
+        </form>
+      </div>
 
-      <h2>Kibitzers</h2>
-      <% if (kibitzers.length > 0) { %>
-      <table>
-        <thead>
-          <tr>
-            <th>Engine</th>
-            <th>Type</th>
-            <th>Priority</th>
-            <th>Threads</th>
-            <th>Hash</th>
-            <th>Target</th>
-            <th>Ready</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% for (const k of kibitzers) { %>
-          <tr>
-            <td data-label="Engine"><%= k.engineName %></td>
-            <td data-label="Type"><%= k.type %></td>
-            <td data-label="Priority"><%= k.priority %></td>
-            <td data-label="Threads"><%= k.threads %></td>
-            <td data-label="Hash"><%= k.hash %> MB</td>
-            <td data-label="Target"><%= k.targetName ? `${k.targetName} (${k.targetPort})` : '—' %></td>
-            <td data-label="Ready"><%= k.ready ? 'Y' : 'N' %></td>
-            <td data-label="Actions">
-              <button class="secondary kibitzer-edit"
-                data-id="<%= k.id %>"
-                data-type="<%= k.type %>"
-                data-priority="<%= k.priority %>"
-                data-threads="<%= k.threads %>"
-                data-hash="<%= k.hash %>"
-                data-engine-path="<%= k.enginePath %>"
-                <% if (k.type === 'ssh') { %>
-                data-host="<%= k.host %>"
-                data-port="<%= k.port ?? 22 %>"
-                data-username="<%= k.username %>"
-                data-private-key-path="<%= k.privateKeyPath %>"
-                <% } %>
-              >Edit</button>
-              <button class="secondary kibitzer-remove" data-id="<%= k.id %>">Remove</button>
-            </td>
-          </tr>
-          <% } %>
-        </tbody>
-      </table>
-      <% } else { %>
-      <p>No kibitzers configured.</p>
-      <% } %>
+      <hr class="admin-divider" />
 
-      <form id="kibitzer-form">
-        <input type="hidden" id="kibitzer-editing-id" value="" />
-        <fieldset>
-          <legend id="kibitzer-form-legend">Add Kibitzer</legend>
+      <div class="admin-section">
+        <h2>Kibitzers</h2>
+        <% if (kibitzers.length > 0) { %>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Engine</th>
+              <th>Type</th>
+              <th>Priority</th>
+              <th>Threads</th>
+              <th>Hash</th>
+              <th>Target</th>
+              <th>Ready</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% for (const k of kibitzers) { %>
+            <tr>
+              <td data-label="Engine"><%= k.engineName %></td>
+              <td data-label="Type"><%= k.type %></td>
+              <td data-label="Priority"><%= k.priority %></td>
+              <td data-label="Threads"><%= k.threads %></td>
+              <td data-label="Hash"><%= k.hash %> MB</td>
+              <td data-label="Target"><%= k.targetName ? `${k.targetName} (${k.targetPort})` : '—' %></td>
+              <td data-label="Ready"><%= k.ready ? 'Y' : 'N' %></td>
+              <td data-label="Actions">
+                <button class="secondary kibitzer-edit"
+                  data-id="<%= k.id %>"
+                  data-type="<%= k.type %>"
+                  data-priority="<%= k.priority %>"
+                  data-threads="<%= k.threads %>"
+                  data-hash="<%= k.hash %>"
+                  data-engine-path="<%= k.enginePath %>"
+                  <% if (k.type === 'ssh') { %>
+                  data-host="<%= k.host %>"
+                  data-port="<%= k.port ?? 22 %>"
+                  data-username="<%= k.username %>"
+                  data-private-key-path="<%= k.privateKeyPath %>"
+                  <% } %>
+                >Edit</button>
+                <button class="secondary kibitzer-remove" data-id="<%= k.id %>">Remove</button>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+        <% } else { %>
+        <p>No kibitzers configured.</p>
+        <% } %>
 
-          <label for="kibitzer-type">Type</label>
-          <select id="kibitzer-type" name="type">
-            <option value="local">Local</option>
-            <option value="ssh">SSH</option>
-          </select>
+        <form id="kibitzer-form" class="admin-form">
+          <input type="hidden" id="kibitzer-editing-id" value="" />
+          <fieldset>
+            <legend id="kibitzer-form-legend">Add Kibitzer</legend>
 
-          <label for="kibitzer-priority">Priority</label>
-          <input id="kibitzer-priority" name="priority" type="number" value="1" min="1" required />
+            <label for="kibitzer-type">Type</label>
+            <select id="kibitzer-type" name="type">
+              <option value="local">Local</option>
+              <option value="ssh">SSH</option>
+            </select>
 
-          <label for="kibitzer-engine-path">Engine Path</label>
-          <input id="kibitzer-engine-path" name="enginePath" placeholder="stockfish" />
+            <label for="kibitzer-priority">Priority</label>
+            <input id="kibitzer-priority" name="priority" type="number" value="1" min="1" required />
 
-          <label for="kibitzer-threads">Threads</label>
-          <input id="kibitzer-threads" name="threads" type="number" value="1" min="1" />
+            <label for="kibitzer-engine-path">Engine Path</label>
+            <input id="kibitzer-engine-path" name="enginePath" placeholder="stockfish" />
 
-          <label for="kibitzer-hash">Hash (MB)</label>
-          <input id="kibitzer-hash" name="hash" type="number" value="256" min="1" />
+            <label for="kibitzer-threads">Threads</label>
+            <input id="kibitzer-threads" name="threads" type="number" value="1" min="1" />
 
-          <div id="ssh-fields" style="display: none">
-            <label for="kibitzer-host">Host</label>
-            <input id="kibitzer-host" name="host" placeholder="example.com" />
+            <label for="kibitzer-hash">Hash (MB)</label>
+            <input id="kibitzer-hash" name="hash" type="number" value="256" min="1" />
 
-            <label for="kibitzer-port">Port</label>
-            <input id="kibitzer-port" name="port" type="number" value="22" />
+            <div id="ssh-fields">
+              <label for="kibitzer-host">Host</label>
+              <input id="kibitzer-host" name="host" placeholder="example.com" />
 
-            <label for="kibitzer-username">Username</label>
-            <input id="kibitzer-username" name="username" />
+              <label for="kibitzer-port">Port</label>
+              <input id="kibitzer-port" name="port" type="number" value="22" />
 
-            <label for="kibitzer-private-key-path">Private Key Path</label>
-            <input id="kibitzer-private-key-path" name="privateKeyPath" placeholder="/home/user/.ssh/id_rsa" />
-          </div>
+              <label for="kibitzer-username">Username</label>
+              <input id="kibitzer-username" name="username" />
 
-          <button type="submit" id="kibitzer-submit" class="primary">Add</button>
-          <a href="#" id="kibitzer-cancel" style="display: none; margin-left: 0.5rem">Cancel</a>
-        </fieldset>
-      </form>
+              <label for="kibitzer-private-key-path">Private Key Path</label>
+              <input id="kibitzer-private-key-path" name="privateKeyPath" placeholder="/home/user/.ssh/id_rsa" />
+            </div>
+
+            <button type="submit" id="kibitzer-submit" class="primary">Add</button>
+            <a href="#" id="kibitzer-cancel">Cancel</a>
+          </fieldset>
+        </form>
+      </div>
     </div>
+    <%- include('../partials/footer') %>
   </body>
 </html>
