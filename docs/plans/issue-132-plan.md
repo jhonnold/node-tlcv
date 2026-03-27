@@ -11,8 +11,7 @@
 - Modify: `public/js/admin.ts`
 
 **Steps:**
-1. Write failing test: Manually verify that the theme toggle button does nothing on the admin page (current state). Since this is a frontend jQuery app with no unit test framework, verification is manual via the browser.
-2. Implement: Add the theme import and `initTheme()` call to `admin.ts`, matching the pattern in `broadcasts.ts`:
+1. Add the theme import and `initTheme()` call to `admin.ts`, matching the pattern in `broadcasts.ts`:
    ```typescript
    import $ from 'jquery';
    import { init as initTheme } from './components/theme/index';
@@ -25,15 +24,13 @@
      // ... rest of existing handlers unchanged ...
    });
    ```
-3. Verify: `npm run build` succeeds without errors.
 
 ### Task 2: Update admin.ejs template structure with header and footer
 **Files:**
 - Modify: `views/pages/admin.ejs`
 
 **Steps:**
-1. Write failing test: Load `/admin` in a browser and confirm no header/footer is present (current state).
-2. Implement: Restructure `admin.ejs` to match the `broadcasts.ejs` pattern:
+1. Restructure `admin.ejs` to match the `broadcasts.ejs` pattern:
    - Add `<%- include('../partials/analytics') %>` in `<head>`
    - Add `<%- include('../partials/header', { showFocus: false }) %>` after `<body>`
    - Wrap content in `<div class="container">` (without inline styles)
@@ -61,28 +58,27 @@
 
          <div class="admin-section">
            <h2>Broadcasts</h2>
-           <!-- existing broadcasts table, unchanged -->
-           <!-- existing add-new form, unchanged -->
+           <!-- existing broadcasts table with class="admin-table" added -->
+           <!-- existing add-new form with class="admin-form" added -->
          </div>
 
          <hr class="admin-divider" />
 
          <div class="admin-section">
            <h2>Kibitzers</h2>
-           <!-- existing kibitzers table, unchanged -->
-           <!-- existing kibitzer-form, unchanged -->
+           <!-- existing kibitzers table with class="admin-table" added -->
+           <!-- existing kibitzer-form with class="admin-form" added -->
          </div>
        </div>
        <%- include('../partials/footer') %>
      </body>
    </html>
    ```
-   - Remove the inline `style="max-width: 1200px; padding: 1rem"` from the container div
-   - Remove `style="display: none"` from `#ssh-fields` and `#kibitzer-cancel` (move to CSS)
-   - Wrap each section (Broadcasts, Kibitzers) in `<div class="admin-section">`
-   - Add class `admin-table` to both `<table>` elements for targeted styling
-   - Add class `admin-form` to both `<form>` elements
-3. Verify: `npm run build` succeeds. Load `/admin` in browser — header with theme toggle and footer should appear.
+2. Remove the inline `style="max-width: 1200px; padding: 1rem"` from the container div.
+3. Remove `style="display: none"` from `#ssh-fields` and `style="display: none; margin-left: 0.5rem"` from `#kibitzer-cancel` (these move to CSS in Task 3).
+4. Wrap each section (Broadcasts, Kibitzers) in `<div class="admin-section">`.
+5. Add class `admin-table` to both `<table>` elements for targeted styling.
+6. Add class `admin-form` to both `<form>` elements (`id="add-new"` and `id="kibitzer-form"`).
 
 ### Task 3: Create admin-specific SCSS partial
 **Files:**
@@ -90,8 +86,7 @@
 - Modify: `public/css/main.scss`
 
 **Steps:**
-1. Write failing test: Load `/admin` and confirm tables/forms use default unstyled mini.css appearance (current state).
-2. Implement: Create `public/css/_admin.scss` with styles that use CSS custom properties for full theme compatibility:
+1. Create `public/css/_admin.scss` with styles that use CSS custom properties for full theme compatibility:
    ```scss
    .admin-section {
      max-width: 900px;
@@ -114,7 +109,8 @@
 
    .admin-table {
      width: 100%;
-     border-collapse: collapse;
+     border-collapse: separate;
+     border-spacing: 0;
      background: var(--surfaceColor);
      border: 1px solid var(--surfaceColorHover);
      border-radius: 8px;
@@ -212,49 +208,14 @@
    }
    ```
 
-   Then add `@use 'admin';` to `public/css/main.scss` (before `responsive`):
+2. Add `@use 'admin';` to `public/css/main.scss` (before `responsive`):
    ```scss
    @use 'admin';
    @use 'responsive';
    ```
-3. Verify: `npm run build` succeeds. Load `/admin` — tables should have themed backgrounds, rounded corners, and hover effects. Toggle dark theme — all elements should respect dark colors.
-
-### Task 4: Verify dark theme compatibility
-**Files:**
-- No new files; verification only.
-
-**Steps:**
-1. Write failing test: Load `/admin`, click the theme toggle in the header, and verify all elements update correctly.
-2. Implement: Check that all admin styles use only CSS custom properties (`var(--*)`) and not hardcoded colors. Review `_admin.scss` for any hardcoded color values and replace with variables. Key variables to use:
-   - Backgrounds: `var(--surfaceColor)`, `var(--surfaceColorHover)`, `var(--backgroundColor)`
-   - Text: `var(--textColor)`
-   - Accents: `var(--primaryColor)`, `var(--primaryColorHover)`
-   - Borders: `var(--surfaceColorHover)`
-3. Verify: Toggle between light and dark theme on the admin page. All text, backgrounds, borders, buttons, and form elements should change appropriately.
-
-## Testing Strategy
-
-Since this is a frontend-only change with no unit test framework:
-
-1. **Build verification**: `npm run build` must succeed without errors after all changes.
-2. **Visual verification** (manual):
-   - Load `/admin` — header with "CCRL Live" branding and theme toggle button should appear at top
-   - Footer with credits should appear at bottom
-   - Click theme toggle — entire page including tables, forms, and all elements should switch between light and dark themes
-   - Tables should have themed surface backgrounds with hover effects on rows
-   - Forms should have consistent input styling with focus states
-   - The page layout should feel consistent with `/broadcasts`
-3. **Responsive verification**: Resize browser to mobile width (~375px) — admin page should remain usable
-4. **Functional verification**: All existing admin functionality must still work:
-   - Close broadcast button
-   - Add new broadcast form
-   - Edit/Remove kibitzer buttons
-   - Add/Edit kibitzer form with SSH field toggle
-   - Cancel edit button
 
 ## Risks and Considerations
 
 - **No breaking changes to functionality**: All form IDs, button classes, and data attributes used by `admin.ts` must remain identical. Only wrapper classes and structural elements are being added.
-- **Inline styles removal**: The `style="display: none"` on `#ssh-fields` and `#kibitzer-cancel` must be moved to CSS (`_admin.scss`) to maintain the same initial hidden state, since `admin.ts` uses jQuery `.toggle()` / `.show()` / `.hide()` on these elements.
+- **Inline styles removal**: The `style="display: none"` on `#ssh-fields` and `#kibitzer-cancel` must be moved to CSS (`_admin.scss`) to maintain the same initial hidden state, since `admin.ts` uses jQuery `.toggle()` / `.show()` / `.hide()` on these elements which set inline styles and will correctly override the CSS default.
 - **mini.css conflicts**: The existing `mini.css` framework is loaded via webpack for all pages. Some of its default table/form styles may conflict with the new `_admin.scss` styles. Use specific class selectors (`.admin-table`, `.admin-form`) to ensure our styles take precedence.
-- **No analytics partial**: The admin page currently doesn't include the analytics partial. Adding it is optional and follows the pattern of other pages, but should be confirmed with the project owner if analytics should track admin page views.
