@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import { init as initTheme } from './components/theme/index';
 
 // --- Broadcast handlers ---
 
@@ -103,6 +104,8 @@ function collectKibitzerFormData(): Record<string, string> {
 }
 
 $(document).ready(() => {
+  initTheme();
+
   // Broadcast handlers
   $('#add-new').on('submit', (e) => {
     e.preventDefault();
