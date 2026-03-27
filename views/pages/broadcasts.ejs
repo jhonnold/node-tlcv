@@ -86,6 +86,9 @@
               <% }); %>
             </div>
             <div class="card-info">
+              <% if (broadcast.site) { %>
+              <div class="tournament-title"><%= broadcast.site %></div>
+              <% } %>
               <div class="player-row">
                 <span class="player-color pc-black"></span>
                 <span class="player-name"><%= broadcast.black %></span>
