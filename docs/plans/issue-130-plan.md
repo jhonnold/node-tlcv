@@ -12,9 +12,7 @@
 - Modify: `views/pages/broadcasts.ejs`
 
 **Steps:**
-1. Write failing test: This project has no test framework. Verify the current template does not render `broadcast.site` anywhere in the card by inspecting the template (confirmed — `site` is passed in the data on line 24 of `src/routes/index.ts` but never used in the template).
-
-2. Implement: Add a `tournament-title` span inside the `.card-info` div, placed **above** the first `.player-row` (the black player row) so the tournament name appears as the card heading. Insert the following between lines 88 and 89 of `views/pages/broadcasts.ejs`:
+Add a `tournament-title` div inside the `.card-info` div, placed **above** the first `.player-row` (the black player row) so the tournament name appears as the card heading. Insert the following between lines 88 and 89 of `views/pages/broadcasts.ejs`:
 
 ```ejs
               <% if (broadcast.site) { %>
@@ -33,17 +31,13 @@ The full `.card-info` section will then read:
                 ...
 ```
 
-3. Verify: Run `npm run build` to confirm TypeScript/Webpack compilation succeeds, then start the dev server (`npm run dev`) and visually confirm tournament titles appear on dashboard cards.
-
 ### Task 2: Style the tournament title element
 
 **Files:**
 - Modify: `public/css/_broadcasts.scss`
 
 **Steps:**
-1. Write failing test: No automated test — visually confirm the tournament title currently has no styling (raw unstyled text after Task 1).
-
-2. Implement: Add a `.tournament-title` rule in `_broadcasts.scss`. Place it after the `.card-info` block (after line 93) and before `.player-row` (line 95). The style should match the card's existing design language — small, muted text with truncation:
+Add a `.tournament-title` rule in `_broadcasts.scss`. Place it after the `.card-info` block (after line 93) and before `.player-row` (line 95). The style should match the card's existing design language — small, muted text with truncation:
 
 ```scss
 .tournament-title {
@@ -57,19 +51,6 @@ The full `.card-info` section will then read:
 ```
 
 This uses `--primaryColor` to visually distinguish the tournament name from other card text (player names, opening, etc.), and applies the same ellipsis-truncation pattern used by `.player-name` and `.opening`.
-
-3. Verify: Run `npm run build` to confirm SCSS compiles. Visually inspect cards on the dashboard — tournament title should appear above the black player row in the primary accent color, truncated with ellipsis on overflow.
-
-## Testing Strategy
-
-Since the project has no automated test suite:
-1. **Build check:** `npm run build` — confirms no compilation errors.
-2. **Manual verification:**
-   - Start the server with active broadcasts and confirm each card shows the tournament title.
-   - Verify cards with an empty/missing `site` field do not show an empty element (guarded by the `<% if %>` conditional).
-   - Verify long tournament names are truncated with ellipsis.
-   - Verify the featured card (first card) also displays the title correctly.
-   - Check both light and dark themes if applicable (the `--primaryColor` CSS variable should adapt).
 
 ## Risks and Considerations
 
