@@ -8,6 +8,7 @@ let captureAudio: HTMLAudioElement;
 let unsubUpdate: (() => void) | null = null;
 let unsubState: (() => void) | null = null;
 let initialized = false;
+let lastMoveCount = 0;
 
 function loadPreference(): boolean {
   return localStorage.getItem('soundEnabled') === 'true';
@@ -39,14 +40,14 @@ function onUpdate(data: GameEventData) {
   if (!initialized) return;
 
   const moves = data.game.moves;
-  if (!moves.length) return;
-
-  const lastMove = moves[moves.length - 1];
-  if (lastMove.move?.includes('x')) {
-    playSound(true);
-  } else {
-    playSound(false);
+  if (moves.length <= lastMoveCount) {
+    lastMoveCount = moves.length;
+    return;
   }
+
+  lastMoveCount = moves.length;
+  const lastMove = moves[moves.length - 1];
+  playSound(lastMove.move?.includes('x') === true);
 }
 
 export function init() {
@@ -64,7 +65,8 @@ export function init() {
 
   // Listen to game:state to mark initialized — only play sounds for
   // updates that arrive AFTER the initial state load
-  unsubState = on('game:state', () => {
+  unsubState = on('game:state', (data) => {
+    lastMoveCount = data.game.moves.length;
     initialized = true;
   });
 
@@ -76,4 +78,5 @@ export function destroy() {
   if (unsubUpdate) unsubUpdate();
   if (unsubState) unsubState();
   initialized = false;
+  lastMoveCount = 0;
 }
