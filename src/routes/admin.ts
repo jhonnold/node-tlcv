@@ -6,6 +6,7 @@ import { logger } from '../util/index.js';
 import { closeConnection, getKibitzerManager, newConnection } from '../broadcast-manager.js';
 import configStore from '../config/config-store.js';
 import type { KibitzerConfig } from '../kibitzer/types.js';
+import { register } from '../metrics.js';
 
 const router = Router();
 
@@ -113,6 +114,11 @@ router.delete('/kibitzers/:id', async (req: Request, res: Response) => {
     logger.error(error);
     res.sendStatus(400);
   }
+});
+
+router.get('/metrics', async (_: Request, res: Response) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 export default router;
