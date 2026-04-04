@@ -1,4 +1,6 @@
 import { RemoteInfo, Socket, createSocket } from 'dgram';
+import broadcasts from '../broadcast.js';
+import { udpMessagesReceived, udpMessagesOutOfOrder } from '../metrics.js';
 import { logger } from '../util/index.js';
 
 export type MessageCallback = (message: string) => void;
@@ -44,6 +46,9 @@ export class UdpTransport {
     logger.debug(`Message received from ${rInfo.address}:${rInfo.port}: ${msg}`, { port: this.port });
 
     const fullMessage = msg.toString().trim();
+    const event = broadcasts.get(this.port)?.game.site ?? 'unknown';
+    udpMessagesReceived.inc({ port: String(this.port), event });
+
     let messageText: string;
 
     if (fullMessage.startsWith('<')) {
@@ -58,6 +63,7 @@ export class UdpTransport {
           `Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}, SKIPPING PROCESSING!`,
           { port: this.port },
         );
+        udpMessagesOutOfOrder.inc({ port: String(this.port), event });
         return;
       }
 
