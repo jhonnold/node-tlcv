@@ -8,6 +8,7 @@ import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game
 import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
+import { commandsProcessed, chatMessages } from './metrics.js';
 import { parseResults, parseGames } from './services/result-parser.js';
 import type { BroadcastDelta, ColorCode, GameDelta } from '../shared/types.js';
 
@@ -375,6 +376,7 @@ class GameService {
   }
 
   private onChat(tokens: CommandTokens): UpdateResult {
+    chatMessages.inc({ port: String(this.broadcast.port), event: this.game.site ?? 'unknown' });
     // Disable connection messages. TODO: Make this configurable
     if (tokens[1].endsWith('has arrived!') || tokens[1].endsWith('has left!')) return [EmitType.CHAT, false];
 
@@ -535,6 +537,12 @@ class GameService {
       const [emit, updated, ...updateData] = await commandConfig.fn(
         commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
       );
+
+      commandsProcessed.inc({
+        port: String(this.broadcast.port),
+        event: this.broadcast.game.site ?? 'unknown',
+        command: cmd,
+      });
 
       if (updated && emit === EmitType.CHAT) {
         chatEmit.push(updateData[0]);
