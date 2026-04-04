@@ -99,49 +99,49 @@ export const kibitzerTargetPort = new Gauge({
 export const udpMessagesReceived = new Counter({
   name: 'ccrl_udp_messages_received_total',
   help: 'Total UDP messages received',
-  labelNames: ['port', 'event'] as const,
+  labelNames: ['port'] as const,
   registers: [register],
 });
 
 export const udpMessagesOutOfOrder = new Counter({
   name: 'ccrl_udp_messages_out_of_order_total',
   help: 'Total UDP messages received out of order and skipped',
-  labelNames: ['port', 'event'] as const,
+  labelNames: ['port'] as const,
   registers: [register],
 });
 
 export const commandsProcessed = new Counter({
   name: 'ccrl_commands_processed_total',
   help: 'Total commands processed by game service',
-  labelNames: ['port', 'event', 'command'] as const,
+  labelNames: ['port', 'command'] as const,
   registers: [register],
 });
 
 export const chatMessages = new Counter({
   name: 'ccrl_chat_messages_total',
   help: 'Total chat messages received from the chess server',
-  labelNames: ['port', 'event'] as const,
+  labelNames: ['port'] as const,
   registers: [register],
 });
 
 export const spectatorJoins = new Counter({
   name: 'ccrl_spectator_joins_total',
   help: 'Total spectator joins via Socket.IO',
-  labelNames: ['port', 'event'] as const,
+  labelNames: ['port'] as const,
   registers: [register],
 });
 
 export const spectatorLeaves = new Counter({
   name: 'ccrl_spectator_leaves_total',
   help: 'Total spectator disconnects via Socket.IO',
-  labelNames: ['port', 'event'] as const,
+  labelNames: ['port'] as const,
   registers: [register],
 });
 
 export const socketEmissions = new Counter({
   name: 'ccrl_socket_emissions_total',
   help: 'Total Socket.IO broadcast emission events',
-  labelNames: ['port', 'event', 'type'] as const,
+  labelNames: ['port', 'type'] as const,
   registers: [register],
 });
 

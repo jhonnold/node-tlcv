@@ -376,7 +376,7 @@ class GameService {
   }
 
   private onChat(tokens: CommandTokens): UpdateResult {
-    chatMessages.inc({ port: String(this.broadcast.port), event: this.game.site ?? 'unknown' });
+    chatMessages.inc({ port: String(this.broadcast.port) });
     // Disable connection messages. TODO: Make this configurable
     if (tokens[1].endsWith('has arrived!') || tokens[1].endsWith('has left!')) return [EmitType.CHAT, false];
 
@@ -538,11 +538,7 @@ class GameService {
         commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
       );
 
-      commandsProcessed.inc({
-        port: String(this.broadcast.port),
-        event: this.broadcast.game.site ?? 'unknown',
-        command: cmd,
-      });
+      commandsProcessed.inc({ port: String(this.broadcast.port), command: cmd });
 
       if (updated && emit === EmitType.CHAT) {
         chatEmit.push(updateData[0]);

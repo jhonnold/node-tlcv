@@ -22,7 +22,7 @@ io.on('connection', (socket: Socket) => {
     if (!broadcast) return;
 
     broadcast.browserCount++;
-    spectatorJoins.inc({ port: String(port), event: broadcast.game.site ?? 'unknown' });
+    spectatorJoins.inc({ port: String(port) });
 
     username = uniqueName(user, broadcast.spectators);
     if (username) broadcast.spectators.add(username);
@@ -55,7 +55,7 @@ io.on('connection', (socket: Socket) => {
     if (!broadcast) return;
 
     broadcast.browserCount--;
-    spectatorLeaves.inc({ port: String(broadcast.port), event: broadcast.game.site ?? 'unknown' });
+    spectatorLeaves.inc({ port: String(broadcast.port) });
 
     if (username) broadcast.spectators.delete(username);
 
@@ -64,12 +64,12 @@ io.on('connection', (socket: Socket) => {
 });
 
 export function emitUpdate(port: number, data: BroadcastDelta): void {
-  socketEmissions.inc({ port: String(port), event: broadcasts.get(port)?.game.site ?? 'unknown', type: 'update' });
+  socketEmissions.inc({ port: String(port), type: 'update' });
   io.to(String(port)).emit(EmitType.UPDATE, data);
 }
 
 export function emitChat(port: number, messages: string[]): void {
-  socketEmissions.inc({ port: String(port), event: broadcasts.get(port)?.game.site ?? 'unknown', type: 'chat' });
+  socketEmissions.inc({ port: String(port), type: 'chat' });
   io.to(String(port)).emit(EmitType.CHAT, messages);
 }
 
