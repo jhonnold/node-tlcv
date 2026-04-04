@@ -1,3 +1,4 @@
+import { messageBufferErrors } from '../metrics.js';
 import { logger } from '../util/index.js';
 
 const PROCESSING_INTERVAL = 100;
@@ -38,6 +39,7 @@ export class MessageBuffer {
       await this.consumer(messages);
     } catch (err) {
       logger.error(`Error processing messages - ${err}`, { port: this.port });
+      messageBufferErrors.inc({ port: String(this.port) });
     } finally {
       this.processing = false;
     }
