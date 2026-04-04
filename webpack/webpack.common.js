@@ -101,6 +101,7 @@ export default {
     new CopyWebpackPlugin({
       patterns: [
         { from: './public/img', to: './img' },
+        { from: './public/audio', to: './audio' },
         { from: './views/partials', to: '../views/partials' },
       ],
     }),
