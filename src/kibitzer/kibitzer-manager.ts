@@ -1,6 +1,7 @@
 import { Chess } from 'chess.js';
 import broadcasts from '../broadcast.js';
 import { emitUpdate } from '../socket-io-adapter.js';
+import { kibitzerAssignments } from '../metrics.js';
 import { logger } from '../util/index.js';
 import { createTransport } from './transport-factory.js';
 import type { KibitzerTransport, KibitzerConfig, AnalysisInfo } from './types.js';
@@ -284,6 +285,9 @@ export class KibitzerManager {
     });
 
     this.slots.set(port, slot);
+
+    const entry = this.transports.find((e) => e.transport === transport);
+    if (entry) kibitzerAssignments.inc({ id: entry.id });
 
     const fen = broadcast.game.instance.fen();
     slot.currentFen = fen;
