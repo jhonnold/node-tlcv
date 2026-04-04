@@ -117,8 +117,13 @@ router.delete('/kibitzers/:id', async (req: Request, res: Response) => {
 });
 
 router.get('/metrics', async (_: Request, res: Response) => {
-  res.set('Content-Type', register.contentType);
-  res.end(await register.metrics());
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (err) {
+    logger.error(`Metrics scrape failed: ${err}`);
+    res.status(500).end();
+  }
 });
 
 export default router;

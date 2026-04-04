@@ -140,7 +140,7 @@ export const spectatorLeaves = new Counter({
 
 export const socketEmissions = new Counter({
   name: 'ccrl_socket_emissions_total',
-  help: 'Total Socket.IO emissions to clients',
+  help: 'Total Socket.IO broadcast emission events',
   labelNames: ['port', 'event', 'type'] as const,
   registers: [register],
 });
