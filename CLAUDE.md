@@ -35,6 +35,45 @@ The server uses Express for HTTP routing and Socket.IO for real-time client comm
 6. **Socket.IO** (socket-io-adapter.ts) - Broadcasts state to web clients; handles client join/chat/disconnect
 7. **Kibitzer** (kibitzer/) - Analysis engine overlay (local or remote via SSH)
 
+### TLCS Protocol Message Flow
+
+The chess server pushes messages over UDP. Two delivery modes exist:
+
+- **ID-wrapped** (`< NNN>MSG`): reliable channel — `UdpTransport.onMessage` sends an `ACK: NNN` reply and tracks `lastMessage` to reject out-of-order IDs. Used for state-critical commands.
+- **Unwrapped** (raw line, no `< >` prefix): fire-and-forget — logged with "No message id for ..." at debug. Used for high-frequency/ephemeral commands where loss is tolerable.
+
+**ID-wrapped commands**: `FEN`, `WMOVE`, `BMOVE`, `FMR`, `WPLAYER`, `BPLAYER`, `SITE`, `FEATURE`, `level`, `ADDUSER`, `DELUSER`, `MENU`, `PONG`, `CHAT`, `RESULT`.
+**Unwrapped commands**: `WTIME`, `BTIME`, `WPV`, `BPV`, `CTRESET`, `CT:`, `LOGON SUCCESSFUL`.
+
+**Typical per-move cycle** (for the side about to move, call it X, with opponent Y):
+
+```
+(previous YMOVE just arrived)
+XTIME: <ms>   otim <ms>          ← X's remaining time, Y's in otim; ~0.3–3s after YMOVE
+XPV: <depth> <cp> <time_cs> <nodes> <pv...>   ← tens per move, ~2 per depth (summary + full PV)
+XPV: ...                          (iterative deepening as X thinks)
+...
+< NNN>FEN: <position after X's move>
+< NNN>XMOVE: <n>. <SAN>
+< NNN>FMR: <halfmove-clock>
+(optional trailing XPV flush)
+(then the cycle flips: YTIME → YPVs → FEN/YMOVE/FMR → XTIME → ...)
+```
+
+So `WTIME` precedes `WMOVE` (same color), and `BTIME` precedes `BMOVE` — the TIME message is emitted at the start of that side's thinking phase, not after the move. Immediately after an opponent's move you will see the current side's `XTIME` (not `XMOVE`).
+
+**Relative frequency per move** (observed):
+- `XPV` / `BPV`: ~20–60 entries per move (depends on think time; roughly 2 per UCI depth iterated)
+- `XTIME` / `BTIME`: exactly 1 per move (at the start of the thinking side's turn)
+- `FEN`: 1 per move (position after the move; plus 1 at broadcast start)
+- `XMOVE` / `BMOVE`: 1 per move
+- `FMR`: 1 per move (fifty-move-rule halfmove counter)
+- `PONG`: ~1 every 10s (server keepalive reply; independent of moves)
+- `ADDUSER` / `DELUSER`: 1 per spectator join/leave
+- `CHAT`: 1 per chat message
+- `CTRESET` + `CT:` lines: full crosstable dump after each game completes (~100+ `CT:` lines following one `CTRESET`)
+- `WPLAYER` / `BPLAYER` / `SITE` / `FEATURE` / `level` / `MENU` / initial `FEN`: once per broadcast/game (at connection or game start)
+
 ### Kibitzer Subsystem
 
 The kibitzer runs chess engines (local or remote via SSH) that independently analyze the live position and overlay analysis alongside the broadcast engine data. Transports are configured in `config.json` under the `kibitzers` key.

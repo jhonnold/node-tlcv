@@ -293,6 +293,7 @@ class GameService {
 
     // start the timer for the other side
     this.game[notColor].startTime = new Date().getTime();
+    this.dirty.clocks = true;
 
     this.broadcast.kibitzerManager?.onPositionChange(this.broadcast.port, this.game.instance.fen());
 
