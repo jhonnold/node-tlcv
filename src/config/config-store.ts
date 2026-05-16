@@ -1,10 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { KibitzerConfig } from '../kibitzer/types.js';
+import type { WebhookConfig } from '../webhooks/types.js';
 
 export interface AppConfig {
   connections: string[];
   kibitzers?: KibitzerConfig[];
+  webhooks?: WebhookConfig[];
 }
 
 export class ConfigStore {
@@ -52,6 +54,20 @@ export class ConfigStore {
   async removeKibitzer(id: string): Promise<void> {
     const appConfig = await this.load();
     appConfig.kibitzers = (appConfig.kibitzers ?? []).filter((k) => k.id !== id);
+    await this.save(appConfig);
+  }
+
+  async addWebhook(config: WebhookConfig): Promise<void> {
+    const appConfig = await this.load();
+    const webhooks = appConfig.webhooks ?? [];
+    webhooks.push(config);
+    appConfig.webhooks = webhooks;
+    await this.save(appConfig);
+  }
+
+  async removeWebhook(id: string): Promise<void> {
+    const appConfig = await this.load();
+    appConfig.webhooks = (appConfig.webhooks ?? []).filter((w) => w.id !== id);
     await this.save(appConfig);
   }
 }

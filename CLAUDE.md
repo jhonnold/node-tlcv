@@ -94,6 +94,21 @@ The kibitzer runs chess engines (local or remote via SSH) that independently ana
 
 **Targeting**: `poll()` runs every 10s (and once immediately at startup), ranks broadcasts by viewer count, assigns the top N transports (where N = number of configured kibitzers). Highest-priority transport gets the most-viewed broadcast. Hysteresis threshold of 2 gives currently-analyzed broadcasts a ranking bonus. Broadcasts with zero viewers are excluded.
 
+### Webhook Subsystem
+
+Outbound webhooks POST a notification when a game **starts** or **finishes**. Configs are stored in `config.json` under the `webhooks` key and managed at runtime from the admin panel. The subsystem mirrors the kibitzer pattern (discriminated-union-by-`type`, config-backed, runtime-managed, admin-editable).
+
+**Files** (`src/webhooks/`):
+- `types.ts` - `WebhookConfig` discriminated union (`DiscordWebhookConfig` only for now), the normalized `WebhookEvent` payload (`GameStartedEvent | GameFinishedEvent`), and the `WebhookSender` interface
+- `discord-sender.ts` - `DiscordSender` formats events as Discord embeds and POSTs via Node's global `fetch`
+- `sender-factory.ts` - `createSender()` builds a sender from a config based on its `type`
+- `webhook-manager.ts` - `WebhookManager` owns the configs/senders; `dispatch()` applies port + event filters and fans out
+- `index.ts` - Barrel export
+
+**Data flow**: `GameService` calls `getWebhookManager()?.dispatch(event)` from `onPlayer()` (game-started) and `onResult()` (game-finished). `dispatch()` is **fire-and-forget** — it filters each webhook by `ports` (empty = all) and `events` (empty = both), then calls `sender.send()` without awaiting. Senders catch all errors internally and never throw, so a failed webhook never blocks game processing.
+
+**Game-started detection**: `onPlayer()` fires once per color. `GameService` uses a re-arm state machine (`gameStartArmed` + `startColorsSeen`) — armed at construction and re-armed after each `RESULT`, it fires exactly once per game when both colors have been announced. This avoids keying on the 100ms-debounced `currentGameNumber`.
+
 ### Frontend Architecture
 
 The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
@@ -156,6 +171,8 @@ The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
 - `/admin` - Admin panel (basic auth, username: admin)
 - `POST /admin/kibitzers` - Add a new kibitzer transport at runtime
 - `DELETE /admin/kibitzers/:id` - Remove a kibitzer transport at runtime
+- `POST /admin/webhooks` - Add a new webhook at runtime
+- `DELETE /admin/webhooks/:id` - Remove a webhook at runtime
 
 ### Client-Server Communication
 
@@ -188,11 +205,16 @@ Configuration is in `config/config.json`:
   "kibitzers": [
     { "id": "a1b2c3d4", "type": "local", "priority": 10, "enginePath": "/usr/bin/stockfish", "threads": 4, "hash": 512 },
     { "id": "e5f6g7h8", "type": "ssh", "priority": 5, "host": "example.com", "username": "user", "privateKeyPath": "/path/to/key", "enginePath": "/usr/bin/stockfish", "threads": 8, "hash": 2048 }
+  ],
+  "webhooks": [
+    { "id": "i9j0k1l2", "type": "discord", "name": "My channel", "url": "https://discord.com/api/webhooks/...", "ports": [16063], "events": ["game-finished"] }
   ]
 }
 ```
 
 The `kibitzers` array is optional. Each entry has an `id` (auto-assigned at startup if missing), a `type` (`"local"` or `"ssh"`), a `priority` (higher = assigned to more-viewed broadcasts), and type-specific fields. SSH entries also require `host`, `username`, `privateKeyPath`, and `enginePath`. Both types accept optional `port` (SSH only, default 22), `threads` (default 1), and `hash` (default 256).
+
+The `webhooks` array is also optional. Each entry has an `id` (auto-assigned if missing), a `type` (`"discord"` only for now), a `url`, an optional `name`, an optional `ports` array (empty/unset = all broadcasts), and an optional `events` array of `"game-started"` / `"game-finished"` (empty/unset = both).
 
 Environment variables:
 - `TLCV_PASSWORD` - Admin panel password (required)
@@ -216,6 +238,7 @@ Environment variables:
 - `src/broadcast-manager.ts` - Broadcast creation, reconnection, and lifecycle orchestration
 - `src/config/config-store.ts` - Config read/write abstraction for connections
 - `src/kibitzer/` - Analysis engine transports (local, SSH), manager, factory, UCI parser
+- `src/webhooks/` - Outbound webhook senders (Discord), manager, factory
 - `src/transport/` - UDP transport and message buffering
 - `src/services/` - External integrations (Lichess openings/tablebase, PGN saving, PGN cache, game metadata, result parsing)
 - `src/routes/` - Express route handlers (index, admin)
@@ -247,4 +270,7 @@ Environment variables:
 - **Kibitzer transport lifecycle**: Connection lifecycle (`create`/`teardown`) is separate from analysis lifecycle (`startAnalysis`/`stopAnalysis`). `create()` is called once at startup to establish the engine connection (SSH or local process) and UCI handshake. `teardown()` is only called during graceful shutdown. When moving between broadcasts, only `stopAnalysis()`/`startAnalysis()` are called — the underlying connection stays alive. No automatic restart if an engine crashes or SSH connection drops — `ready` becomes `false` and analysis silently stops.
 - **Kibitzer config IDs**: Each kibitzer config entry has a unique `id` field (8-char UUID prefix). Existing configs without IDs get them auto-assigned and saved on first startup. IDs are used for the admin DELETE route.
 - **Kibitzer runtime management**: `KibitzerManager` owns the full transport lifecycle from config. It accepts `KibitzerConfig[]` in the constructor and supports `addTransport(config)` / `removeTransport(id)` for runtime changes. The admin panel's "edit" is implemented as delete + re-add on the frontend.
+- **Webhook dispatch is fire-and-forget**: `WebhookManager.dispatch()` calls `sender.send()` without awaiting. `DiscordSender.send()` catches every error and always resolves, so a slow or failing webhook never blocks `onResult()` / the message batch. Do not `await` `dispatch()`.
+- **Webhook game-started dedup**: `GameService` fires one game-started event per game via a re-arm state machine (`gameStartArmed` / `startColorsSeen`). It is re-armed in `onResult()`. Connecting mid-game fires one game-started for the already-in-progress game — accepted.
+- **Webhook URL is a secret**: Discord webhook URLs embed a token. The admin table masks all but the last 8 chars, but the edit button still carries the full URL in a `data-url` attribute (admin page is basic-auth protected).
 - **No test infrastructure**: This project has no test runner or test files. Verification is done via `npm run build` (TypeScript + webpack) and manual testing.

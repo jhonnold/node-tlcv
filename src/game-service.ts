@@ -2,6 +2,7 @@ import { Chess } from 'chess.js';
 import { ChessGame } from './chess-game.js';
 import { logger, siteSlug } from './util/index.js';
 import { Broadcast, username } from './broadcast.js';
+import { getWebhookManager } from './broadcast-manager.js';
 import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
@@ -55,6 +56,10 @@ class GameService {
   private gamesParseTimer: ReturnType<typeof setTimeout> | null = null;
   private dirty: DirtyFlags = freshFlags();
   private moveCountBefore = 0;
+  // "Game started" detection: armed for the first game, re-armed after each
+  // RESULT. Fires once both colors have been (re)announced for the new game.
+  private gameStartArmed = true;
+  private startColorsSeen = new Set<Color>();
 
   constructor(broadcast: Broadcast) {
     this.broadcast = broadcast;
@@ -140,6 +145,26 @@ class GameService {
 
     this.dirty.players = true;
     this.dirty.liveData = true;
+
+    // onPlayer fires once per color. Notify "game started" exactly once, when
+    // both colors have been announced for this game (independent of the
+    // 100ms-debounced currentGameNumber advance).
+    if (this.gameStartArmed) {
+      this.startColorsSeen.add(color);
+      if (this.startColorsSeen.size === 2) {
+        this.gameStartArmed = false;
+        this.startColorsSeen.clear();
+        getWebhookManager()?.dispatch({
+          kind: 'game-started',
+          port: this.broadcast.port,
+          gameNumber: this.broadcast.currentGameNumber,
+          white: this.game.white.name,
+          black: this.game.black.name,
+          site: this.game.site,
+        });
+      }
+    }
+
     return [EmitType.UPDATE, false];
   }
 
@@ -420,6 +445,21 @@ class GameService {
 
     await savePgn(this.game, this.broadcast.port, this.broadcast.currentGameNumber);
     await saveGameMeta(this.game, this.broadcast.port, this.broadcast.currentGameNumber, result);
+
+    getWebhookManager()?.dispatch({
+      kind: 'game-finished',
+      port: this.broadcast.port,
+      gameNumber: this.broadcast.currentGameNumber,
+      white: this.game.white.name,
+      black: this.game.black.name,
+      site: this.game.site,
+      result,
+      opening: this.game.opening,
+    });
+
+    // Re-arm "game started" detection for the next game.
+    this.gameStartArmed = true;
+    this.startColorsSeen.clear();
 
     this.broadcast.reloadResults();
 

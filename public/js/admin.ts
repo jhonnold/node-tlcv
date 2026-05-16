@@ -103,6 +103,57 @@ function collectKibitzerFormData(): Record<string, string> {
   return data;
 }
 
+// --- Webhook handlers ---
+
+function removeWebhook(id: string) {
+  $.ajax({
+    type: 'DELETE',
+    url: `/admin/webhooks/${id}`,
+    complete() {
+      window.location.reload();
+    },
+  });
+}
+
+function addWebhook(data: Record<string, unknown>) {
+  $.ajax({
+    type: 'POST',
+    url: '/admin/webhooks',
+    data: JSON.stringify(data),
+    contentType: 'application/json',
+    complete() {
+      window.location.reload();
+    },
+  });
+}
+
+function resetWebhookForm() {
+  $('#webhook-editing-id').val('');
+  $('#webhook-type').val('discord');
+  $('#webhook-name').val('');
+  $('#webhook-url').val('');
+  $('#webhook-ports').val('');
+  $('#webhook-event-started').prop('checked', true);
+  $('#webhook-event-finished').prop('checked', true);
+  $('#webhook-form-legend').text('Add Webhook');
+  $('#webhook-submit').text('Add');
+  $('#webhook-cancel').hide();
+}
+
+function collectWebhookFormData(): Record<string, unknown> {
+  const events: string[] = [];
+  if ($('#webhook-event-started').prop('checked')) events.push('game-started');
+  if ($('#webhook-event-finished').prop('checked')) events.push('game-finished');
+
+  return {
+    type: $('#webhook-type').val() as string,
+    name: ($('#webhook-name').val() as string).trim(),
+    url: ($('#webhook-url').val() as string).trim(),
+    ports: ($('#webhook-ports').val() as string).trim(),
+    events,
+  };
+}
+
 $(document).ready(() => {
   initTheme();
 
@@ -173,6 +224,57 @@ $(document).ready(() => {
       });
     } else {
       addKibitzer(data);
+    }
+  });
+
+  // Webhook remove
+  $(document).on('click', '.webhook-remove', function handleWebhookRemove() {
+    const id = $(this).data('id');
+    removeWebhook(id);
+  });
+
+  // Webhook edit — populate form with row data
+  $(document).on('click', '.webhook-edit', function handleWebhookEdit() {
+    const $btn = $(this);
+    $('#webhook-editing-id').val($btn.data('id'));
+    $('#webhook-type').val($btn.data('type'));
+    $('#webhook-name').val(String($btn.data('name') ?? ''));
+    $('#webhook-url').val(String($btn.data('url') ?? ''));
+    $('#webhook-ports').val(String($btn.data('ports') ?? ''));
+    const events = String($btn.data('events') ?? '').split(',');
+    $('#webhook-event-started').prop('checked', events.includes('game-started'));
+    $('#webhook-event-finished').prop('checked', events.includes('game-finished'));
+    $('#webhook-form-legend').text('Edit Webhook');
+    $('#webhook-submit').text('Save');
+    $('#webhook-cancel').show();
+  });
+
+  // Webhook cancel edit
+  $('#webhook-cancel').on('click', (e) => {
+    e.preventDefault();
+    resetWebhookForm();
+  });
+
+  // Webhook form submit (add or edit)
+  $('#webhook-form').on('submit', (e) => {
+    e.preventDefault();
+    const editingId = ($('#webhook-editing-id').val() as string).trim();
+    const data = collectWebhookFormData();
+
+    if (editingId) {
+      // Edit = delete old, then add new
+      $.ajax({
+        type: 'DELETE',
+        url: `/admin/webhooks/${editingId}`,
+        success() {
+          addWebhook(data);
+        },
+        error() {
+          window.location.reload();
+        },
+      });
+    } else {
+      addWebhook(data);
     }
   });
 });

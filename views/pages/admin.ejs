@@ -140,6 +140,84 @@
           </fieldset>
         </form>
       </div>
+
+      <hr class="admin-divider" />
+
+      <div class="admin-section">
+        <h2>Webhooks</h2>
+        <% if (webhooks.length > 0) { %>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>URL</th>
+              <th>Ports</th>
+              <th>Events</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% for (const w of webhooks) { %>
+            <tr>
+              <td data-label="Name"><%= w.name || '—' %></td>
+              <td data-label="Type"><%= w.type %></td>
+              <td data-label="URL"><%= '••••' + w.url.slice(-8) %></td>
+              <td data-label="Ports"><%= w.ports.length ? w.ports.join(', ') : 'all' %></td>
+              <td data-label="Events"><%= w.events.join(', ') %></td>
+              <td data-label="Actions">
+                <button class="secondary webhook-edit"
+                  data-id="<%= w.id %>"
+                  data-type="<%= w.type %>"
+                  data-name="<%= w.name %>"
+                  data-url="<%= w.url %>"
+                  data-ports="<%= w.ports.join(',') %>"
+                  data-events="<%= w.events.join(',') %>"
+                >Edit</button>
+                <button class="secondary webhook-remove" data-id="<%= w.id %>">Remove</button>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+        <% } else { %>
+        <p>No webhooks configured.</p>
+        <% } %>
+
+        <form id="webhook-form" class="admin-form">
+          <input type="hidden" id="webhook-editing-id" value="" />
+          <fieldset>
+            <legend id="webhook-form-legend">Add Webhook</legend>
+
+            <label for="webhook-type">Type</label>
+            <select id="webhook-type" name="type">
+              <option value="discord">Discord</option>
+            </select>
+
+            <label for="webhook-name">Name</label>
+            <input id="webhook-name" name="name" placeholder="My Discord channel" />
+
+            <label for="webhook-url">URL</label>
+            <input id="webhook-url" name="url" required placeholder="https://discord.com/api/webhooks/..." />
+
+            <label for="webhook-ports">Ports</label>
+            <input id="webhook-ports" name="ports" placeholder="blank = all, or e.g. 16063, 16064" />
+
+            <label>Events</label>
+            <div class="webhook-events">
+              <label class="webhook-event-option">
+                <input type="checkbox" id="webhook-event-started" value="game-started" checked /> Game started
+              </label>
+              <label class="webhook-event-option">
+                <input type="checkbox" id="webhook-event-finished" value="game-finished" checked /> Game finished
+              </label>
+            </div>
+
+            <button type="submit" id="webhook-submit" class="primary">Add</button>
+            <a href="#" id="webhook-cancel">Cancel</a>
+          </fieldset>
+        </form>
+      </div>
     </div>
     <%- include('../partials/footer') %>
   </body>
