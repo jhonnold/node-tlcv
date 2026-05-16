@@ -115,4 +115,27 @@
     display: none;
     margin-left: 0.5rem;
   }
+
+  #webhook-cancel {
+    display: none;
+    margin-left: 0.5rem;
+  }
+
+  .webhook-events {
+    display: flex;
+    gap: 16px;
+    margin-top: 4px;
+  }
+
+  .webhook-event-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 0;
+    font-weight: 400;
+
+    input {
+      width: auto;
+    }
+  }
 }

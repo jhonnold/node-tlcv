@@ -2,6 +2,7 @@ import dns from 'dns';
 import broadcasts, { Broadcast } from './broadcast.js';
 import configStore from './config/config-store.js';
 import type { KibitzerManager } from './kibitzer/kibitzer-manager.js';
+import type { WebhookManager } from './webhooks/webhook-manager.js';
 
 const lookup = (hostname: string): Promise<string> =>
   new Promise((resolve, reject) => dns.lookup(hostname, (err, addr) => (err ? reject(err) : resolve(addr))));
@@ -14,6 +15,16 @@ export function setKibitzerManager(manager: KibitzerManager): void {
 
 export function getKibitzerManager(): KibitzerManager | null {
   return _kibitzerManager;
+}
+
+let _webhookManager: WebhookManager | null = null;
+
+export function setWebhookManager(manager: WebhookManager): void {
+  _webhookManager = manager;
+}
+
+export function getWebhookManager(): WebhookManager | null {
+  return _webhookManager;
 }
 
 export async function connect(): Promise<void> {
