@@ -2,6 +2,7 @@
 import $ from 'jquery';
 import type { Socket } from 'socket.io-client';
 import { on } from '../../events/index';
+import { renderMarkdown } from '../../utils/markdown';
 import username from './messaging';
 
 export { username };
@@ -29,7 +30,7 @@ function addChat(msg: string) {
     }
   }
 
-  $('#chat-box').append($('<p>').text(rest).prepend($('<strong>').text(name)));
+  $('#chat-box').append($('<p>').html(renderMarkdown(rest)).prepend($('<strong>').text(name)));
 }
 
 function setChat(msgs: string[]) {
