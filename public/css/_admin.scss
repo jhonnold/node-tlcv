@@ -1,5 +1,9 @@
+@use 'mixins' as *;
+
+$admin-max-width: 900px;
+
 .admin-section {
-  max-width: 900px;
+  max-width: $admin-max-width;
   margin: 0 auto;
   padding: 0 16px 24px;
 
@@ -11,42 +15,38 @@
 }
 
 .admin-divider {
-  max-width: 900px;
+  max-width: $admin-max-width;
   margin: 8px auto 24px;
   border: none;
   border-top: 1px solid var(--surfaceColorHover);
 }
 
+.admin-empty {
+  @include table-status-message;
+  margin-bottom: 16px;
+}
+
 .admin-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  @include mini-table-reset;
   background: var(--surfaceColor);
   border: 1px solid var(--surfaceColorHover);
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 16px;
 
-  thead {
-    background: var(--surfaceColorHover);
+  thead th {
+    @include sticky-th-header;
   }
 
-  th {
-    font-weight: 600;
-    font-size: 0.85em;
-    text-align: left;
-    padding: 10px 12px;
-    color: var(--textColor);
-  }
-
-  td {
-    padding: 10px 12px;
+  tbody td {
+    padding: 6px 8px;
     font-size: 0.9em;
     color: var(--textColor);
+    vertical-align: middle;
     border-top: 1px solid var(--surfaceColorHover);
   }
 
-  tr:hover td {
+  tbody tr:hover td {
     background: var(--surfaceColorHover);
   }
 
@@ -60,14 +60,19 @@
 }
 
 .admin-form {
-  max-width: 500px;
+  // Neutralize mini.css's default <form> "card" chrome so the <fieldset> is
+  // the only card (avoids the card-in-card look).
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
 
   label {
     display: block;
     font-size: 0.85em;
     font-weight: 600;
-    margin-bottom: 4px;
-    margin-top: 12px;
+    margin: 0 0 4px;
     color: var(--textColor);
   }
 
@@ -90,9 +95,11 @@
   }
 
   fieldset {
+    display: block;
     border: 1px solid var(--surfaceColorHover);
     border-radius: 8px;
     padding: 16px;
+    margin: 0;
     background: var(--surfaceColor);
   }
 
@@ -100,25 +107,38 @@
     font-weight: 600;
     font-size: 1rem;
     color: var(--textColor);
-    padding: 0 8px;
+    padding: 0;
+    margin-bottom: 12px;
   }
 
-  button[type='submit'] {
+  // Two-column field grid; full-width fields opt in via .field--full.
+  .admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 16px;
+  }
+
+  .field--full {
+    grid-column: 1 / -1;
+  }
+
+  // SSH-only block is shown/hidden by admin.ts; it spans the row and lays its
+  // own fields out in the same two-column grid.
+  #ssh-fields {
+    display: none;
+    margin-top: 12px;
+  }
+
+  .admin-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-top: 16px;
   }
 
-  #ssh-fields {
-    display: none;
-  }
-
-  #kibitzer-cancel {
-    display: none;
-    margin-left: 0.5rem;
-  }
-
+  #kibitzer-cancel,
   #webhook-cancel {
     display: none;
-    margin-left: 0.5rem;
   }
 
   .webhook-events {
@@ -131,11 +151,24 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 0;
+    margin: 0;
     font-weight: 400;
 
     input {
       width: auto;
     }
+  }
+}
+
+// Connection form: a single inline row rather than a card.
+.admin-form--inline {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  .field {
+    flex: 1;
+    max-width: 400px;
   }
 }
