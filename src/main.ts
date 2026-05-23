@@ -52,5 +52,6 @@ io.attach(server);
 
   kibitzerManager.start();
 
-  server.listen(8080, () => logger.info('Started listening on port 8080!'));
+  const port = Number(process.env.PORT) || 8080;
+  server.listen(port, () => logger.info(`Started listening on port ${port}!`));
 })();

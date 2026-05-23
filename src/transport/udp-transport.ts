@@ -24,6 +24,10 @@ export class UdpTransport {
     this.socket.on('listening', this.onListening.bind(this));
     this.socket.on('message', this.onMessage.bind(this));
 
+    // The local socket MUST bind the broadcast port: the TLCS server streams the
+    // broadcast to clientIP:<broadcast port> and ignores the source port of our
+    // LOGON entirely (verified empirically). Binding any other port receives
+    // nothing. This is why two instances on one host cannot share a broadcast.
     this.socket.bind(port);
   }
 
