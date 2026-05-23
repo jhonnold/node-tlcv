@@ -31,6 +31,7 @@ io.on('connection', (socket: Socket) => {
 
     socket.join(String(port));
     socket.emit('state', broadcast.toJSON(true));
+    emitSpectators(broadcast);
   });
 
   socket.on('chat', (msg: string) => {
@@ -49,6 +50,7 @@ io.on('connection', (socket: Socket) => {
     logger.info(`${originalUsername} changed their name to ${username}!`, { port: broadcast.port });
 
     socket.emit('state', broadcast.toJSON());
+    emitSpectators(broadcast);
   });
 
   socket.on('disconnect', () => {
@@ -60,12 +62,20 @@ io.on('connection', (socket: Socket) => {
     if (username) broadcast.spectators.delete(username);
 
     logger.info(`${username} has left from port ${broadcast.port}!`, { port: broadcast.port });
+    emitSpectators(broadcast);
   });
 });
 
 export function emitUpdate(port: number, data: BroadcastDelta): void {
   socketEmissions.inc({ port: String(port), type: 'update' });
   io.to(String(port)).emit(EmitType.UPDATE, data);
+}
+
+// Broadcast the current spectator list to everyone in the room. Used after
+// browser-driven changes (join/nick/disconnect) so already-connected clients
+// see viewers come and go without refreshing.
+function emitSpectators(broadcast: Broadcast): void {
+  emitUpdate(broadcast.port, { spectators: Array.from(broadcast.spectators) });
 }
 
 export function emitChat(port: number, messages: string[]): void {
