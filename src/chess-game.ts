@@ -101,6 +101,7 @@ export class ChessGame {
   site: string;
   fen: string;
   opening: string;
+  openingLookupDisabled: boolean;
   tablebase: string;
   moveNumber: number;
   fmr: number;
@@ -122,6 +123,7 @@ export class ChessGame {
 
     this.fen = this.instance.fen();
     this.opening = 'Unknown';
+    this.openingLookupDisabled = false;
     this.tablebase = '';
     this.moveNumber = 1;
     this.fmr = 0;
@@ -144,6 +146,7 @@ export class ChessGame {
 
     this.fen = this.instance.fen();
     this.opening = 'Unknown';
+    this.openingLookupDisabled = false;
     this.tablebase = '';
     this.moveNumber = this.instance.moveNumber();
     this.fmr = 0;

@@ -10,9 +10,11 @@ export type LichessTablebaseResponse = {
   category: string | null;
 };
 
-export async function fetchOpening(name: string, instance: Chess): Promise<string | null> {
+export type OpeningResult = { failed: boolean; opening: string | null };
+
+export async function fetchOpening(name: string, instance: Chess): Promise<OpeningResult> {
   const history = instance.history({ verbose: true });
-  if (!history.length) return null;
+  if (!history.length) return { failed: false, opening: null };
 
   const moves = history.map((move) => `${move.from}${move.to}`).join(',');
   const url = `https://explorer.lichess.org/masters?play=${moves}`;
@@ -35,14 +37,15 @@ export async function fetchOpening(name: string, instance: Chess): Promise<strin
       const { eco, name: openingName } = opening;
 
       logger.info(`Setting opening for game ${name} to ${eco} ${openingName}`, { port: name });
-      return `${eco} ${openingName}`;
+      return { failed: false, opening: `${eco} ${openingName}` };
     }
+
+    return { failed: false, opening: null };
   } catch (error) {
     logger.warn(`Error requesting opening for game ${name} @ ${url}`, { port: name });
     logger.error(error);
+    return { failed: true, opening: null };
   }
-
-  return null;
 }
 
 export async function fetchTablebase(name: string, fen: string, turn: ColorCode): Promise<string> {
