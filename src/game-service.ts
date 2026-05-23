@@ -4,6 +4,7 @@ import { logger, siteSlug } from './util/index.js';
 import { Broadcast, username } from './broadcast.js';
 import { getWebhookManager } from './broadcast-manager.js';
 import { fetchOpening, fetchTablebase } from './services/lichess.js';
+import type { OpeningResult } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
 import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
@@ -322,12 +323,20 @@ class GameService {
 
     this.broadcast.kibitzerManager?.onPositionChange(this.broadcast.port, this.game.instance.fen());
 
-    const [opening, tablebase] = await Promise.all([
-      fetchOpening(this.game.name, this.game.instance),
+    const skipOpening = this.game.openingLookupDisabled || this.game.startFen !== null;
+
+    const [openingResult, tablebase] = await Promise.all([
+      skipOpening
+        ? Promise.resolve<OpeningResult>({ failed: false, opening: null })
+        : fetchOpening(this.game.name, this.game.instance),
       fetchTablebase(this.game.name, this.game.fen, this.game.instance.turn()),
     ]);
 
-    if (opening) this.game.opening = opening;
+    if (openingResult.failed) {
+      this.game.openingLookupDisabled = true;
+    } else if (openingResult.opening) {
+      this.game.opening = openingResult.opening;
+    }
     this.game.tablebase = tablebase;
 
     this.dirty.move = true;
