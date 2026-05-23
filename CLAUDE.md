@@ -216,8 +216,9 @@ The `kibitzers` array is optional. Each entry has an `id` (auto-assigned at star
 
 The `webhooks` array is also optional. Each entry has an `id` (auto-assigned if missing), a `type` (`"discord"` only for now), a `url`, an optional `name`, an optional `ports` array (empty/unset = all broadcasts), and an optional `events` array of `"game-started"` / `"game-finished"` (empty/unset = both).
 
-Environment variables:
+Environment variables (see `.env.example`; `.env` is gitignored and loaded via `dotenv`):
 - `TLCV_PASSWORD` - Admin panel password (required)
+- `PORT` - Backend HTTP/Socket.IO listen port (default: 8080). Set a unique value per worktree to run multiple instances side by side.
 - `CONFIG_DIR` - Config directory (default: "config")
 - `PGNS_DIR` - PGN output directory (default: "pgns")
 - `LICHESS_OAUTH_TOKEN` - Optional Lichess API bearer token for opening/tablebase lookups
@@ -274,4 +275,5 @@ Environment variables:
 - **Webhook game-started dedup**: `GameService` fires one game-started event per game via a re-arm state machine (`gameStartArmed` / `startColorsSeen`). It is re-armed in `onResult()`. Connecting mid-game fires one game-started for the already-in-progress game — accepted.
 - **Webhook URL is a secret**: Discord webhook URLs embed a token. The admin table masks all but the last 8 chars, but the edit button still carries the full URL in a `data-url` attribute (admin page is basic-auth protected).
 - **No-op protocol commands**: `LOGON` (the `LOGON SUCCESSFUL` handshake reply), `FEATURE`, and `level` are recognized in the `Command` enum with no-op handlers (`() => [EmitType.UPDATE, false]`, same pattern as `PONG`). They are connection-time handshake/config lines the viewer derives nothing from (clocks come from `WTIME`/`BTIME`, not `level`); the handlers exist purely to suppress the `Unable to process <cmd>!` warning in `categorizeMessages`.
+- **UDP local bind = broadcast port is mandatory**: `UdpTransport` binds the local socket to the broadcast port (`udp-transport.ts`). This is required, not a convention: the TLCS server streams the broadcast to `clientIP:<broadcast port>` and ignores the source port of our `LOGONv15` (verified empirically — a LOGON sent from a different source port still has its data delivered to the broadcast port). Consequences: you cannot bind an ephemeral local port and still receive data, and two instances on the same host cannot watch the *same* broadcast (both need that port → `EADDRINUSE`). To run multiple worktrees, point each `config/config.json` at a **different** broadcast port.
 - **No test infrastructure**: This project has no test runner or test files. Verification is done via `npm run build` (TypeScript + webpack) and manual testing.
