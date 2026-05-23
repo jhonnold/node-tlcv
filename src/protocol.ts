@@ -18,6 +18,9 @@ export enum Command {
   MENU = 'MENU',
   RESULT = 'result',
   FMR = 'FMR',
+  LOGON = 'LOGON',
+  FEATURE = 'FEATURE',
+  LEVEL = 'level',
 }
 
 export function splitOnCommand(line: string): [Command, string] {

@@ -85,6 +85,11 @@ class GameService {
       [Command.MENU]: { fn: this.onMenu.bind(this), split: true, lowPrio: false },
       [Command.RESULT]: { fn: this.onResult.bind(this), split: false, lowPrio: false },
       [Command.FMR]: { fn: this.onFmr.bind(this), split: false, lowPrio: false },
+      // Recognized but intentionally ignored — connection-time handshake/config
+      // lines the viewer derives nothing from (see CLAUDE.md "No-op protocol commands").
+      [Command.LOGON]: { fn: () => [EmitType.UPDATE, false], split: false, lowPrio: false },
+      [Command.FEATURE]: { fn: () => [EmitType.UPDATE, false], split: false, lowPrio: false },
+      [Command.LEVEL]: { fn: () => [EmitType.UPDATE, false], split: false, lowPrio: false },
     };
   }
 

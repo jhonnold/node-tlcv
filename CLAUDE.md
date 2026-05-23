@@ -155,7 +155,7 @@ The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
 ### Key Classes
 
 - **Broadcast**: Core entity representing a single broadcast. Contains ChessGame, spectators Set, chat Array, menu Map. Sends LOGONv15 to connect to server.
-- **GameService**: Processes ~20 command types from the chess server via a `commandConfig` map. Each command has `split` (tokenize by whitespace) and `lowPrio` flags.
+- **GameService**: Processes ~22 command types from the chess server via a `commandConfig` map. Each command has `split` (tokenize by whitespace) and `lowPrio` flags.
 - **BroadcastState** (broadcast-state.ts): Serialization of broadcast state for Socket.IO emission.
 
 ### Routes
@@ -273,4 +273,5 @@ Environment variables:
 - **Webhook dispatch is fire-and-forget**: `WebhookManager.dispatch()` calls `sender.send()` without awaiting. `DiscordSender.send()` catches every error and always resolves, so a slow or failing webhook never blocks `onResult()` / the message batch. Do not `await` `dispatch()`.
 - **Webhook game-started dedup**: `GameService` fires one game-started event per game via a re-arm state machine (`gameStartArmed` / `startColorsSeen`). It is re-armed in `onResult()`. Connecting mid-game fires one game-started for the already-in-progress game — accepted.
 - **Webhook URL is a secret**: Discord webhook URLs embed a token. The admin table masks all but the last 8 chars, but the edit button still carries the full URL in a `data-url` attribute (admin page is basic-auth protected).
+- **No-op protocol commands**: `LOGON` (the `LOGON SUCCESSFUL` handshake reply), `FEATURE`, and `level` are recognized in the `Command` enum with no-op handlers (`() => [EmitType.UPDATE, false]`, same pattern as `PONG`). They are connection-time handshake/config lines the viewer derives nothing from (clocks come from `WTIME`/`BTIME`, not `level`); the handlers exist purely to suppress the `Unable to process <cmd>!` warning in `categorizeMessages`.
 - **No test infrastructure**: This project has no test runner or test files. Verification is done via `npm run build` (TypeScript + webpack) and manual testing.
