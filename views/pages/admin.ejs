@@ -28,7 +28,7 @@
           <tbody>
             <% for (const broadcast of broadcasts) {%>
             <tr>
-              <td data-label="Site"><%= broadcast.game.site %></td>
+              <td data-label="Site"><%= broadcast.game.site || '—' %></td>
               <td data-label="Host"><%= broadcast.host %></td>
               <td data-label="Port"><%= broadcast.port %></td>
               <td data-label="Close">
@@ -38,9 +38,11 @@
             <% } %>
           </tbody>
         </table>
-        <form id="add-new" class="admin-form">
-          <label for="connection">Connection</label>
-          <input id="connection" name="connection" required placeholder="GrahamCCRL.dyndns.org:16000" />
+        <form id="add-new" class="admin-form admin-form--inline">
+          <div class="field">
+            <label for="connection">Connection</label>
+            <input id="connection" name="connection" required placeholder="GrahamCCRL.dyndns.org:16000" />
+          </div>
           <button type="submit" class="primary">Add new</button>
         </form>
       </div>
@@ -95,7 +97,7 @@
           </tbody>
         </table>
         <% } else { %>
-        <p>No kibitzers configured.</p>
+        <p class="admin-empty">No kibitzers configured.</p>
         <% } %>
 
         <form id="kibitzer-form" class="admin-form">
@@ -103,40 +105,64 @@
           <fieldset>
             <legend id="kibitzer-form-legend">Add Kibitzer</legend>
 
-            <label for="kibitzer-type">Type</label>
-            <select id="kibitzer-type" name="type">
-              <option value="local">Local</option>
-              <option value="ssh">SSH</option>
-            </select>
+            <div class="admin-grid">
+              <div class="field">
+                <label for="kibitzer-type">Type</label>
+                <select id="kibitzer-type" name="type">
+                  <option value="local">Local</option>
+                  <option value="ssh">SSH</option>
+                </select>
+              </div>
 
-            <label for="kibitzer-priority">Priority</label>
-            <input id="kibitzer-priority" name="priority" type="number" value="1" min="1" required />
+              <div class="field">
+                <label for="kibitzer-priority">Priority</label>
+                <input id="kibitzer-priority" name="priority" type="number" value="1" min="1" required />
+              </div>
 
-            <label for="kibitzer-engine-path">Engine Path</label>
-            <input id="kibitzer-engine-path" name="enginePath" placeholder="stockfish" />
+              <div class="field field--full">
+                <label for="kibitzer-engine-path">Engine Path</label>
+                <input id="kibitzer-engine-path" name="enginePath" placeholder="stockfish" />
+              </div>
 
-            <label for="kibitzer-threads">Threads</label>
-            <input id="kibitzer-threads" name="threads" type="number" value="1" min="1" />
+              <div class="field">
+                <label for="kibitzer-threads">Threads</label>
+                <input id="kibitzer-threads" name="threads" type="number" value="1" min="1" />
+              </div>
 
-            <label for="kibitzer-hash">Hash (MB)</label>
-            <input id="kibitzer-hash" name="hash" type="number" value="256" min="1" />
-
-            <div id="ssh-fields">
-              <label for="kibitzer-host">Host</label>
-              <input id="kibitzer-host" name="host" placeholder="example.com" />
-
-              <label for="kibitzer-port">Port</label>
-              <input id="kibitzer-port" name="port" type="number" value="22" />
-
-              <label for="kibitzer-username">Username</label>
-              <input id="kibitzer-username" name="username" />
-
-              <label for="kibitzer-private-key-path">Private Key Path</label>
-              <input id="kibitzer-private-key-path" name="privateKeyPath" placeholder="/home/user/.ssh/id_rsa" />
+              <div class="field">
+                <label for="kibitzer-hash">Hash (MB)</label>
+                <input id="kibitzer-hash" name="hash" type="number" value="256" min="1" />
+              </div>
             </div>
 
-            <button type="submit" id="kibitzer-submit" class="primary">Add</button>
-            <a href="#" id="kibitzer-cancel">Cancel</a>
+            <div id="ssh-fields">
+              <div class="admin-grid">
+                <div class="field">
+                  <label for="kibitzer-host">Host</label>
+                  <input id="kibitzer-host" name="host" placeholder="example.com" />
+                </div>
+
+                <div class="field">
+                  <label for="kibitzer-port">Port</label>
+                  <input id="kibitzer-port" name="port" type="number" value="22" />
+                </div>
+
+                <div class="field">
+                  <label for="kibitzer-username">Username</label>
+                  <input id="kibitzer-username" name="username" />
+                </div>
+
+                <div class="field field--full">
+                  <label for="kibitzer-private-key-path">Private Key Path</label>
+                  <input id="kibitzer-private-key-path" name="privateKeyPath" placeholder="/home/user/.ssh/id_rsa" />
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-form-actions">
+              <button type="submit" id="kibitzer-submit" class="primary">Add</button>
+              <a href="#" id="kibitzer-cancel">Cancel</a>
+            </div>
           </fieldset>
         </form>
       </div>
@@ -181,7 +207,7 @@
           </tbody>
         </table>
         <% } else { %>
-        <p>No webhooks configured.</p>
+        <p class="admin-empty">No webhooks configured.</p>
         <% } %>
 
         <form id="webhook-form" class="admin-form">
@@ -189,32 +215,46 @@
           <fieldset>
             <legend id="webhook-form-legend">Add Webhook</legend>
 
-            <label for="webhook-type">Type</label>
-            <select id="webhook-type" name="type">
-              <option value="discord">Discord</option>
-            </select>
+            <div class="admin-grid">
+              <div class="field">
+                <label for="webhook-type">Type</label>
+                <select id="webhook-type" name="type">
+                  <option value="discord">Discord</option>
+                </select>
+              </div>
 
-            <label for="webhook-name">Name</label>
-            <input id="webhook-name" name="name" placeholder="My Discord channel" />
+              <div class="field">
+                <label for="webhook-name">Name</label>
+                <input id="webhook-name" name="name" placeholder="My Discord channel" />
+              </div>
 
-            <label for="webhook-url">URL</label>
-            <input id="webhook-url" name="url" required placeholder="https://discord.com/api/webhooks/..." />
+              <div class="field field--full">
+                <label for="webhook-url">URL</label>
+                <input id="webhook-url" name="url" required placeholder="https://discord.com/api/webhooks/..." />
+              </div>
 
-            <label for="webhook-ports">Ports</label>
-            <input id="webhook-ports" name="ports" placeholder="blank = all, or e.g. 16063, 16064" />
+              <div class="field field--full">
+                <label for="webhook-ports">Ports</label>
+                <input id="webhook-ports" name="ports" placeholder="blank = all, or e.g. 16063, 16064" />
+              </div>
 
-            <label>Events</label>
-            <div class="webhook-events">
-              <label class="webhook-event-option">
-                <input type="checkbox" id="webhook-event-started" value="game-started" checked /> Game started
-              </label>
-              <label class="webhook-event-option">
-                <input type="checkbox" id="webhook-event-finished" value="game-finished" checked /> Game finished
-              </label>
+              <div class="field field--full">
+                <label>Events</label>
+                <div class="webhook-events">
+                  <label class="webhook-event-option">
+                    <input type="checkbox" id="webhook-event-started" value="game-started" checked /> Game started
+                  </label>
+                  <label class="webhook-event-option">
+                    <input type="checkbox" id="webhook-event-finished" value="game-finished" checked /> Game finished
+                  </label>
+                </div>
+              </div>
             </div>
 
-            <button type="submit" id="webhook-submit" class="primary">Add</button>
-            <a href="#" id="webhook-cancel">Cancel</a>
+            <div class="admin-form-actions">
+              <button type="submit" id="webhook-submit" class="primary">Add</button>
+              <a href="#" id="webhook-cancel">Cancel</a>
+            </div>
           </fieldset>
         </form>
       </div>
