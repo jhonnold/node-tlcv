@@ -49,7 +49,9 @@ io.on('connection', (socket: Socket) => {
 
     logger.info(`${originalUsername} changed their name to ${username}!`, { port: broadcast.port });
 
-    socket.emit('state', broadcast.toJSON());
+    // A rename only changes the spectator list; emitSpectators pushes that to
+    // the whole room (including this socket). Emitting full state here would
+    // re-seed chat history from an empty payload and wipe the user's chat box.
     emitSpectators(broadcast);
   });
 
