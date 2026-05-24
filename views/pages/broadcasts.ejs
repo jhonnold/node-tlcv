@@ -80,7 +80,10 @@
                       var light = (rankIdx + fileIdx) % 2 === 0;
                 %>
                 <div class="sq <%= light ? 'sq-l' : 'sq-d' %>">
-                  <img src="/img/<%= pieceMap[ch] %>.svg" alt="" />
+                  <%# Pre-JS fallback path; "classic" must match DEFAULT_PIECE_SET in
+                      public/js/components/theme/piece-sets.ts. broadcasts.ts rewrites
+                      these <img> per the user's chosen set after load. %>
+                  <img src="/img/pieces/classic/<%= pieceMap[ch] %>.svg" data-piece="<%= pieceMap[ch] %>" alt="" />
                 </div>
                 <%
                       fileIdx++;

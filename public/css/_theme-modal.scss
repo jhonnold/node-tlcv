@@ -64,6 +64,37 @@
   font-weight: 600;
 }
 
+// Piece-set picker; lives at the top of the Board section.
+.theme-piece-set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  label {
+    font-size: 0.9rem;
+  }
+
+  select {
+    flex: 0 0 auto;
+    min-width: 160px;
+    margin: 0;
+    padding: 5px 8px;
+    font-family: var(--fontFamily);
+    font-size: 0.85rem;
+    color: var(--textColor);
+    background: var(--surfaceColor);
+    border: 1px solid var(--surfaceColorHover);
+    border-radius: var(--universal-border-radius);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--primaryColor);
+    }
+  }
+}
+
 .theme-note {
   margin: 12px 0 0;
   font-size: 0.8rem;

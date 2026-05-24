@@ -9,6 +9,9 @@ import { drawMove, clearArrows } from './arrows';
 import { initResize } from './resize';
 import copyFen from '../../utils/fen';
 import { isReplayMode } from '../replay/index';
+import { getPieceSet } from '../theme/index';
+import { pieceSrc } from '../theme/piece-sets';
+import type { PieceSetId } from '../theme/piece-sets';
 
 let board: ChessboardInstance | null = null;
 let pvBoardWhite: ChessboardInstance | null = null;
@@ -142,6 +145,17 @@ function handleThemeChange() {
   drawArrows();
 }
 
+// The function pieceTheme only affects future renders, so rewrite the pieces that
+// are already on the boards in place. No board recreation (keeps resize refs valid).
+function handlePiecesChange({ set }: { set: string }) {
+  ['#board', '#white-pv-board', '#black-pv-board'].forEach((sel) =>
+    $(`${sel} img[data-piece]`).each(function () {
+      const piece = $(this).attr('data-piece');
+      if (piece) $(this).attr('src', pieceSrc(set as PieceSetId, piece));
+    }),
+  );
+}
+
 function highlightSquares(lastMove: { from: string; to: string } | null) {
   $('#board .highlight').removeClass('highlight');
   if (lastMove) {
@@ -216,8 +230,11 @@ function handleNavPosition({ fen, isLive, lastMove, index }: NavPosition) {
 }
 
 export function init() {
-  // Initialize main board
-  board = Chessboard('board', { pieceTheme: '/img/{piece}.svg', showNotation: true });
+  // Initialize main board. pieceTheme is a function so chessboardjs picks up the
+  // active piece set on every (re)render; handlePiecesChange covers pieces already
+  // on the board when the set changes.
+  const pieceTheme = (piece: string) => pieceSrc(getPieceSet(), piece);
+  board = Chessboard('board', { pieceTheme, showNotation: true });
 
   // Initialize arrow canvas
   clearArrows();
@@ -226,7 +243,7 @@ export function init() {
 
   // Initialize PV boards
   const pvBoardSettings = {
-    pieceTheme: '/img/{piece}.svg',
+    pieceTheme,
     showNotation: false,
   };
   pvBoardWhite = Chessboard('white-pv-board', pvBoardSettings);
@@ -243,6 +260,7 @@ export function init() {
   on('game:update', handleGameUpdate);
   on('game:state', handleGameState);
   on('theme:change', handleThemeChange);
+  on('pieces:change', handlePiecesChange);
   on('nav:position', handleNavPosition);
   on('board:resize', () => drawArrows());
   on('board:flip', (data) => {

@@ -4,14 +4,18 @@ import $ from 'jquery';
 import { emit } from '../../events/index';
 import { PRESETS, TOKENS, DEFAULT_PRESET } from './presets';
 import type { ThemeColors, ThemeName, PresetName, ThemeTokenKey } from './presets';
+import { PIECE_SETS, DEFAULT_PIECE_SET, isPieceSetId } from './piece-sets';
+import type { PieceSetId } from './piece-sets';
 
 const THEME_KEY = 'theme';
 const CUSTOM_KEY = 'tlcv.customTheme';
 const BASE_KEY = 'tlcv.themeBase';
+const PIECE_SET_KEY = 'tlcv.pieceSet';
 
 let currentTheme: ThemeName = DEFAULT_PRESET;
 let basePreset: PresetName = DEFAULT_PRESET;
 let currentColors: ThemeColors = { ...PRESETS[DEFAULT_PRESET] };
+let currentPieceSet: PieceSetId = DEFAULT_PIECE_SET;
 
 const isPreset = (value: string | null): value is PresetName => value === 'light' || value === 'dark';
 const isThemeName = (value: string | null): value is ThemeName => isPreset(value) || value === 'custom';
@@ -186,6 +190,27 @@ export function getTheme(): ThemeName {
   return currentTheme;
 }
 
+// ---- piece set -------------------------------------------------------------
+// Independent of the color palette above: its own key/event, and it never
+// touches applyColors/persist.
+
+function loadPieceSet(): PieceSetId {
+  const stored = localStorage.getItem(PIECE_SET_KEY);
+  return isPieceSetId(stored) ? stored : DEFAULT_PIECE_SET;
+}
+
+export function getPieceSet(): PieceSetId {
+  return currentPieceSet;
+}
+
+/** Switch the active piece set; boards react via the `pieces:change` event. */
+function setPieceSet(id: PieceSetId) {
+  currentPieceSet = id;
+  localStorage.setItem(PIECE_SET_KEY, id);
+  $('#theme-piece-set').val(id);
+  emit('pieces:change', { set: id });
+}
+
 // ---- editor UI -------------------------------------------------------------
 
 function buildRows() {
@@ -249,6 +274,18 @@ export function init() {
   currentColors = resolveColors(currentTheme);
   applyColors(currentColors);
 
+  // Piece set: load and reflect in the dropdown. Boards read getPieceSet() when
+  // they build their pieceTheme, so no emit is needed (or wanted) here.
+  currentPieceSet = loadPieceSet();
+  const pieceSelect = $('#theme-piece-set');
+  pieceSelect.empty();
+  PIECE_SETS.forEach(({ id, label }) => pieceSelect.append(`<option value="${id}">${label}</option>`));
+  pieceSelect.val(currentPieceSet);
+  pieceSelect.on('change', function () {
+    const value = $(this).val();
+    if (isPieceSetId(String(value))) setPieceSet(String(value) as PieceSetId);
+  });
+
   buildRows();
   syncControls();
 
@@ -277,5 +314,6 @@ export function destroy() {
   $('#theme-reset').off('click');
   $('.theme-color-input').off('input');
   $('input[name="theme-preset"]').off('change');
+  $('#theme-piece-set').off('change');
   $(document).off('keydown.theme');
 }
