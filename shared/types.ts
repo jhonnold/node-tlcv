@@ -134,3 +134,12 @@ export type GameRecord = {
 };
 
 export type StoredGameMeta = SerializedGame & { result: string };
+
+export type StoredTournamentResults = {
+  site: string;
+  port: number;
+  updated: string; // ISO 8601 timestamp
+  results: string; // raw accumulated CT text dump
+  parsedResults: ParsedResults | null;
+  parsedGames: GameRecord[];
+};
