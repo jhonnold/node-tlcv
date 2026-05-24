@@ -13,14 +13,24 @@
       <label><input type="radio" name="theme-preset" value="custom" /> Custom</label>
     </div>
 
-    <div id="theme-essential" class="theme-rows"></div>
+    <section class="theme-section">
+      <h4 class="theme-section-title">Page</h4>
+      <div id="theme-page-essential" class="theme-rows"></div>
+      <p class="theme-note">Hover colors are calculated automatically from your accent, surface, and background.</p>
+      <details class="theme-advanced">
+        <summary>Advanced page colors</summary>
+        <div id="theme-page-advanced" class="theme-rows"></div>
+      </details>
+    </section>
 
-    <p class="theme-note">Hover and highlight colors are calculated automatically from your accent, surface, and background.</p>
-
-    <details class="theme-advanced">
-      <summary>Advanced colors</summary>
-      <div id="theme-advanced" class="theme-rows"></div>
-    </details>
+    <section class="theme-section">
+      <h4 class="theme-section-title">Board</h4>
+      <div id="theme-board-essential" class="theme-rows"></div>
+      <details class="theme-advanced">
+        <summary>Advanced board colors</summary>
+        <div id="theme-board-advanced" class="theme-rows"></div>
+      </details>
+    </section>
 
     <div class="theme-modal-footer">
       <button id="theme-reset" type="button">Reset to preset</button>

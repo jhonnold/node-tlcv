@@ -50,6 +50,20 @@
   }
 }
 
+.theme-section {
+  & + & {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--surfaceColorHover);
+  }
+}
+
+.theme-section-title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
 .theme-note {
   margin: 12px 0 0;
   font-size: 0.8rem;

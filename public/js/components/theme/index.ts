@@ -36,8 +36,9 @@ function alphaSuffix(value: string): string {
 }
 
 // ---- derived colors --------------------------------------------------------
-// Hover and highlight colors are auto-calculated from the essentials so a custom
-// palette stays coherent without the user hand-tuning them.
+// Hover colors are auto-calculated from the page essentials so a custom palette
+// stays coherent without the user hand-tuning them. Board colors (including the
+// move highlight) are independent and never derived.
 
 interface RGBA {
   r: number;
@@ -88,7 +89,7 @@ function shadeForContrast(color: RGBA, bg: RGBA, amount = 0.2): RGBA {
   };
 }
 
-// Returns a new map with hover/highlight tokens recomputed from the essentials.
+// Returns a new map with the page hover tokens recomputed from the essentials.
 function deriveDependents(colors: ThemeColors): ThemeColors {
   const bg = parseColor(colors['--backgroundColor']);
   const primary = parseColor(colors['--primaryColor']);
@@ -103,9 +104,6 @@ function deriveDependents(colors: ThemeColors): ThemeColors {
     hover.a = luminance(bg) < 0.5 ? '' : '40';
     next['--surfaceColorHover'] = rgbaToString(hover);
   }
-  // Move-highlight follows the accent so it stays coherent; keep a translucent
-  // overlay (matches the presets' authored ~6b alpha).
-  if (primary) next['--highlightColor'] = rgbaToString({ ...primary, a: '6b' });
   return next;
 }
 
@@ -122,8 +120,8 @@ function loadCustomColors(base: PresetName): ThemeColors {
 }
 
 function resolveColors(theme: ThemeName): ThemeColors {
-  // Presets keep their hand-authored hover/highlight values; custom palettes
-  // derive them from the essentials so they always stay coherent.
+  // Presets keep their hand-authored hover values; custom palettes derive them
+  // from the page essentials so they always stay coherent.
   return theme === 'custom' ? deriveDependents(loadCustomColors(basePreset)) : { ...PRESETS[theme] };
 }
 
@@ -176,7 +174,7 @@ function setColor(token: ThemeTokenKey, inputHex: string) {
     currentTheme = 'custom';
   }
   currentColors[token] = inputHex + alphaSuffix(currentColors[token]);
-  // Recompute hover/highlight from the (possibly just-changed) essentials.
+  // Recompute page hover states from the (possibly just-changed) essentials.
   currentColors = deriveDependents(currentColors);
   applyColors(currentColors);
   persist();
@@ -191,15 +189,19 @@ export function getTheme(): ThemeName {
 // ---- editor UI -------------------------------------------------------------
 
 function buildRows() {
-  const groups: Record<'essential' | 'advanced', JQuery<HTMLElement>> = {
-    essential: $('#theme-essential'),
-    advanced: $('#theme-advanced'),
-  };
-  if (!groups.essential.length) return;
-  groups.essential.empty();
-  groups.advanced.empty();
+  // One container per (section, tier); ids match the markup in theme-modal.ejs.
+  const containers = new Map<string, JQuery<HTMLElement>>();
+  let anyFound = false;
+  TOKENS.forEach(({ section, tier }) => {
+    const id = `${section}-${tier}`;
+    if (containers.has(id)) return;
+    const el = $(`#theme-${id}`);
+    if (el.length) anyFound = true;
+    containers.set(id, el.empty());
+  });
+  if (!anyFound) return;
 
-  TOKENS.forEach(({ key, label, group }) => {
+  TOKENS.forEach(({ key, label, section, tier }) => {
     const inputId = `theme-input-${key}`;
     const row = $(`
       <div class="theme-row">
@@ -208,7 +210,7 @@ function buildRows() {
         <input type="color" id="${inputId}" class="theme-color-input" data-token="${key}" />
       </div>
     `);
-    groups[group].append(row);
+    containers.get(`${section}-${tier}`)?.append(row);
   });
 
   $('.theme-color-input').on('input', function () {
