@@ -1,13 +1,16 @@
-<div id="chat-area" data-active-tab="chat">
+<div id="chat-area" data-active-tab="<%= archive ? 'games' : 'chat' %>">
   <div id="tab-bar">
+    <% if (!archive) { %>
     <button class="tab-btn active" data-tab="chat">Chat</button>
+    <% } %>
     <button class="tab-btn" data-tab="moves">Moves</button>
     <button class="tab-btn" data-tab="graphs">Graphs</button>
     <button class="tab-btn" data-tab="results">Results</button>
-    <button class="tab-btn" data-tab="games">Games</button>
+    <button class="tab-btn<%= archive ? ' active' : '' %>" data-tab="games">Games</button>
     <button class="tab-btn" data-tab="details">Details</button>
   </div>
 
+  <% if (!archive) { %>
   <div id="chat-tab-panel" class="tab-panel">
     <div class="card fluid" id="chat-box"></div>
     <input placeholder="Anonymous" id="username" />
@@ -15,6 +18,7 @@
     <input placeholder="Type your message here..." id="chat-msg" />
     <button class="primary" id="chat-btn">Send</button>
   </div>
+  <% } %>
 
   <div id="moves-tab-panel" class="tab-panel">
     <div class="card fluid" id="moves-card">
@@ -24,9 +28,11 @@
           <button id="copy-fen-btn" title="Copy FEN">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
           </button>
+          <% if (!archive) { %>
           <a href="/<%= port %>/pgn" target="_blank" id="pgn-btn" title="Download PGN">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           </a>
+          <% } %>
         </div>
       </div>
       <div id="move-list"></div>
@@ -63,10 +69,12 @@
         <span class="details-link-label">PGN Archive</span>
         <svg class="details-link-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
       </a>
+      <% if (!archive) { %>
       <a href="/<%= port %>/pgn" target="_blank" class="details-link">
         <span class="details-link-label">Current Game PGN</span>
         <svg class="details-link-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
       </a>
+      <% } %>
       <a id="schedule" href="#" target="_blank" class="details-link" hidden>
         <span class="details-link-label">Schedule</span>
         <svg class="details-link-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>

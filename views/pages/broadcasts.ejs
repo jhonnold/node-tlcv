@@ -129,6 +129,30 @@
         <% }); %>
       </div>
       <% } %>
+
+      <% if (archived && archived.length) { %>
+      <%
+        function formatArchiveDate(iso) {
+          var d = new Date(iso);
+          if (isNaN(d.getTime())) return '';
+          return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+      %>
+      <div class="page-header">
+        <h2>Previous Broadcasts</h2>
+      </div>
+      <div class="archive-grid">
+        <% archived.forEach(function(t) { %>
+        <a href="/archive/<%= t.slug %>" class="archive-card">
+          <div class="archive-title"><%= t.site %></div>
+          <div class="archive-meta">
+            <span class="archive-games"><%= t.gameCount %> game<%= t.gameCount === 1 ? '' : 's' %></span>
+            <span class="archive-date"><%= formatArchiveDate(t.updated) %></span>
+          </div>
+        </a>
+        <% }); %>
+      </div>
+      <% } %>
     </div>
     <%- include('../partials/footer') %>
   </body>

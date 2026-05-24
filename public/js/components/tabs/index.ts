@@ -22,6 +22,10 @@ function switchTab(tab: string) {
 }
 
 export function init() {
+  // Seed from the server-rendered default so archive mode (no Chat tab) can start
+  // on a different tab; falls back to 'chat' for the live page.
+  activeTab = $('#chat-area').attr('data-active-tab') || 'chat';
+
   $('#tab-bar').on('click', '.tab-btn', function handleTabClick() {
     const tab = $(this).attr('data-tab');
     if (tab && tab !== activeTab) {
