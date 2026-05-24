@@ -49,11 +49,16 @@
             'K': 'wK', 'Q': 'wQ', 'R': 'wR', 'B': 'wB', 'N': 'wN', 'P': 'wP',
             'k': 'bK', 'q': 'bQ', 'r': 'bR', 'b': 'bB', 'n': 'bN', 'p': 'bP'
           };
+
+          function cardLabel(b) {
+            var prefix = b.site ? b.site + ' — ' : '';
+            return prefix + b.white + ' vs ' + b.black + ', move ' + b.moveCount;
+          }
         %>
         <% broadcasts.forEach(function(broadcast, idx) { %>
-        <a href="/<%= broadcast.port %>" class="broadcast-card<%= idx === 0 ? ' featured' : '' %>">
+        <a href="/<%= broadcast.port %>" class="broadcast-card<%= idx === 0 ? ' featured' : '' %>" aria-label="<%= cardLabel(broadcast) %>">
           <div class="card-inner">
-            <div class="mini-board">
+            <div class="mini-board" aria-hidden="true">
               <%
                 var ranks = broadcast.fen.split(' ')[0].split('/');
                 ranks.forEach(function(rank, rankIdx) {
@@ -75,7 +80,7 @@
                       var light = (rankIdx + fileIdx) % 2 === 0;
                 %>
                 <div class="sq <%= light ? 'sq-l' : 'sq-d' %>">
-                  <img src="/img/<%= pieceMap[ch] %>.svg" alt="<%= ch %>" />
+                  <img src="/img/<%= pieceMap[ch] %>.svg" alt="" />
                 </div>
                 <%
                       fileIdx++;
