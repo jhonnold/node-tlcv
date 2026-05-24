@@ -1,5 +1,14 @@
 // public/js/components/graphs/index.js
-import { Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip } from 'chart.js';
+import {
+  Chart,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 import type { MoveMetaData, SerializedGame } from '../../../../shared/types';
 import { on } from '../../events/index';
 import { getActiveTab } from '../tabs/index';
@@ -8,13 +17,16 @@ import GRAPH_TYPES from './graph-types';
 import { init as initSelector, setActive } from './selector';
 import { isReplayMode } from '../replay/index';
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip);
+Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend);
 
 // Module state
 let chart: Chart | null = null;
 let chartInitialized = false;
 let activeGraph = 'eval';
 let gameMoves: MoveMetaData[] = [];
+let whiteName = '';
+let blackName = '';
+let kibitzerName = '';
 
 function getCssVar(name: string) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -90,13 +102,15 @@ function createChart() {
   const primaryColor = getCssVar('--primaryColor');
   const graphWhiteColor = getCssVar('--graphWhiteColor');
   const graphBlackColor = getCssVar('--graphBlackColor');
+  const textColor = getCssVar('--textColor');
   const { labels, whiteData, blackData, kibitzerData, yAxis } = prepareChartPayload();
 
   const datasets = [
     {
-      label: 'White',
+      label: whiteName || 'White',
       data: whiteData,
       borderColor: graphWhiteColor,
+      backgroundColor: graphWhiteColor,
       borderWidth: 1.5,
       pointRadius: buildPointRadii(whiteData),
       pointHoverRadius: 5,
@@ -105,9 +119,10 @@ function createChart() {
       spanGaps: true,
     },
     {
-      label: 'Black',
+      label: blackName || 'Black',
       data: blackData,
       borderColor: graphBlackColor,
+      backgroundColor: graphBlackColor,
       borderWidth: 1.5,
       pointRadius: buildPointRadii(blackData),
       pointHoverRadius: 5,
@@ -119,9 +134,10 @@ function createChart() {
 
   if (activeGraph === 'eval') {
     datasets.push({
-      label: 'Kibitzer',
+      label: kibitzerName || 'Kibitzer',
       data: kibitzerData,
       borderColor: primaryColor,
+      backgroundColor: primaryColor,
       borderWidth: 1,
       pointRadius: buildPointRadii(kibitzerData),
       pointHoverRadius: 4,
@@ -152,11 +168,31 @@ function createChart() {
         goTo(elements[0].index + 1);
       },
       scales: {
-        x: { display: false },
+        x: {
+          display: true,
+          title: { display: true, text: 'Move number', color: textColor, font: { size: 11 } },
+          ticks: {
+            color: textColor,
+            font: { size: 10 },
+            autoSkip: true,
+            maxRotation: 0,
+            // `this` is the scale (regular method, not arrow); label is "12. Nf3" / "12... c5"
+            callback(value: string | number) {
+              const label = this.getLabelForValue(value as number);
+              const match = /^(\d+)\.\s/.exec(label); // white's "N. " only; black returns ''
+              return match ? match[1] : '';
+            },
+          },
+          grid: { display: false },
+        },
         y: yAxis,
       },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: textColor, boxWidth: 16, boxHeight: 10, padding: 12, font: { size: 11 } },
+        },
         tooltip: {
           callbacks: {
             title(items) {
@@ -179,13 +215,16 @@ function refreshChart() {
   if (!chartInitialized || !chart) return;
   const { labels, whiteData, blackData, kibitzerData, yAxis } = prepareChartPayload();
   chart.data.labels = labels;
+  chart.data.datasets[0].label = whiteName || 'White';
   chart.data.datasets[0].data = whiteData;
   // @ts-expect-error -- pointRadius exists on line dataset but not on the generic union
   chart.data.datasets[0].pointRadius = buildPointRadii(whiteData);
+  chart.data.datasets[1].label = blackName || 'Black';
   chart.data.datasets[1].data = blackData;
   // @ts-expect-error -- pointRadius exists on line dataset but not on the generic union
   chart.data.datasets[1].pointRadius = buildPointRadii(blackData);
   if (chart.data.datasets[2]) {
+    chart.data.datasets[2].label = kibitzerName || 'Kibitzer';
     chart.data.datasets[2].data = kibitzerData;
     // @ts-expect-error -- pointRadius exists on line dataset but not on the generic union
     chart.data.datasets[2].pointRadius = buildPointRadii(kibitzerData);
@@ -196,6 +235,9 @@ function refreshChart() {
 
 function storeGameData(game: SerializedGame) {
   gameMoves = game.moves || [];
+  whiteName = game.white?.name || '';
+  blackName = game.black?.name || '';
+  kibitzerName = game.kibitzerLiveData?.name || '';
 }
 
 function switchGraphType(type: string) {
