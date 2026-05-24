@@ -30,7 +30,6 @@ export default {
     ],
     admin: ['reset-css', 'mini.css', './public/js/admin.ts', './public/css/main.scss'],
     broadcasts: ['reset-css', 'mini.css', './public/js/broadcasts.ts', './public/css/main.scss'],
-    ['dark-theme']: ['./public/css/dark-theme.scss'],
   },
   output: {
     path: path.resolve('./build/public'),

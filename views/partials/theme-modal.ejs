@@ -1,0 +1,29 @@
+<div id="theme-modal-overlay" class="theme-modal-overlay hidden" aria-hidden="true">
+  <div class="theme-modal card" role="dialog" aria-modal="true" aria-labelledby="theme-modal-title">
+    <div class="theme-modal-header">
+      <h3 id="theme-modal-title">Theme</h3>
+      <button id="theme-modal-close" class="header-btn" title="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div class="theme-preset-row">
+      <label><input type="radio" name="theme-preset" value="light" /> Light</label>
+      <label><input type="radio" name="theme-preset" value="dark" /> Dark</label>
+      <label><input type="radio" name="theme-preset" value="custom" /> Custom</label>
+    </div>
+
+    <div id="theme-essential" class="theme-rows"></div>
+
+    <p class="theme-note">Hover and highlight colors are calculated automatically from your accent, surface, and background.</p>
+
+    <details class="theme-advanced">
+      <summary>Advanced colors</summary>
+      <div id="theme-advanced" class="theme-rows"></div>
+    </details>
+
+    <div class="theme-modal-footer">
+      <button id="theme-reset" type="button">Reset to preset</button>
+    </div>
+  </div>
+</div>

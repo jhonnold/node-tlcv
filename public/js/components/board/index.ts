@@ -21,11 +21,13 @@ let navKibitzerAlg: string | null = null;
 let navThinkingAlg: string | null = null;
 let navMoveColor: ColorCode | null = null;
 
-const WHITE_ARROW_COLOR = '#DDDDDDDD';
-const BLACK_ARROW_COLOR = '#222222DD';
-const KIBITZER_ARROW_LIGHT = '#114F8ADD';
-const KIBITZER_ARROW_DARK = '#68C07BDD';
 const EMPTY_FEN = '8/8/8/8/8/8/8/8';
+
+// Arrow colors are theme tokens (see theme/presets.ts) so they follow the active
+// palette and any custom overrides. Read live at draw time, falling back to the
+// light-preset value if the token is unset (e.g. read before the theme applies).
+const getCssVar = (name: string, fallback: string): string =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
 function updatePvBoards(fens: { white: string; black: string }) {
   pvBoardWhite!.position(fens.white, false);
@@ -66,8 +68,9 @@ function drawArrows() {
   clearArrows();
   if (!lastGameData) return;
 
-  const theme = localStorage.getItem('theme') || 'light';
-  const kibitzerArrowColor = theme === 'dark' ? KIBITZER_ARROW_DARK : KIBITZER_ARROW_LIGHT;
+  const whiteArrow = getCssVar('--whiteArrowColor', '#ddddddDD');
+  const blackArrow = getCssVar('--blackArrowColor', '#222222DD');
+  const kibitzerArrowColor = getCssVar('--kibitzerArrowColor', '#114f8aDD');
 
   let kMove: string;
   let fMove: string;
@@ -83,14 +86,14 @@ function drawArrows() {
     kMove = lastGameData.kibitzerLiveData?.pvAlg || '';
     fMove = lastMeta?.pvFollowup || '';
     tMove = pvAlg;
-    tMoveColor = color === 'w' ? WHITE_ARROW_COLOR : BLACK_ARROW_COLOR;
-    fMoveColor = color === 'w' ? BLACK_ARROW_COLOR : WHITE_ARROW_COLOR;
+    tMoveColor = color === 'w' ? whiteArrow : blackArrow;
+    fMoveColor = color === 'w' ? blackArrow : whiteArrow;
   } else {
     kMove = navKibitzerAlg || '';
     fMove = navFollowup || '';
     tMove = navThinkingAlg || '';
-    tMoveColor = navMoveColor === 'w' ? WHITE_ARROW_COLOR : BLACK_ARROW_COLOR;
-    fMoveColor = navMoveColor === 'w' ? BLACK_ARROW_COLOR : WHITE_ARROW_COLOR;
+    tMoveColor = navMoveColor === 'w' ? whiteArrow : blackArrow;
+    fMoveColor = navMoveColor === 'w' ? blackArrow : whiteArrow;
   }
 
   // Group arrows by move and blend overlapping colors

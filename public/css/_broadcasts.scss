@@ -117,12 +117,12 @@
 }
 
 .pc-white {
-  background: #fff;
+  background: var(--pieceWhiteColor);
 }
 
 .pc-black {
-  background: #222;
-  border-color: #222;
+  background: var(--pieceBlackColor);
+  border-color: var(--pieceBlackColor);
 }
 
 .player-name {
