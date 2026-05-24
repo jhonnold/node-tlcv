@@ -2,7 +2,7 @@
 import $ from 'jquery';
 import type { H2HCell, StandingsRow } from '../../../../shared/types';
 import { on } from '../../events/index';
-import { getPort } from '../../utils/url';
+import { apiBase } from '../../utils/url';
 
 function renderH2HCell(cell: H2HCell, isSelf: boolean) {
   const $td = $('<td>').addClass('results-h2h-cell');
@@ -69,7 +69,7 @@ function fetchAndRender() {
   $container.html('<p class="results-loading">Loading results...</p>');
 
   $.ajax({
-    url: `/${getPort()}/result-table/json`,
+    url: `${apiBase()}/result-table/json`,
     method: 'GET',
     dataType: 'json',
   })

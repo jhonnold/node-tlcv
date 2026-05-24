@@ -20,16 +20,20 @@ import { init as initFocus } from './components/focus/index';
 import { init as initFlip } from './components/flip/index';
 import { init as initSounds } from './components/sounds/index';
 import { chatHeight, updateLayout } from './components/board/resize';
-import { getPort } from './utils/url';
+import { getPort, isArchive } from './utils/url';
 
-// Get port from URL
-const port = getPort();
+// Archive (previous broadcast) pages are read-only and disk-backed: no live socket,
+// no chat. The games component drives the board via replay events instead.
+const archive = isArchive();
+
+// Get port from URL (live mode only)
+const port = archive ? 0 : getPort();
 
 // Initialize socket
 const socket = io({ autoConnect: false });
 
-// Pass socket to chat component
-setSocket(socket);
+// Pass socket to chat component (live mode only)
+if (!archive) setSocket(socket);
 
 // Cached state for delta merging
 let cachedState: GameEventData | null = null;
@@ -89,7 +93,7 @@ function init() {
   initGames();
   initReplay();
   initGraphs();
-  initChat();
+  if (!archive) initChat();
   initFocus();
   initFlip();
   initSounds();
@@ -100,11 +104,12 @@ function init() {
   // Setup window resize handler
   $(window).on('resize', handleWindowResize);
 
-  // Socket event handlers
-  setupSocketEvents();
-
-  // Connect!
-  socket.connect();
+  // Live mode only: wire and open the socket. Archive mode is populated from disk
+  // by the games component (auto-loads the latest game on init).
+  if (!archive) {
+    setupSocketEvents();
+    socket.connect();
+  }
 }
 
 // Start when DOM is ready

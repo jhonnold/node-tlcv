@@ -207,3 +207,59 @@
   padding: 40px;
   color: var(--textColor);
 }
+
+// Previous broadcasts (archive)
+.archive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 12px;
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.archive-card {
+  display: block;
+  min-width: 0;
+  background: var(--surfaceColor);
+  border: 1px solid var(--surfaceColorHover);
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+
+  &:link,
+  &:visited {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  &:hover {
+    background: var(--surfaceColorHover);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02);
+  }
+}
+
+.archive-title {
+  font-weight: 600;
+  font-size: 0.95em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.archive-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 0.8em;
+  color: var(--textColor);
+}
+
+.archive-date {
+  font-family: monospace;
+}

@@ -1,7 +1,7 @@
 import $ from 'jquery';
 import type { GameRecord, StoredGameMeta } from '../../../../shared/types';
 import { on, emit } from '../../events/index';
-import { getPort } from '../../utils/url';
+import { apiBase, isArchive } from '../../utils/url';
 
 const DOWNLOAD_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
@@ -60,7 +60,7 @@ function renderGames(games: GameRecord[]) {
 
 function loadReplay(gameNumber: number) {
   $.ajax({
-    url: `/${getPort()}/games/${gameNumber}/meta`,
+    url: `${apiBase()}/games/${gameNumber}/meta`,
     method: 'GET',
     dataType: 'json',
   })
@@ -79,7 +79,7 @@ function fetchAndRender() {
   $container.html('<p class="games-loading">Loading games...</p>');
 
   $.ajax({
-    url: `/${getPort()}/games/json`,
+    url: `${apiBase()}/games/json`,
     method: 'GET',
     dataType: 'json',
   })
@@ -92,8 +92,28 @@ function fetchAndRender() {
     });
 }
 
+// Archive pages have no live feed, so open them on the most recent finished game
+// (highest game number with a saved meta sidecar) to avoid landing on a blank board.
+function autoLoadLatest() {
+  $.ajax({
+    url: `${apiBase()}/games/json`,
+    method: 'GET',
+    dataType: 'json',
+  }).done((data: GameRecord[]) => {
+    const latest = data
+      .filter((g) => g.metaUrl)
+      .reduce<GameRecord | null>((best, g) => (!best || g.gameNumber > best.gameNumber ? g : best), null);
+    if (latest) loadReplay(latest.gameNumber);
+  });
+}
+
 export function init() {
   on('tab:change', ({ tab }) => {
     if (tab === 'games') fetchAndRender();
   });
+
+  if (isArchive()) {
+    fetchAndRender();
+    autoLoadLatest();
+  }
 }

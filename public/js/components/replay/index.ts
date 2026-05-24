@@ -2,6 +2,7 @@ import $ from 'jquery';
 import type { StoredGameMeta } from '../../../../shared/types';
 import { on, emit } from '../../events/index';
 import type { GameEventData } from '../../events/index';
+import { isArchive } from '../../utils/url';
 
 let replaying = false;
 let lastLiveData: GameEventData | null = null;
@@ -67,6 +68,11 @@ function exitReplay() {
 }
 
 function injectBanner() {
+  // The banner is the "return to the live game" affordance. Archive pages have no
+  // live game — every view is a replay of a saved game, and switching games happens
+  // via the Games list — so there's no banner to inject.
+  if (isArchive()) return;
+
   const banner = $('<div id="replay-banner" hidden>')
     .append($('<span class="replay-title">'))
     .append(

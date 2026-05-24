@@ -143,3 +143,10 @@ export type StoredTournamentResults = {
   parsedResults: ParsedResults | null;
   parsedGames: GameRecord[];
 };
+
+export type ArchiveSummary = {
+  slug: string;
+  site: string;
+  updated: string; // ISO 8601 timestamp
+  gameCount: number;
+};
