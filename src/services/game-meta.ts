@@ -9,6 +9,7 @@ const metaCache = new FileCache(/^(\d+)_.+\.meta\.json$/i);
 
 export const loadAll = metaCache.loadAll.bind(metaCache);
 export const invalidate = metaCache.invalidate.bind(metaCache);
+export const getMetaFiles = metaCache.getFiles.bind(metaCache);
 
 export async function getMetaFile(siteSlug: string, gameNumber: number): Promise<StoredGameMeta | null> {
   const files = await metaCache.getFiles(siteSlug);

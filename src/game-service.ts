@@ -7,7 +7,7 @@ import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import type { OpeningResult } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
-import { saveTournamentResults } from './services/tournament-results.js';
+import { saveTournamentResults, invalidateArchiveCache } from './services/tournament-results.js';
 import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
@@ -357,6 +357,7 @@ class GameService {
       const oldSlug = siteSlug(this.game.site);
       invalidatePgnCache(oldSlug);
       invalidateMetaCache(oldSlug);
+      invalidateArchiveCache(oldSlug);
     }
     this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
 

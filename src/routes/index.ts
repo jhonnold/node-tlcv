@@ -3,7 +3,7 @@ import broadcasts, { Broadcast } from '../broadcast.js';
 import { siteSlug } from '../util/index.js';
 import { getFiles } from '../services/pgn-cache.js';
 import { getMetaFile, getMetaFileUrl } from '../services/game-meta.js';
-import { listArchivedTournaments, loadTournamentResults } from '../services/tournament-results.js';
+import { listArchivedTournaments, loadOrReconstructArchive } from '../services/tournament-results.js';
 import type { GameRecord, StoredTournamentResults } from '../../shared/types.js';
 
 interface RequestWithBroadcast extends Request {
@@ -159,7 +159,7 @@ router.use('/archive/:slug', async (req: Request, res: Response, next: NextFunct
     return;
   }
 
-  const archive = await loadTournamentResults(slug);
+  const archive = await loadOrReconstructArchive(slug);
   if (!archive) {
     res.redirect('/');
     return;
