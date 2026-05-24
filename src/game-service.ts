@@ -7,6 +7,7 @@ import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import type { OpeningResult } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
+import { saveTournamentResults } from './services/tournament-results.js';
 import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
@@ -393,6 +394,10 @@ class GameService {
       if (games.length > 0) {
         this.broadcast.parsedGames = games;
         this.broadcast.currentGameNumber = games[0].gameNumber + 1;
+
+        // Persist the latest standings + schedule (fixed filename, overwritten each dump).
+        // Fire-and-forget: saveTournamentResults catches all errors internally.
+        saveTournamentResults(this.broadcast);
       }
       this.gamesParseTimer = null;
     }, 100);
