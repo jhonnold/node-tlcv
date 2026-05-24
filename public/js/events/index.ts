@@ -17,6 +17,7 @@ type EventMap = {
   'nav:position': NavPosition;
   'tab:change': { tab: string };
   'theme:change': { theme: string };
+  'pieces:change': { set: string };
   'board:resize': undefined;
   'board:flip': { flipped: boolean };
   'game:replay': StoredGameMeta;
