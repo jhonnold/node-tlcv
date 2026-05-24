@@ -34,38 +34,47 @@ export type ThemeTokenKey =
 
 export type ThemeColors = Record<ThemeTokenKey, string>;
 
-export type TokenGroup = 'essential' | 'advanced';
+// Tokens are organized along two orthogonal dimensions: which part of the UI
+// they theme (`section`) and how prominent they are in the editor (`tier`). The
+// editor renders one block per section with the advanced tier behind a collapse.
+export type TokenSection = 'page' | 'board';
+export type TokenTier = 'essential' | 'advanced';
 
 export interface TokenMeta {
   key: ThemeTokenKey;
   label: string;
-  group: TokenGroup;
+  section: TokenSection;
+  tier: TokenTier;
 }
 
-// The curated subset of tokens exposed in the editor.
+// The curated subset of tokens exposed in the editor, grouped by section so the
+// chess board's colors are fully separate from the rest of the page.
 //
 // Tokens omitted here are NOT user-editable, for two reasons:
-//   - Derived (see DERIVED_TOKENS / deriveDependents in ./index.ts): for custom
-//     themes these are auto-calculated from the essentials so hover/highlight
-//     always stay coherent with the chosen accent/surface — `--primaryColorHover`,
-//     `--surfaceColorHover`, `--highlightColor`.
+//   - Derived (see deriveDependents in ./index.ts): for custom themes these are
+//     auto-calculated from the page essentials so hover states always stay
+//     coherent with the chosen accent/surface — `--primaryColorHover`,
+//     `--surfaceColorHover`.
 //   - Preset-only / niche: `--cardTextColor`, `--pieceWhiteColor`,
 //     `--pieceBlackColor`, `--kibitzerColor`.
 export const TOKENS: TokenMeta[] = [
-  { key: '--primaryColor', label: 'Accent', group: 'essential' },
-  { key: '--backgroundColor', label: 'Background', group: 'essential' },
-  { key: '--surfaceColor', label: 'Surface', group: 'essential' },
-  { key: '--textColor', label: 'Text', group: 'essential' },
-  { key: '--boardLight', label: 'Board — light squares', group: 'essential' },
-  { key: '--boardDark', label: 'Board — dark squares', group: 'essential' },
-  { key: '--secondaryColor', label: 'Secondary accent', group: 'advanced' },
-  { key: '--graphWhiteColor', label: 'Graph — white', group: 'advanced' },
-  { key: '--graphBlackColor', label: 'Graph — black', group: 'advanced' },
-  { key: '--evalBarWhite', label: 'Eval bar — white', group: 'advanced' },
-  { key: '--evalBarBlack', label: 'Eval bar — black', group: 'advanced' },
-  { key: '--whiteArrowColor', label: 'White move arrow', group: 'advanced' },
-  { key: '--blackArrowColor', label: 'Black move arrow', group: 'advanced' },
-  { key: '--kibitzerArrowColor', label: 'Kibitzer arrow', group: 'advanced' },
+  // Page
+  { key: '--primaryColor', label: 'Accent', section: 'page', tier: 'essential' },
+  { key: '--backgroundColor', label: 'Background', section: 'page', tier: 'essential' },
+  { key: '--surfaceColor', label: 'Surface', section: 'page', tier: 'essential' },
+  { key: '--textColor', label: 'Text', section: 'page', tier: 'essential' },
+  { key: '--secondaryColor', label: 'Secondary accent', section: 'page', tier: 'advanced' },
+  { key: '--graphWhiteColor', label: 'Graph — white', section: 'page', tier: 'advanced' },
+  { key: '--graphBlackColor', label: 'Graph — black', section: 'page', tier: 'advanced' },
+  { key: '--evalBarWhite', label: 'Eval bar — white', section: 'page', tier: 'advanced' },
+  { key: '--evalBarBlack', label: 'Eval bar — black', section: 'page', tier: 'advanced' },
+  // Board
+  { key: '--boardLight', label: 'Light squares', section: 'board', tier: 'essential' },
+  { key: '--boardDark', label: 'Dark squares', section: 'board', tier: 'essential' },
+  { key: '--highlightColor', label: 'Last-move highlight', section: 'board', tier: 'essential' },
+  { key: '--whiteArrowColor', label: 'White move arrow', section: 'board', tier: 'advanced' },
+  { key: '--blackArrowColor', label: 'Black move arrow', section: 'board', tier: 'advanced' },
+  { key: '--kibitzerArrowColor', label: 'Kibitzer arrow', section: 'board', tier: 'advanced' },
 ];
 
 export const PRESETS: Record<PresetName, ThemeColors> = {
