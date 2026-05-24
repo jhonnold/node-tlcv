@@ -14,6 +14,7 @@
 
 .broadcast-card {
   display: block;
+  min-width: 0; // allow the grid item to shrink below its min-content (fixes #154)
   background: var(--surfaceColor);
   border: 1px solid var(--surfaceColorHover);
   border-radius: 8px;
