@@ -95,8 +95,17 @@ function deriveDependents(colors: ThemeColors): ThemeColors {
   const surface = parseColor(colors['--surfaceColor']);
   const next = { ...colors };
   if (primary && bg) next['--primaryColorHover'] = rgbaToString(shadeForContrast(primary, bg));
-  if (surface && bg) next['--surfaceColorHover'] = rgbaToString(shadeForContrast(surface, bg));
-  if (primary) next['--highlightColor'] = rgbaToString({ ...primary, a: '66' });
+  if (surface && bg) {
+    // Surface-hover doubles as borders/row-hover. Don't inherit the surface's
+    // own alpha (which is high on light themes and would make hovers heavy);
+    // instead use a subtle wash on light backgrounds and a solid lift on dark.
+    const hover = shadeForContrast(surface, bg);
+    hover.a = luminance(bg) < 0.5 ? '' : '40';
+    next['--surfaceColorHover'] = rgbaToString(hover);
+  }
+  // Move-highlight follows the accent so it stays coherent; keep a translucent
+  // overlay (matches the presets' authored ~6b alpha).
+  if (primary) next['--highlightColor'] = rgbaToString({ ...primary, a: '6b' });
   return next;
 }
 
@@ -121,7 +130,10 @@ function resolveColors(theme: ThemeName): ThemeColors {
 function persist() {
   localStorage.setItem(THEME_KEY, currentTheme);
   localStorage.setItem(BASE_KEY, basePreset);
+  // Clear the saved palette when on a preset so re-selecting "Custom" starts
+  // from the current preset rather than resurrecting a discarded palette.
   if (currentTheme === 'custom') localStorage.setItem(CUSTOM_KEY, JSON.stringify(currentColors));
+  else localStorage.removeItem(CUSTOM_KEY);
 }
 
 function getPreferredTheme(): ThemeName {
@@ -220,10 +232,12 @@ function openModal() {
 }
 
 function closeModal() {
+  const overlay = $('#theme-modal-overlay');
+  if (overlay.hasClass('hidden')) return; // already closed — don't steal focus
   // Return focus to the trigger before hiding so we never set aria-hidden on an
   // ancestor of the focused element.
   $('#theme-toggle').trigger('focus');
-  $('#theme-modal-overlay').addClass('hidden').attr('aria-hidden', 'true');
+  overlay.addClass('hidden').attr('aria-hidden', 'true');
 }
 
 export function init() {
@@ -254,6 +268,7 @@ export function init() {
 }
 
 export function destroy() {
+  if (debounceHandle) clearTimeout(debounceHandle);
   $('#theme-toggle').off('click');
   $('#theme-modal-close').off('click');
   $('#theme-modal-overlay').off('click');

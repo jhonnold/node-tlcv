@@ -28,7 +28,9 @@ export type ThemeTokenKey =
   | '--evalBarBlack'
   | '--whiteArrowColor'
   | '--blackArrowColor'
-  | '--kibitzerArrowColor';
+  | '--kibitzerArrowColor'
+  // Non-color theme variable: chat/PV text weight (dark themes read lighter).
+  | '--chatFontWeight';
 
 export type ThemeColors = Record<ThemeTokenKey, string>;
 
@@ -89,6 +91,7 @@ export const PRESETS: Record<PresetName, ThemeColors> = {
     '--whiteArrowColor': '#ddddddDD',
     '--blackArrowColor': '#222222DD',
     '--kibitzerArrowColor': '#114f8aDD',
+    '--chatFontWeight': '500',
   },
   dark: {
     '--primaryColor': '#9fc0a2',
@@ -112,6 +115,7 @@ export const PRESETS: Record<PresetName, ThemeColors> = {
     '--whiteArrowColor': '#ddddddDD',
     '--blackArrowColor': '#222222DD',
     '--kibitzerArrowColor': '#68c07bDD',
+    '--chatFontWeight': '300',
   },
 };
 

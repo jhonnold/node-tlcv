@@ -24,8 +24,10 @@ let navMoveColor: ColorCode | null = null;
 const EMPTY_FEN = '8/8/8/8/8/8/8/8';
 
 // Arrow colors are theme tokens (see theme/presets.ts) so they follow the active
-// palette and any custom overrides. Read live at draw time.
-const getCssVar = (name: string): string => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+// palette and any custom overrides. Read live at draw time, falling back to the
+// light-preset value if the token is unset (e.g. read before the theme applies).
+const getCssVar = (name: string, fallback: string): string =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
 function updatePvBoards(fens: { white: string; black: string }) {
   pvBoardWhite!.position(fens.white, false);
@@ -66,9 +68,9 @@ function drawArrows() {
   clearArrows();
   if (!lastGameData) return;
 
-  const whiteArrow = getCssVar('--whiteArrowColor');
-  const blackArrow = getCssVar('--blackArrowColor');
-  const kibitzerArrowColor = getCssVar('--kibitzerArrowColor');
+  const whiteArrow = getCssVar('--whiteArrowColor', '#ddddddDD');
+  const blackArrow = getCssVar('--blackArrowColor', '#222222DD');
+  const kibitzerArrowColor = getCssVar('--kibitzerArrowColor', '#114f8aDD');
 
   let kMove: string;
   let fMove: string;
