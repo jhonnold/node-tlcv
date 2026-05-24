@@ -109,6 +109,16 @@ Outbound webhooks POST a notification when a game **starts** or **finishes**. Co
 
 **Game-started detection**: `onPlayer()` fires once per color. `GameService` uses a re-arm state machine (`gameStartArmed` + `startColorsSeen`) — armed at construction and re-armed after each `RESULT`, it fires exactly once per game when both colors have been announced. This avoids keying on the 100ms-debounced `currentGameNumber`.
 
+### Metrics Subsystem
+
+Prometheus metrics via `prom-client`. `src/metrics.ts` owns a single `Registry` (`ccrl_` prefix, plus default Node process metrics) and is scraped at `GET /admin/metrics` (basic-auth protected, same as the rest of `/admin`).
+
+**Gauges** (recomputed at scrape time via `collect()`): `ccrl_broadcasts_active`, `ccrl_broadcast_spectators`, `ccrl_broadcast_browser_connections`, `ccrl_game_move_number`, `ccrl_kibitzer_total`, `ccrl_kibitzer_ready`, `ccrl_kibitzer_target_port` (labeled by `port`/`event`).
+
+**Counters** (incremented inline at the event site): `ccrl_udp_messages_received_total`, `ccrl_udp_messages_out_of_order_total`, `ccrl_commands_processed_total`, `ccrl_chat_messages_total`, `ccrl_spectator_joins_total`, `ccrl_spectator_leaves_total`, `ccrl_socket_emissions_total`, `ccrl_kibitzer_assignments_total`, `ccrl_message_buffer_errors_total`.
+
+Instrumented across `game-service.ts` (commands, chat), `socket-io-adapter.ts` (spectator join/leave, emissions), `transport/udp-transport.ts` (UDP receive, out-of-order), `transport/message-buffer.ts` (buffer errors), and `kibitzer/kibitzer-manager.ts` (assignments). Counters import the specific metric and call `.inc()`; gauges read live state (`broadcasts` map, `KibitzerManager`) at scrape time, so no per-event wiring is needed for them.
+
 ### Frontend Architecture
 
 The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
@@ -169,10 +179,13 @@ The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
 - `/:port/games/json` - Returns game records as JSON (with PGN/meta URLs)
 - `/:port/games/:gameNumber/meta` - Returns metadata sidecar for a specific game
 - `/admin` - Admin panel (basic auth, username: admin)
+- `POST /admin/new` - Open a new broadcast connection at runtime
+- `POST /admin/close` - Close a broadcast connection at runtime
 - `POST /admin/kibitzers` - Add a new kibitzer transport at runtime
 - `DELETE /admin/kibitzers/:id` - Remove a kibitzer transport at runtime
 - `POST /admin/webhooks` - Add a new webhook at runtime
 - `DELETE /admin/webhooks/:id` - Remove a webhook at runtime
+- `GET /admin/metrics` - Prometheus metrics scrape endpoint (basic auth)
 
 ### Client-Server Communication
 
@@ -234,6 +247,7 @@ Environment variables (see `.env.example`; `.env` is gitignored and loaded via `
 - `src/game-service.ts` - Chess server command processing
 - `src/protocol.ts` - Command enum and message parsing
 - `src/socket-io-adapter.ts` - Socket.IO server and emit helpers
+- `src/metrics.ts` - Prometheus registry, gauges/counters, scraped at `/admin/metrics`
 - `src/chess-game.ts` - Chess game state wrapper
 - `src/connection.ts` - Connection lifecycle management
 - `src/broadcast-manager.ts` - Broadcast creation, reconnection, and lifecycle orchestration
