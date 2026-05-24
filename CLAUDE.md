@@ -136,7 +136,7 @@ The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
 - `components/replay/` - Game replay from persistent metadata sidecar files
 - `components/results/` - Tournament results/standings table rendering
 - `components/tabs/` - Tabbed interface (Chat, Moves, Results, Details)
-- `components/theme/` - Dark theme toggle
+- `components/theme/` - Theme selector: applies a color palette as CSS custom properties on `document.documentElement`, persists the choice, and drives the theme editor modal (`presets.ts` holds the Light/Dark presets and editable-token metadata)
 - `components/focus/` - Focus management
 - `utils/` - FEN display, PV text formatting
 - `events/` - Custom event bus for inter-component communication
@@ -149,8 +149,8 @@ The frontend is TypeScript using jQuery and chessboardjs, bundled with Webpack.
 
 **Styles** (`public/css/`): SCSS with partials, compiled by webpack via `sass-loader`:
 - `main.scss` - Entry point that `@use`s all partials
-- `dark-theme.scss` - Standalone dark theme overrides (separate webpack entry)
-- `_variables.scss` - CSS custom properties (`:root` tokens)
+- `_variables.scss` - CSS custom properties (`:root` tokens; the Light theme baseline / pre-JS fallback)
+- `_theme-modal.scss` - Styles for the theme editor modal
 - `_mixins.scss` - Reusable mixins (`mini-table-reset`, `icon-btn`, `sticky-th-header`, `table-status-message`)
 - `_base.scss` - Global element styles, Google Fonts import
 - `_chessboard.scss`, `_layout.scss`, `_board.scss`, `_info-area.scss` - Board/layout components
@@ -279,7 +279,8 @@ Environment variables (see `.env.example`; `.env` is gitignored and loaded via `
 - **FEN backup recovery**: If `chess.js` fails to parse a move, the game reloads from the most recent FEN command — the `fen` field on `ChessGame` is kept as a backup for this purpose.
 - **Sass `@use` ordering**: `@use` rules must appear before all other rules in a `.scss` file. CSS `@import url()` (e.g., Google Fonts) counts as "other rules" — place font imports in a partial like `_base.scss`, not alongside `@use` statements.
 - **Dual CSS/SCSS webpack rules**: `webpack.common.js` has separate rules for `.css` (third-party packages: reset-css, mini.css, chessboardjs) and `.scss` (project styles). Only project styles go through `sass-loader`.
-- **Dark theme isolation**: `dark-theme.scss` is a standalone webpack entry with no `@use` of project partials. It overrides CSS custom properties in `:root` and adds selector-level overrides. Do not add `@use` imports to it.
+- **Theming is JS-applied tokens, not a stylesheet swap**: themes are sets of CSS custom properties applied at runtime by `components/theme/index.ts` via `documentElement.style.setProperty()`. The Light/Dark presets and the editable-token metadata live in `components/theme/presets.ts`; `_variables.scss` holds the Light values as the pre-JS fallback and **must stay in sync** with the `light` preset. There is no longer a separate `dark-theme.scss` bundle. To keep a color themeable, drive it from a token in a partial — never hardcode a color that needs to differ between themes (e.g. `--cardTextColor`, `--pieceBlackColor` were added for exactly this). The editor exposes a curated subset of tokens (essentials + an advanced group); preset-only tokens (`--cardTextColor`, `--pieceWhiteColor`, `--pieceBlackColor`, `--kibitzerColor`) are defined per preset but not user-editable.
+- **Theme persistence + alpha**: `localStorage.theme` holds the preset name (`light`/`dark`/`custom`), `tlcv.customTheme` the custom color map, `tlcv.themeBase` the preset a custom palette derives from. `<input type="color">` only edits `#rrggbb`, so tokens carrying alpha (`--surfaceColor`, `--surfaceColorHover`, `--highlightColor`) preserve their existing 2-digit alpha suffix when edited. `theme:change` is still emitted on every change (debounced for live edits) — `board/` and `graphs/` re-read tokens via `getComputedStyle` on it.
 - **Kibitzer score normalization**: UCI scores are always converted to white's perspective in `uci-parser.ts`. When it's black to move, the raw centipawn score is negated. Mate scores map to ±1,000,000 cp.
 - **Kibitzer priority-based targeting**: `KibitzerManager` assigns configured transports to the top broadcasts by viewer count. The number of simultaneous analyses equals the number of entries in the `kibitzers` config array. Highest-priority transport serves the most-viewed broadcast. A hysteresis threshold of 2 prevents thrashing — currently analyzed broadcasts get a bonus when ranking.
 - **Kibitzer transport lifecycle**: Connection lifecycle (`create`/`teardown`) is separate from analysis lifecycle (`startAnalysis`/`stopAnalysis`). `create()` is called once at startup to establish the engine connection (SSH or local process) and UCI handshake. `teardown()` is only called during graceful shutdown. When moving between broadcasts, only `stopAnalysis()`/`startAnalysis()` are called — the underlying connection stays alive. No automatic restart if an engine crashes or SSH connection drops — `ready` becomes `false` and analysis silently stops.

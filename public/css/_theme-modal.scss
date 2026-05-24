@@ -1,0 +1,134 @@
+.theme-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--universal-padding);
+  background: rgba(0, 0, 0, 0.5);
+
+  &.hidden {
+    display: none;
+  }
+}
+
+.theme-modal {
+  width: min(440px, 100%);
+  max-height: 85vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 16px;
+  // Override the translucent .card surface for a solid, readable panel.
+  background-color: var(--backgroundColor);
+  color: var(--textColor);
+}
+
+.theme-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.theme-preset-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--surfaceColorHover);
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+}
+
+.theme-note {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.theme-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-row {
+  display: grid;
+  grid-template-columns: 1fr auto 36px;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.theme-row-label {
+  font-size: 0.9rem;
+}
+
+.theme-hex {
+  font-family: monospace;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.theme-color-input {
+  width: 36px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--surfaceColorHover);
+  border-radius: var(--universal-border-radius);
+  background: none;
+  cursor: pointer;
+
+  &::-webkit-color-swatch-wrapper {
+    padding: 2px;
+  }
+
+  &::-webkit-color-swatch {
+    border: none;
+    border-radius: 2px;
+  }
+}
+
+.theme-advanced {
+  margin-top: 8px;
+
+  summary {
+    cursor: pointer;
+    font-weight: 500;
+    padding: 6px 0;
+  }
+}
+
+.theme-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+
+  #theme-reset {
+    margin: 0;
+    font-family: var(--fontFamily);
+    font-weight: 500;
+    font-size: 0.85rem;
+    padding: 6px 14px;
+    border-radius: var(--universal-border-radius);
+    cursor: pointer;
+    color: var(--textColor);
+    background: var(--surfaceColor);
+    border: 1px solid var(--surfaceColorHover);
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover {
+      background: var(--surfaceColorHover);
+      border-color: var(--primaryColor);
+    }
+  }
+}

@@ -3,6 +3,8 @@
   white-space: nowrap;
   margin-bottom: 0;
   padding-bottom: var(--universal-margin);
+  font-weight: 300;
+  color: var(--cardTextColor);
 }
 
 .spectator-wrapper {
@@ -22,6 +24,7 @@
 }
 
 #chat-area input {
+  color: var(--cardTextColor);
   border-color: var(--surfaceColorHover);
   background-color: var(--surfaceColor);
 
@@ -39,6 +42,7 @@
   height: 100%;
   grid-row: 1 / 3;
   grid-column: 1;
+  font-weight: 300;
 
   em,
   i {
