@@ -60,9 +60,11 @@ router.get('/', async (_: Request, res: Response): Promise<void> => {
   // scanned meta-only folders on every `/` hit — uncached, synchronous JSON.parse on
   // the site's most-trafficked route, which drained the host's CPU credits. Tournament
   // data is still persisted (saveTournamentResults) and reachable via /archive/:slug.
-  // The broadcasts.ejs archive section is guarded by `archived?.length`, so omitting it
-  // simply hides the section. Re-enable via a cached listing if/when needed.
-  res.render('pages/broadcasts', { broadcasts: broadcastList });
+  // We still pass `archived: []` because broadcasts.ejs references the variable under
+  // EJS's `with(locals)` scope — omitting it entirely throws a ReferenceError. The
+  // empty array makes the template's `archived && archived.length` guard hide the
+  // section. Re-enable via a cached listing if/when needed.
+  res.render('pages/broadcasts', { broadcasts: broadcastList, archived: [] });
 });
 
 router.get('/broadcasts', (_: Request, res: Response): void => {
