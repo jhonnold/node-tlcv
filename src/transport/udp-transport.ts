@@ -12,7 +12,7 @@ export class UdpTransport {
   private onParsedMessage: MessageCallback;
   private closed: boolean;
 
-  constructor(host: string, port: number, onParsedMessage: MessageCallback) {
+  constructor(host: string, port: number, onParsedMessage: MessageCallback, ephemeral = false) {
     this.host = host;
     this.port = port;
     this.onParsedMessage = onParsedMessage;
@@ -24,11 +24,19 @@ export class UdpTransport {
     this.socket.on('listening', this.onListening.bind(this));
     this.socket.on('message', this.onMessage.bind(this));
 
-    // The local socket MUST bind the broadcast port: the TLCS server streams the
-    // broadcast to clientIP:<broadcast port> and ignores the source port of our
-    // LOGON entirely (verified empirically). Binding any other port receives
-    // nothing. This is why two instances on one host cannot share a broadcast.
-    this.socket.bind(port);
+    if (ephemeral) {
+      // Ephemeral mode (opt-in, e.g. for uci-to-tlcs): bind an OS-assigned local
+      // port. The server replies to our source port instead of the broadcast
+      // port, so we can receive without binding the broadcast port. This lets
+      // multiple instances on one host watch the same broadcast (no EADDRINUSE).
+      this.socket.bind();
+    } else {
+      // Classic TLCS: the local socket MUST bind the broadcast port. The server
+      // streams the broadcast to clientIP:<broadcast port> and ignores the source
+      // port of our LOGON entirely (verified empirically). Binding any other port
+      // receives nothing, and two instances on one host cannot share a broadcast.
+      this.socket.bind(port);
+    }
   }
 
   private onError(err: Error): void {
@@ -40,7 +48,9 @@ export class UdpTransport {
 
   private onListening(): void {
     const address = this.socket.address();
-    logger.info(`Listening @ ${address.address}:${address.port}`, { port: this.port });
+    logger.info(`Listening @ ${address.address}:${address.port} (broadcast ${this.host}:${this.port})`, {
+      port: this.port,
+    });
   }
 
   private onMessage(msg: Buffer, rInfo: RemoteInfo): void {

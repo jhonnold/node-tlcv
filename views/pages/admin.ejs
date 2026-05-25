@@ -22,6 +22,7 @@
               <th>Site</th>
               <th>Host</th>
               <th>Port</th>
+              <th>Ephemeral</th>
               <th>Close</th>
             </tr>
           </thead>
@@ -31,6 +32,7 @@
               <td data-label="Site"><%= broadcast.game.site || '—' %></td>
               <td data-label="Host"><%= broadcast.host %></td>
               <td data-label="Port"><%= broadcast.port %></td>
+              <td data-label="Ephemeral"><%= broadcast.ephemeral ? 'Yes' : '—' %></td>
               <td data-label="Close">
                 <button class="secondary close" data-connection="<%= broadcast.connection %>">Close</button>
               </td>
@@ -42,6 +44,11 @@
           <div class="field">
             <label for="connection">Connection</label>
             <input id="connection" name="connection" required placeholder="GrahamCCRL.dyndns.org:16000" />
+          </div>
+          <div class="field">
+            <label class="webhook-event-option">
+              <input type="checkbox" id="ephemeral" name="ephemeral" /> Ephemeral local port
+            </label>
           </div>
           <button type="submit" class="primary">Add new</button>
         </form>

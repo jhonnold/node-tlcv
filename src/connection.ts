@@ -6,9 +6,9 @@ class Connection {
 
   private messageBuffer: MessageBuffer;
 
-  constructor(host: string, port: number, onBatch: BatchConsumer) {
+  constructor(host: string, port: number, onBatch: BatchConsumer, ephemeral = false) {
     this.messageBuffer = new MessageBuffer(port, onBatch);
-    this.transport = new UdpTransport(host, port, (msg) => this.messageBuffer.push(msg));
+    this.transport = new UdpTransport(host, port, (msg) => this.messageBuffer.push(msg), ephemeral);
   }
 
   send(msg: string): void {

@@ -30,22 +30,22 @@ export function getWebhookManager(): WebhookManager | null {
 export async function connect(): Promise<void> {
   const connections = await configStore.getConnections();
 
-  for (const c of connections) {
-    const [url, port] = c.split(':');
+  for (const { connection, ephemeral } of connections) {
+    const [url, port] = connection.split(':');
     const ip = await lookup(url);
 
-    broadcasts.set(+port, new Broadcast(url, ip, +port, _kibitzerManager ?? undefined));
+    broadcasts.set(+port, new Broadcast(url, ip, +port, _kibitzerManager ?? undefined, ephemeral));
   }
 }
 
-export async function newConnection(connection: string): Promise<void> {
+export async function newConnection(connection: string, ephemeral = false): Promise<void> {
   const [url, port] = connection.split(':');
   const ip = await lookup(url);
 
   if (broadcasts.has(+port)) throw Error('Port already in use!');
 
-  broadcasts.set(+port, new Broadcast(url, ip, +port, _kibitzerManager ?? undefined));
-  await configStore.addConnection(connection);
+  broadcasts.set(+port, new Broadcast(url, ip, +port, _kibitzerManager ?? undefined, ephemeral));
+  await configStore.addConnection(connection, ephemeral);
 }
 
 export async function closeConnection(connection: string): Promise<void> {

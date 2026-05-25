@@ -3,10 +3,22 @@ import path from 'node:path';
 import type { KibitzerConfig } from '../kibitzer/types.js';
 import type { WebhookConfig } from '../webhooks/types.js';
 
+export interface ConnectionConfig {
+  connection: string;
+  ephemeral?: boolean;
+}
+
+/** A connections entry is either a bare "host:port" string or a config object. */
+export type ConnectionEntry = string | ConnectionConfig;
+
 export interface AppConfig {
-  connections: string[];
+  connections: ConnectionEntry[];
   kibitzers?: KibitzerConfig[];
   webhooks?: WebhookConfig[];
+}
+
+function normalizeConnection(entry: ConnectionEntry): ConnectionConfig {
+  return typeof entry === 'string' ? { connection: entry, ephemeral: false } : { ephemeral: false, ...entry };
 }
 
 export class ConfigStore {
@@ -26,20 +38,24 @@ export class ConfigStore {
     await fs.writeFile(this.configPath, JSON.stringify(config, null, 2), { encoding: 'utf8' });
   }
 
-  async getConnections(): Promise<string[]> {
+  async getConnections(): Promise<ConnectionConfig[]> {
     const config = await this.load();
-    return config.connections;
+    return config.connections.map(normalizeConnection);
   }
 
-  async addConnection(connection: string): Promise<void> {
+  async addConnection(connection: string, ephemeral = false): Promise<void> {
     const config = await this.load();
-    config.connections = [...new Set([...config.connections, connection])];
+    const existing = config.connections.filter((c) => normalizeConnection(c).connection !== connection);
+    // Keep the file tidy: a bare string for the default mode, an object only when
+    // ephemeral is set. Reads tolerate both forms via normalizeConnection().
+    const entry: ConnectionEntry = ephemeral ? { connection, ephemeral: true } : connection;
+    config.connections = [...existing, entry];
     await this.save(config);
   }
 
   async removeConnection(connection: string): Promise<void> {
     const config = await this.load();
-    config.connections = config.connections.filter((c) => c !== connection);
+    config.connections = config.connections.filter((c) => normalizeConnection(c).connection !== connection);
     await this.save(config);
   }
 

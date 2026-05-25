@@ -16,6 +16,7 @@ export class Broadcast {
   readonly host: string;
   readonly ip: string;
   readonly port: number;
+  readonly ephemeral: boolean;
   readonly game: ChessGame;
   readonly kibitzerManager: KibitzerManager | null;
   private state: BroadcastState;
@@ -23,16 +24,17 @@ export class Broadcast {
   private conn: Connection;
   private pings!: NodeJS.Timeout;
 
-  constructor(host: string, ip: string, port: number, kibitzerManager?: KibitzerManager) {
+  constructor(host: string, ip: string, port: number, kibitzerManager?: KibitzerManager, ephemeral = false) {
     this.host = host;
     this.ip = ip;
     this.port = port;
+    this.ephemeral = ephemeral;
 
     this.kibitzerManager = kibitzerManager ?? null;
     this.state = new BroadcastState();
     this.game = new ChessGame(String(this.port));
     this.gameService = new GameService(this);
-    this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this));
+    this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this), this.ephemeral);
 
     this.connect();
     this.reloadResults();
@@ -64,7 +66,7 @@ export class Broadcast {
     this.conn.close();
 
     setTimeout(() => {
-      this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this));
+      this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this), this.ephemeral);
       this.connect();
     }, 500);
   }
