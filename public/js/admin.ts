@@ -15,11 +15,11 @@ function closeBroadcast(connection: string) {
   });
 }
 
-function addNewBroadcast(connection: string) {
+function addNewBroadcast(connection: string, ephemeral: boolean) {
   $.ajax({
     type: 'POST',
     url: '/admin/new',
-    data: JSON.stringify({ connection }),
+    data: JSON.stringify({ connection, ephemeral }),
     contentType: 'application/json',
     complete() {
       window.location.reload();
@@ -162,7 +162,8 @@ $(document).ready(() => {
     e.preventDefault();
     const connection = $('#connection').val() as string;
     if (!connection) return;
-    addNewBroadcast(connection);
+    const ephemeral = $('#ephemeral').prop('checked') as boolean;
+    addNewBroadcast(connection, ephemeral);
   });
 
   $('button.close').click(function handleClose() {

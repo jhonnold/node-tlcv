@@ -42,10 +42,11 @@ router.post('/close', async (req: Request, res: Response) => {
 
 router.post('/new', async (req: Request, res: Response) => {
   const { connection } = req.body;
+  const ephemeral = Boolean(req.body.ephemeral);
 
   try {
-    logger.info(`Attempting new connection of ${connection}`);
-    await newConnection(connection);
+    logger.info(`Attempting new connection of ${connection}${ephemeral ? ' (ephemeral)' : ''}`);
+    await newConnection(connection, ephemeral);
     res.sendStatus(200);
   } catch (error) {
     logger.warn(`Unable to add connection ${connection}`);

@@ -214,7 +214,7 @@ Socket.IO events:
 Configuration is in `config/config.json`:
 ```json
 {
-  "connections": ["hostname:port", "hostname:port", ...],
+  "connections": ["hostname:port", { "connection": "hostname:port", "ephemeral": true }, ...],
   "kibitzers": [
     { "id": "a1b2c3d4", "type": "local", "priority": 10, "enginePath": "/usr/bin/stockfish", "threads": 4, "hash": 512 },
     { "id": "e5f6g7h8", "type": "ssh", "priority": 5, "host": "example.com", "username": "user", "privateKeyPath": "/path/to/key", "enginePath": "/usr/bin/stockfish", "threads": 8, "hash": 2048 }
@@ -224,6 +224,8 @@ Configuration is in `config/config.json`:
   ]
 }
 ```
+
+Each `connections` entry is either a bare `"host:port"` string (default mode) or an object `{ "connection": "host:port", "ephemeral": true }`. The optional `ephemeral` flag binds an OS-assigned local UDP port instead of the broadcast port (see the UDP bind gotcha below). Both forms are accepted on read; the admin "Add new" form writes a bare string unless the "Ephemeral local port" checkbox is set.
 
 The `kibitzers` array is optional. Each entry has an `id` (auto-assigned at startup if missing), a `type` (`"local"` or `"ssh"`), a `priority` (higher = assigned to more-viewed broadcasts), and type-specific fields. SSH entries also require `host`, `username`, `privateKeyPath`, and `enginePath`. Both types accept optional `port` (SSH only, default 22), `threads` (default 1), and `hash` (default 256).
 
@@ -290,5 +292,6 @@ Environment variables (see `.env.example`; `.env` is gitignored and loaded via `
 - **Webhook game-started dedup**: `GameService` fires one game-started event per game via a re-arm state machine (`gameStartArmed` / `startColorsSeen`). It is re-armed in `onResult()`. Connecting mid-game fires one game-started for the already-in-progress game — accepted.
 - **Webhook URL is a secret**: Discord webhook URLs embed a token. The admin table masks all but the last 8 chars, but the edit button still carries the full URL in a `data-url` attribute (admin page is basic-auth protected).
 - **No-op protocol commands**: `LOGON` (the `LOGON SUCCESSFUL` handshake reply), `FEATURE`, and `level` are recognized in the `Command` enum with no-op handlers (`() => [EmitType.UPDATE, false]`, same pattern as `PONG`). They are connection-time handshake/config lines the viewer derives nothing from (clocks come from `WTIME`/`BTIME`, not `level`); the handlers exist purely to suppress the `Unable to process <cmd>!` warning in `categorizeMessages`.
-- **UDP local bind = broadcast port is mandatory**: `UdpTransport` binds the local socket to the broadcast port (`udp-transport.ts`). This is required, not a convention: the TLCS server streams the broadcast to `clientIP:<broadcast port>` and ignores the source port of our `LOGONv15` (verified empirically — a LOGON sent from a different source port still has its data delivered to the broadcast port). Consequences: you cannot bind an ephemeral local port and still receive data, and two instances on the same host cannot watch the *same* broadcast (both need that port → `EADDRINUSE`). To run multiple worktrees, point each `config/config.json` at a **different** broadcast port.
+- **UDP local bind = broadcast port (default mode)**: by default `UdpTransport` binds the local socket to the broadcast port (`udp-transport.ts`). This is required for classic TLCS, not a convention: the server streams the broadcast to `clientIP:<broadcast port>` and ignores the source port of our `LOGONv15` (verified empirically — a LOGON sent from a different source port still has its data delivered to the broadcast port). Consequences in default mode: you cannot bind an ephemeral local port and still receive data, and two instances on the same host cannot watch the *same* broadcast (both need that port → `EADDRINUSE`). To run multiple worktrees against classic TLCS, point each `config/config.json` at a **different** broadcast port.
+- **Ephemeral mode (opt-in per connection)**: the optional `ephemeral` flag on a `connections` entry calls `socket.bind()` (OS-assigned local port) instead of `socket.bind(<broadcast port>)`. The remote send destination is unchanged (still `host:<broadcast port>`) — only our *source* port differs. This only works against a server that replies to our source port (e.g. the sibling `uci-to-tlcs` broadcaster); classic TLCS (Graham's) still replies to the broadcast port, so ephemeral mode would receive nothing there. Because the broadcast port is not bound, multiple instances on one host **can** watch the same ephemeral broadcast. The broadcast port remains the identity everywhere (Map key, `/:port` route, Socket.IO room, metrics) regardless of mode; the flag is threaded `UdpTransport` ← `Connection` ← `Broadcast` and preserved across `reconnect()`.
 - **No test infrastructure**: This project has no test runner or test files. Verification is done via `npm run build` (TypeScript + webpack) and manual testing.
