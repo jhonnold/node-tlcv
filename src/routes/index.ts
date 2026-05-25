@@ -3,7 +3,7 @@ import broadcasts, { Broadcast } from '../broadcast.js';
 import { siteSlug } from '../util/index.js';
 import { getFiles } from '../services/pgn-cache.js';
 import { getMetaFile, getMetaFileUrl } from '../services/game-meta.js';
-import { listArchivedTournaments, loadOrReconstructArchive } from '../services/tournament-results.js';
+import { loadOrReconstructArchive } from '../services/tournament-results.js';
 import type { GameRecord, StoredTournamentResults } from '../../shared/types.js';
 
 interface RequestWithBroadcast extends Request {
@@ -55,11 +55,14 @@ router.get('/', async (_: Request, res: Response): Promise<void> => {
     })
     .sort((a, b) => b.viewerCount - a.viewerCount);
 
-  // Exclude tournaments that are currently live — they already appear above.
-  const liveSlugs = new Set(Array.from(broadcasts.values()).map((b) => siteSlug(b.game.site)));
-  const archived = (await listArchivedTournaments()).filter((t) => !liveSlugs.has(t.slug));
-
-  res.render('pages/broadcasts', { broadcasts: broadcastList, archived });
+  // NOTE: the "Previous Broadcasts" archive listing was removed from the homepage.
+  // listArchivedTournaments() read+parsed every pgns/*/tournament-results.json and
+  // scanned meta-only folders on every `/` hit — uncached, synchronous JSON.parse on
+  // the site's most-trafficked route, which drained the host's CPU credits. Tournament
+  // data is still persisted (saveTournamentResults) and reachable via /archive/:slug.
+  // The broadcasts.ejs archive section is guarded by `archived?.length`, so omitting it
+  // simply hides the section. Re-enable via a cached listing if/when needed.
+  res.render('pages/broadcasts', { broadcasts: broadcastList });
 });
 
 router.get('/broadcasts', (_: Request, res: Response): void => {
