@@ -6,7 +6,15 @@
 // chessboardjs token (`wK`…`bP`). DEFAULT_PIECE_SET below must stay in sync with
 // the pre-JS fallback path hardcoded in views/pages/broadcasts.ejs.
 
-export type PieceSetId = 'classic' | 'livius' | 'meridian' | 'meridian_shaded';
+export type PieceSetId =
+  | 'classic'
+  | 'livius'
+  | 'meridian'
+  | 'meridian_shaded'
+  | 'claude'
+  | 'claude_minimal'
+  | 'claude_glyph'
+  | 'claude_playful';
 
 export interface PieceSetMeta {
   id: PieceSetId;
@@ -19,6 +27,10 @@ export const PIECE_SETS: PieceSetMeta[] = [
   { id: 'livius', label: 'Livius' },
   { id: 'meridian', label: 'Meridian' },
   { id: 'meridian_shaded', label: 'Meridian Shaded' },
+  { id: 'claude', label: 'Claude' },
+  { id: 'claude_minimal', label: 'Claude Minimal' },
+  { id: 'claude_glyph', label: 'Claude Glyph' },
+  { id: 'claude_playful', label: 'Claude Playful' },
 ];
 
 export const DEFAULT_PIECE_SET: PieceSetId = 'classic';
