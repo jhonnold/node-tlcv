@@ -115,6 +115,8 @@ Prometheus metrics via `prom-client`. `src/metrics.ts` owns a single `Registry` 
 
 **Gauges** (recomputed at scrape time via `collect()`): `ccrl_broadcasts_active`, `ccrl_broadcast_spectators`, `ccrl_broadcast_browser_connections`, `ccrl_game_move_number`, `ccrl_kibitzer_total`, `ccrl_kibitzer_ready`, `ccrl_kibitzer_target_port` (labeled by `port`/`event`).
 
+**Histograms** (observed at call sites): `ccrl_http_request_duration_seconds` (labels `method`/`route`/`status`, instrumented in `util/http-metrics.ts`), `ccrl_lichess_request_duration_seconds` (labels `endpoint`/`outcome`, instrumented in `services/lichess.ts` — wraps `fetchOpening` and `fetchTablebase`).
+
 **Counters** (incremented inline at the event site): `ccrl_udp_messages_received_total`, `ccrl_udp_messages_out_of_order_total`, `ccrl_commands_processed_total`, `ccrl_chat_messages_total`, `ccrl_spectator_joins_total`, `ccrl_spectator_leaves_total`, `ccrl_socket_emissions_total`, `ccrl_kibitzer_assignments_total`, `ccrl_message_buffer_errors_total`.
 
 Instrumented across `game-service.ts` (commands, chat), `socket-io-adapter.ts` (spectator join/leave, emissions), `transport/udp-transport.ts` (UDP receive, out-of-order), `transport/message-buffer.ts` (buffer errors), and `kibitzer/kibitzer-manager.ts` (assignments). Counters import the specific metric and call `.inc()`; gauges read live state (`broadcasts` map, `KibitzerManager`) at scrape time, so no per-event wiring is needed for them.

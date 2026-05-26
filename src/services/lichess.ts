@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import type { ColorCode } from '../../shared/types.js';
+import { lichessRequestDuration } from '../metrics.js';
 import { logger } from '../util/index.js';
 
 export type LichessExplorerResponse = {
@@ -21,6 +22,7 @@ export async function fetchOpening(name: string, instance: Chess): Promise<Openi
 
   logger.info(`Requesting opening for game ${name} from ${url}`, { port: name });
 
+  const endTimer = lichessRequestDuration.startTimer({ endpoint: 'opening' });
   try {
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
     if (process.env.LICHESS_OAUTH_TOKEN) {
@@ -37,11 +39,14 @@ export async function fetchOpening(name: string, instance: Chess): Promise<Openi
       const { eco, name: openingName } = opening;
 
       logger.info(`Setting opening for game ${name} to ${eco} ${openingName}`, { port: name });
+      endTimer({ outcome: 'success' });
       return { failed: false, opening: `${eco} ${openingName}` };
     }
 
+    endTimer({ outcome: 'success' });
     return { failed: false, opening: null };
   } catch (error) {
+    endTimer({ outcome: 'error' });
     logger.warn(`Error requesting opening for game ${name} @ ${url}`, { port: name });
     logger.error(error);
     return { failed: true, opening: null };
@@ -53,6 +58,7 @@ export async function fetchTablebase(name: string, fen: string, turn: ColorCode)
 
   logger.info(`Requesting tablebase for game ${name} from ${url}`, { port: name });
 
+  const endTimer = lichessRequestDuration.startTimer({ endpoint: 'tablebase' });
   try {
     const response = await fetch(url, {
       method: 'GET',
@@ -97,12 +103,15 @@ export async function fetchTablebase(name: string, fen: string, turn: ColorCode)
       }
 
       logger.info(`Set tablebase for game ${name} to ${result}`, { port: name });
+      endTimer({ outcome: 'success' });
       return result;
     } else {
       logger.info(`Setting tablebase for game ${name} to blank`, { port: name });
+      endTimer({ outcome: 'success' });
       return '';
     }
   } catch (error) {
+    endTimer({ outcome: 'error' });
     logger.warn(`Error requesting tablebase for game ${name} @ ${url}`, { port: name });
     logger.error(error);
     return '';
