@@ -5,7 +5,7 @@ import compression from 'compression';
 import serveIndex from 'serve-index';
 import routes from './routes/index.js';
 import adminRoutes from './routes/admin.js';
-import { logging } from './util/index.js';
+import { logging, httpMetrics } from './util/index.js';
 
 export const app = express();
 
@@ -14,6 +14,7 @@ app.set('view engine', 'ejs');
 app.set('views', 'build/views');
 
 app.use(logging);
+app.use(httpMetrics);
 app.use(cors());
 app.use(bp.json());
 app.use(compression());
