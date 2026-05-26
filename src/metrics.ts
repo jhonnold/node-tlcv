@@ -106,6 +106,15 @@ export const httpRequestDuration = new Histogram({
   registers: [register],
 });
 
+export const lichessRequestDuration = new Histogram({
+  name: 'ccrl_lichess_request_duration_seconds',
+  help: 'Lichess API request duration in seconds, by endpoint and outcome',
+  labelNames: ['endpoint', 'outcome'] as const,
+  // External HTTP: ~50ms warm to multi-second on Lichess slow paths; cap at 30s.
+  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30],
+  registers: [register],
+});
+
 // --- Counters (incremented at call sites) ---
 
 export const udpMessagesReceived = new Counter({
