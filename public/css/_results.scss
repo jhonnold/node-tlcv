@@ -3,8 +3,7 @@
 #results-container {
   height: 100%;
   width: 100%;
-  overflow-y: auto;
-  overflow-x: auto;
+  overflow: auto;
   box-sizing: border-box;
   font-size: 0.8rem;
   margin: 0;
@@ -27,6 +26,42 @@
     vertical-align: middle;
   }
 
+  // Engine/Opponent name column sticks on horizontal scroll. The opaque
+  // background occludes h2h columns scrolling underneath (mini-table-reset
+  // forces cells transparent, so this must be set explicitly).
+  td.results-name {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--backgroundColor);
+  }
+
+  // The header's name cell is the top-left corner — it must win both axes.
+  thead th.results-col-name {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+  }
+
+  tbody tr:hover td {
+    background: var(--surfaceColorHover);
+  }
+
+  // Keep the sticky name cell opaque on hover: translucent hover over its base.
+  tbody tr:hover td.results-name {
+    background-color: var(--backgroundColor);
+    background-image: linear-gradient(var(--surfaceColorHover), var(--surfaceColorHover));
+  }
+
+  // The gauntlet engine itself — the subject of the gauntlet view — as top row.
+  tbody tr.results-engine-row {
+    border-bottom: 2px solid var(--surfaceColorHover);
+
+    td {
+      font-weight: 700;
+    }
+  }
+
   .results-rank,
   .results-col-rank {
     width: 24px;
@@ -34,13 +69,10 @@
     padding-right: 6px;
     font-weight: 700;
     font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .results-rank {
-    color: var(--secondaryColor);
-  }
-
-  .results-points {
     color: var(--secondaryColor);
   }
 
@@ -56,13 +88,24 @@
   .results-games {
     text-align: right;
     padding-right: 8px;
+    font-variant-numeric: tabular-nums;
   }
 
   .results-col-points,
-  .results-points {
+  .results-points,
+  .results-col-score,
+  .results-score {
     text-align: right;
     padding-right: 8px;
     font-weight: 700;
+    color: var(--secondaryColor);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .results-col-record,
+  .results-record {
+    text-align: left;
+    padding-right: 12px;
   }
 
   .results-col-h2h,
@@ -82,6 +125,44 @@
 .h2h-empty {
   color: var(--textColor);
   opacity: 0.2;
+}
+
+// Pentanomial pair distribution: five counts, green→red left→right (++ + = − −−).
+.penta-record {
+  display: inline-flex;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.penta-num {
+  min-width: 0.9em;
+  text-align: center;
+
+  &.is-zero {
+    opacity: 0.3;
+    font-weight: 400;
+  }
+}
+
+.penta-4 {
+  color: var(--penta-2);
+} // ++
+.penta-3 {
+  color: var(--penta-15);
+} // +
+.penta-2 {
+  color: var(--penta-1);
+} // =
+.penta-1 {
+  color: var(--penta-05);
+} // −
+.penta-0 {
+  color: var(--penta-0);
+} // −−
+
+.results-gauntlet-group {
+  margin-bottom: 16px;
 }
 
 .results-loading,

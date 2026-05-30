@@ -49,6 +49,12 @@
 
   .results-table {
     @include mini-table-mobile-reset;
+
+    // Sticky columns don't make sense in the stacked mobile layout.
+    td.results-name,
+    thead th.results-col-name {
+      position: static;
+    }
   }
 
   .games-table {
