@@ -17,6 +17,25 @@ export function invalidateArchiveCache(slug: string): void {
   archiveCache.delete(slug);
 }
 
+// The homepage archive listing scans every pgns/* folder (readdir + JSON.parse of
+// each results.json) — too expensive to run per request on the busiest, auto-
+// refreshing route (see the 2026-05-25 CPU-credit incident). Cache the full scan
+// result and only re-scan on a live->archived transition (closeConnection / onSite),
+// never on the per-game-finish results.json write: that write only touches *live*
+// tournaments, which are filtered out of the listing, so a displayed entry's file is
+// already frozen. `listingInflight` coalesces concurrent cold-cache scans into one.
+let listingCache: ArchiveSummary[] | null = null;
+let listingInflight: Promise<ArchiveSummary[]> | null = null;
+
+export function invalidateListingCache(): void {
+  // Clearing the in-flight promise too forces the next caller to start a fresh scan
+  // rather than reuse one that began before this mutation. A scan already running
+  // still resolves and may briefly repopulate slightly-stale data — acceptable for a
+  // non-critical listing, and the triggering mutation is rare.
+  listingCache = null;
+  listingInflight = null;
+}
+
 export async function saveTournamentResults(broadcast: Broadcast): Promise<void> {
   // Fire-and-forget from the message loop, so the whole body is guarded — a throw
   // anywhere (slug/path construction included) must never become an unhandled rejection.
@@ -103,7 +122,30 @@ async function dirUpdatedAt(slug: string): Promise<string> {
   }
 }
 
+// Public, cached entry point. Returns the cached scan when warm; otherwise runs a
+// single scan shared by all concurrent callers (cold-cache stampede guard). A thrown
+// scan resolves to [] without poisoning the cache, so the next call retries.
 export async function listArchivedTournaments(): Promise<ArchiveSummary[]> {
+  if (listingCache) return listingCache;
+  if (listingInflight) return listingInflight;
+
+  listingInflight = scanArchivedTournaments()
+    .then((summaries) => {
+      listingCache = summaries;
+      return summaries;
+    })
+    .catch((error) => {
+      logger.error(`Unable to list archived tournaments! - ${error}`);
+      return [];
+    })
+    .finally(() => {
+      listingInflight = null;
+    });
+
+  return listingInflight;
+}
+
+async function scanArchivedTournaments(): Promise<ArchiveSummary[]> {
   let entries: Dirent[];
   try {
     entries = await fs.readdir('pgns', { withFileTypes: true });

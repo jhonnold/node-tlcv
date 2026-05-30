@@ -7,7 +7,11 @@ import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import type { OpeningResult } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
-import { saveTournamentResults, invalidateArchiveCache } from './services/tournament-results.js';
+import {
+  saveTournamentResults,
+  invalidateArchiveCache,
+  invalidateListingCache,
+} from './services/tournament-results.js';
 import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
@@ -360,6 +364,10 @@ class GameService {
       invalidateArchiveCache(oldSlug);
     }
     this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
+
+    // A site change moves the old slug out of the live set (it becomes archived) and a
+    // new pgns/<slug>/ folder may appear, so the homepage listing scan must re-run.
+    invalidateListingCache();
 
     logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`, { port: this.broadcast.port });
 

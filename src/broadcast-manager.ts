@@ -1,6 +1,7 @@
 import dns from 'dns';
 import broadcasts, { Broadcast } from './broadcast.js';
 import configStore from './config/config-store.js';
+import { invalidateListingCache } from './services/tournament-results.js';
 import type { KibitzerManager } from './kibitzer/kibitzer-manager.js';
 import type { WebhookManager } from './webhooks/webhook-manager.js';
 
@@ -54,6 +55,10 @@ export async function closeConnection(connection: string): Promise<void> {
   if (!broadcast) throw Error('Invalid port!');
   broadcast.close();
   broadcasts.delete(+port);
+
+  // The closed broadcast's tournament drops out of the live set and should now appear
+  // in the homepage "Previous Broadcasts" listing with its final stats — re-scan once.
+  invalidateListingCache();
 
   await configStore.removeConnection(connection);
 }
