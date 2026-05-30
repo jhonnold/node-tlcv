@@ -3,7 +3,7 @@ import broadcasts, { Broadcast } from '../broadcast.js';
 import { siteSlug } from '../util/index.js';
 import { getFiles } from '../services/pgn-cache.js';
 import { getMetaFile, getMetaFileUrl } from '../services/game-meta.js';
-import { loadOrReconstructArchive } from '../services/tournament-results.js';
+import { listArchivedTournaments, loadOrReconstructArchive } from '../services/tournament-results.js';
 import type { GameRecord, StoredTournamentResults } from '../../shared/types.js';
 
 interface RequestWithBroadcast extends Request {
@@ -55,16 +55,16 @@ router.get('/', async (_: Request, res: Response): Promise<void> => {
     })
     .sort((a, b) => b.viewerCount - a.viewerCount);
 
-  // NOTE: the "Previous Broadcasts" archive listing was removed from the homepage.
-  // listArchivedTournaments() read+parsed every pgns/*/tournament-results.json and
-  // scanned meta-only folders on every `/` hit — uncached, synchronous JSON.parse on
-  // the site's most-trafficked route, which drained the host's CPU credits. Tournament
-  // data is still persisted (saveTournamentResults) and reachable via /archive/:slug.
-  // We still pass `archived: []` because broadcasts.ejs references the variable under
-  // EJS's `with(locals)` scope — omitting it entirely throws a ReferenceError. The
-  // empty array makes the template's `archived && archived.length` guard hide the
-  // section. Re-enable via a cached listing if/when needed.
-  res.render('pages/broadcasts', { broadcasts: broadcastList, archived: [] });
+  // "Previous Broadcasts": archived tournaments excluding currently-live ones (those
+  // already appear above). listArchivedTournaments() is cached — the disk scan only
+  // re-runs on a live->archived transition (see tournament-results.ts), so this route
+  // does no per-request disk I/O when warm. The liveSlugs filter stays per-request
+  // because the live set changes independently of the cached scan; it's a cheap
+  // in-memory Set lookup over the broadcasts map.
+  const liveSlugs = new Set(Array.from(broadcasts.values()).map((b) => siteSlug(b.game.site)));
+  const archived = (await listArchivedTournaments()).filter((t) => !liveSlugs.has(t.slug));
+
+  res.render('pages/broadcasts', { broadcasts: broadcastList, archived });
 });
 
 router.get('/broadcasts', (_: Request, res: Response): void => {

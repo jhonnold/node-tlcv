@@ -10,13 +10,16 @@ import { KibitzerManager } from './kibitzer/index.js';
 import { WebhookManager } from './webhooks/index.js';
 import { loadAll as loadPgnCache } from './services/pgn-cache.js';
 import { loadAll as loadMetaCache } from './services/game-meta.js';
+import { listArchivedTournaments } from './services/tournament-results.js';
 import configStore from './config/config-store.js';
 
 const server = http.createServer(app);
 io.attach(server);
 
 (async () => {
-  await Promise.all([loadPgnCache(), loadMetaCache()]);
+  // Warm the homepage archive-listing cache alongside the file caches so the first
+  // `/` hit does no disk scan. listArchivedTournaments() resolves to [] on error.
+  await Promise.all([loadPgnCache(), loadMetaCache(), listArchivedTournaments()]);
 
   const config = await configStore.load();
   const kibitzers = config.kibitzers ?? [];
