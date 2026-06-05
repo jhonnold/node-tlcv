@@ -12,7 +12,7 @@ function updateElText(el: JQuery, val: string) {
 
 const MATE_SCORE_THRESHOLD = 100000;
 
-function formatScore(score: number, color: string) {
+export function formatScore(score: number, color: string) {
   const s = color === 'black' ? score * -1 : score;
 
   if (s > MATE_SCORE_THRESHOLD) {

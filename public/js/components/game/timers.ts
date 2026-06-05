@@ -5,7 +5,7 @@ import type { GameEventData } from '../../events/index';
 
 const timerIntervals = new Map<string, ReturnType<typeof setInterval>>();
 
-function msToString(ms: number) {
+export function msToString(ms: number) {
   const s = Math.floor((ms / 1000) % 60);
   const m = Math.floor(ms / 1000 / 60);
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;

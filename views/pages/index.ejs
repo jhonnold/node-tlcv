@@ -11,6 +11,10 @@
     <%- include('../partials/header', { siteName: archive ? site : game.site, showFocus: true, showFlip: true }) %>
     <div class="container">
       <div class="main-layout">
+        <div id="focus-info-top" class="focus-info" aria-hidden="true">
+          <span class="focus-name"></span>
+          <span class="focus-stats"><span class="focus-score"></span><span class="focus-time"></span></span>
+        </div>
         <div id="board-container">
           <canvas id="arrow-board" height="2400" width="2400" aria-hidden="true"></canvas>
           <div id="board" aria-hidden="true"></div>
@@ -29,6 +33,10 @@
           <%- include('../partials/info-card', { color: 'black' }) %>
           <%- include('../partials/chat', { archive, port }) %>
           <%- include('../partials/info-card', { color: 'white' }) %>
+        </div>
+        <div id="focus-info-bottom" class="focus-info" aria-hidden="true">
+          <span class="focus-name"></span>
+          <span class="focus-stats"><span class="focus-score"></span><span class="focus-time"></span></span>
         </div>
       </div>
     </div>
