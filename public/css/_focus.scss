@@ -1,4 +1,14 @@
+// Focus-info strips are hidden outside of focus mode.
+// Using a class selector (.focus-info, specificity=10) so that the body.focus-mode .focus-info
+// rule (specificity=21) can override it without needing !important.
+.focus-info {
+  display: none;
+}
+
 body.focus-mode {
+  --focus-strip-h: 2.75rem;
+  --focus-board-size: min(100vw, calc(100vh - 2 * var(--focus-strip-h)));
+
   background: #1a1a1a;
 
   .site-header,
@@ -17,15 +27,74 @@ body.focus-mode {
 
   .main-layout {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    width: 100vw;
     height: 100vh;
     padding: 0;
     gap: 0;
   }
 
   #board-container {
-    width: min(100vw, 100vh);
-    height: min(100vw, 100vh);
+    width: var(--focus-board-size);
+    height: var(--focus-board-size);
+  }
+
+  .focus-info {
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: var(--focus-board-size);
+    height: var(--focus-strip-h);
+    padding: 0 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+
+    .focus-name {
+      font-weight: 600;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 1rem;
+    }
+
+    .focus-stats {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+      font-family: monospace;
+
+      .focus-score {
+        min-width: 3.5rem;
+        text-align: right;
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      .focus-time {
+        min-width: 3.5rem;
+        text-align: right;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  body.focus-mode {
+    --focus-strip-h: 2.25rem;
+
+    .focus-info {
+      font-size: 0.8rem;
+      padding: 0 0.35rem;
+
+      .focus-stats {
+        gap: 0.75rem;
+      }
+    }
   }
 }
