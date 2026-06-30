@@ -7,6 +7,7 @@ export class BroadcastState {
   results: string;
   parsedResults: ParsedResults | null;
   parsedGames: GameRecord[] | null;
+  gamesSiteSlug: string | null;
   currentGameNumber: number;
   browserCount: number;
 
@@ -17,6 +18,7 @@ export class BroadcastState {
     this.results = '';
     this.parsedResults = null;
     this.parsedGames = null;
+    this.gamesSiteSlug = null;
     this.currentGameNumber = 1;
     this.browserCount = 0;
   }

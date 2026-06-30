@@ -17,6 +17,7 @@ import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
 import { commandsProcessed, chatMessages } from './metrics.js';
 import { parseResults, parseGames } from './services/result-parser.js';
+import type { GameRecord } from './services/result-parser.js';
 import type { BroadcastDelta, ColorCode, GameDelta } from '../shared/types.js';
 
 type Color = 'white' | 'black';
@@ -368,6 +369,12 @@ class GameService {
     // A site change moves the old slug out of the live set (it becomes archived) and a
     // new pgns/<slug>/ folder may appear, so the homepage listing scan must re-run.
     invalidateListingCache();
+    // If the site slug changed, clear merged games to avoid mixing tournaments.
+    const newSlug = siteSlug(this.game.site);
+    if (this.broadcast.gamesSiteSlug && this.broadcast.gamesSiteSlug !== newSlug) {
+      this.broadcast.parsedGames = null;
+      this.broadcast.gamesSiteSlug = null;
+    }
 
     logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`, { port: this.broadcast.port });
 
@@ -378,7 +385,6 @@ class GameService {
   private onCTReset(): UpdateResult {
     this.broadcast.results = '';
     this.broadcast.parsedResults = null;
-    this.broadcast.parsedGames = null;
 
     if (this.gamesParseTimer) {
       clearTimeout(this.gamesParseTimer);
@@ -401,7 +407,13 @@ class GameService {
     this.gamesParseTimer = setTimeout(() => {
       const games = parseGames(this.broadcast.results);
       if (games.length > 0) {
-        this.broadcast.parsedGames = games;
+        // Merge incoming games into existing, keyed by gameNumber.
+        // Incoming wins for matching keys; old-only games are preserved.
+        const merged = new Map<number, GameRecord>();
+        for (const g of this.broadcast.parsedGames || []) merged.set(g.gameNumber, g);
+        for (const g of games) merged.set(g.gameNumber, g);
+        this.broadcast.parsedGames = Array.from(merged.values()).sort((a, b) => b.gameNumber - a.gameNumber);
+        this.broadcast.gamesSiteSlug = this.broadcast.gamesSiteSlug ?? siteSlug(this.game.site);
         this.broadcast.currentGameNumber = games[0].gameNumber + 1;
 
         // Persist the latest standings + schedule (fixed filename, overwritten each dump).
