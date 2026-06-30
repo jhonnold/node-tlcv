@@ -369,6 +369,12 @@ class GameService {
     // A site change moves the old slug out of the live set (it becomes archived) and a
     // new pgns/<slug>/ folder may appear, so the homepage listing scan must re-run.
     invalidateListingCache();
+    // If the site slug changed, clear merged games to avoid mixing tournaments.
+    const newSlug = siteSlug(this.game.site);
+    if (this.broadcast.gamesSiteSlug && this.broadcast.gamesSiteSlug !== newSlug) {
+      this.broadcast.parsedGames = null;
+      this.broadcast.gamesSiteSlug = null;
+    }
 
     logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`, { port: this.broadcast.port });
 
@@ -408,7 +414,8 @@ class GameService {
           for (const g of this.broadcast.parsedGames) existingMap.set(g.gameNumber, g);
         }
         for (const g of games) existingMap.set(g.gameNumber, g);
-        this.broadcast.parsedGames = Array.from(existingMap.values()).sort((a, b) => a.gameNumber - b.gameNumber);
+        this.broadcast.parsedGames = Array.from(existingMap.values()).sort((a, b) => b.gameNumber - a.gameNumber);
+        this.broadcast.gamesSiteSlug = this.broadcast.gamesSiteSlug ?? siteSlug(this.game.site);
         this.broadcast.currentGameNumber = games[0].gameNumber + 1;
 
         // Persist the latest standings + schedule (fixed filename, overwritten each dump).

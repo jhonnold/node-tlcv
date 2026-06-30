@@ -134,6 +134,14 @@ export class Broadcast {
     this.state.parsedGames = v;
   }
 
+  public get gamesSiteSlug(): string | null {
+    return this.state.gamesSiteSlug;
+  }
+
+  public set gamesSiteSlug(v: string | null) {
+    this.state.gamesSiteSlug = v;
+  }
+
   public get currentGameNumber(): number {
     return this.state.currentGameNumber;
   }
