@@ -17,6 +17,7 @@ import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
 import { commandsProcessed, chatMessages } from './metrics.js';
 import { parseResults, parseGames } from './services/result-parser.js';
+import type { GameRecord } from './services/result-parser.js';
 import type { BroadcastDelta, ColorCode, GameDelta } from '../shared/types.js';
 
 type Color = 'white' | 'black';
@@ -378,7 +379,6 @@ class GameService {
   private onCTReset(): UpdateResult {
     this.broadcast.results = '';
     this.broadcast.parsedResults = null;
-    this.broadcast.parsedGames = null;
 
     if (this.gamesParseTimer) {
       clearTimeout(this.gamesParseTimer);
@@ -401,7 +401,14 @@ class GameService {
     this.gamesParseTimer = setTimeout(() => {
       const games = parseGames(this.broadcast.results);
       if (games.length > 0) {
-        this.broadcast.parsedGames = games;
+        // Merge incoming games into existing, keyed by gameNumber.
+        // Incoming always wins for matching keys; old-only games are preserved.
+        const existingMap = new Map<number, GameRecord>();
+        if (this.broadcast.parsedGames) {
+          for (const g of this.broadcast.parsedGames) existingMap.set(g.gameNumber, g);
+        }
+        for (const g of games) existingMap.set(g.gameNumber, g);
+        this.broadcast.parsedGames = Array.from(existingMap.values()).sort((a, b) => a.gameNumber - b.gameNumber);
         this.broadcast.currentGameNumber = games[0].gameNumber + 1;
 
         // Persist the latest standings + schedule (fixed filename, overwritten each dump).
