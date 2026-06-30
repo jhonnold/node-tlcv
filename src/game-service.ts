@@ -408,13 +408,11 @@ class GameService {
       const games = parseGames(this.broadcast.results);
       if (games.length > 0) {
         // Merge incoming games into existing, keyed by gameNumber.
-        // Incoming always wins for matching keys; old-only games are preserved.
-        const existingMap = new Map<number, GameRecord>();
-        if (this.broadcast.parsedGames) {
-          for (const g of this.broadcast.parsedGames) existingMap.set(g.gameNumber, g);
-        }
-        for (const g of games) existingMap.set(g.gameNumber, g);
-        this.broadcast.parsedGames = Array.from(existingMap.values()).sort((a, b) => b.gameNumber - a.gameNumber);
+        // Incoming wins for matching keys; old-only games are preserved.
+        const merged = new Map<number, GameRecord>();
+        for (const g of this.broadcast.parsedGames || []) merged.set(g.gameNumber, g);
+        for (const g of games) merged.set(g.gameNumber, g);
+        this.broadcast.parsedGames = Array.from(merged.values()).sort((a, b) => b.gameNumber - a.gameNumber);
         this.broadcast.gamesSiteSlug = this.broadcast.gamesSiteSlug ?? siteSlug(this.game.site);
         this.broadcast.currentGameNumber = games[0].gameNumber + 1;
 
