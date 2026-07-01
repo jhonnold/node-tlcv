@@ -360,9 +360,8 @@ class GameService {
     const firstSite = !this.game.site;
 
     if (!firstSite) {
-      // Site change = a new tournament has begun: the accumulated result table and
-      // games list belong to the previous tournament, so reset them in full (this is
-      // the only reset path — CTRESET fires on every refresh, not just new tournaments).
+      // Site change = a new tournament: reset the previous tournament's table and
+      // games in full. This is the only reset path — CTRESET fires every refresh.
       const oldSlug = siteSlug(this.game.site);
       invalidatePgnCache(oldSlug);
       invalidateMetaCache(oldSlug);
@@ -374,11 +373,9 @@ class GameService {
 
     this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
 
-    // First site of a connection: seed parsedGames from the on-disk archive (if any) so
-    // older games survive a mid-tournament server restart. The incoming CT dump's merge
-    // will supersede overlapping game numbers and append newer ones. Seeding only on the
-    // first site (never on a site change) avoids pulling in a different tournament's
-    // archived games. Best-effort — loadTournamentResults returns null on read/parse failure.
+    // First site of a connection: best-effort seed from the on-disk archive so older
+    // games survive a mid-tournament server restart. Seeding only on the first site
+    // avoids pulling in a different tournament's archived games.
     if (firstSite && site) {
       try {
         const stored = await loadTournamentResults(siteSlug(this.game.site));
@@ -403,13 +400,10 @@ class GameService {
   private onCTReset(): UpdateResult {
     this.broadcast.results = '';
     this.broadcast.parsedResults = null;
-    // NOTE: parsedGames is intentionally NOT cleared here. CTRESET fires on every
-    // result-table refresh (after each RESULT), not just new tournaments, and the
-    // games list only carries the most-recent games. The onCT handler merges the
-    // incoming batch with what's already accumulated; clearing here would defeat
-    // that merge and re-introduce the game-#1-lost-at-#301 bug. The full reset on
-    // a new tournament happens in onSite (site change).
-
+    // parsedGames is intentionally NOT cleared here: CTRESET fires every refresh
+    // (not just new tournaments), and onCT merges incoming games into the accumulated
+    // list. Clearing would re-introduce the game-#1-lost-at-#301 bug. Full reset on a
+    // new tournament happens in onSite.
     if (this.gamesParseTimer) {
       clearTimeout(this.gamesParseTimer);
       this.gamesParseTimer = null;
