@@ -22,4 +22,11 @@
   --blackArrowColor: #222222dd;
   --kibitzerArrowColor: #114f8add;
   --chatFontWeight: 500;
+  // Pentanomial pair-result spectrum (green → grey → red). Fixed across themes
+  // (JS never overrides these), so they live only in this :root fallback.
+  --penta-2: #4a9d5b; /* ++ (2.0) */
+  --penta-15: #9fc77f; /* + (1.5) */
+  --penta-1: #9a9a9a; /* = (1.0) */
+  --penta-05: #d99a6c; /* − (0.5) */
+  --penta-0: #c45c5c; /* −− (0.0) */
 }
