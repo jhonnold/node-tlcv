@@ -9,6 +9,7 @@ import { savePgn } from './services/pgn.js';
 import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
 import {
   saveTournamentResults,
+  loadTournamentResults,
   invalidateArchiveCache,
   invalidateListingCache,
 } from './services/tournament-results.js';
@@ -16,7 +17,7 @@ import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
 import { commandsProcessed, chatMessages } from './metrics.js';
-import { parseResults, parseGames } from './services/result-parser.js';
+import { parseResults, parseGames, mergeGames } from './services/result-parser.js';
 import type { BroadcastDelta, ColorCode, GameDelta } from '../shared/types.js';
 
 type Color = 'white' | 'black';
@@ -354,16 +355,40 @@ class GameService {
     return [EmitType.UPDATE, false];
   }
 
-  private onSite(tokens: CommandTokens): UpdateResult {
+  private async onSite(tokens: CommandTokens): Promise<UpdateResult> {
     const site = tokens.slice(1).join(' ');
+    const firstSite = !this.game.site;
 
-    if (this.game.site) {
+    if (!firstSite) {
+      // Site change = a new tournament has begun: the accumulated result table and
+      // games list belong to the previous tournament, so reset them in full (this is
+      // the only reset path — CTRESET fires on every refresh, not just new tournaments).
       const oldSlug = siteSlug(this.game.site);
       invalidatePgnCache(oldSlug);
       invalidateMetaCache(oldSlug);
       invalidateArchiveCache(oldSlug);
+      this.broadcast.results = '';
+      this.broadcast.parsedResults = null;
+      this.broadcast.parsedGames = null;
     }
+
     this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
+
+    // First site of a connection: seed parsedGames from the on-disk archive (if any) so
+    // older games survive a mid-tournament server restart. The incoming CT dump's merge
+    // will supersede overlapping game numbers and append newer ones. Seeding only on the
+    // first site (never on a site change) avoids pulling in a different tournament's
+    // archived games. Best-effort — loadTournamentResults returns null on read/parse failure.
+    if (firstSite && site) {
+      try {
+        const stored = await loadTournamentResults(siteSlug(this.game.site));
+        if (stored?.parsedGames?.length) this.broadcast.parsedGames = stored.parsedGames;
+      } catch (error) {
+        logger.warn(`Failed to seed tournament results from disk - ${error}`, {
+          port: this.broadcast.port,
+        });
+      }
+    }
 
     // A site change moves the old slug out of the live set (it becomes archived) and a
     // new pgns/<slug>/ folder may appear, so the homepage listing scan must re-run.
@@ -378,7 +403,12 @@ class GameService {
   private onCTReset(): UpdateResult {
     this.broadcast.results = '';
     this.broadcast.parsedResults = null;
-    this.broadcast.parsedGames = null;
+    // NOTE: parsedGames is intentionally NOT cleared here. CTRESET fires on every
+    // result-table refresh (after each RESULT), not just new tournaments, and the
+    // games list only carries the most-recent games. The onCT handler merges the
+    // incoming batch with what's already accumulated; clearing here would defeat
+    // that merge and re-introduce the game-#1-lost-at-#301 bug. The full reset on
+    // a new tournament happens in onSite (site change).
 
     if (this.gamesParseTimer) {
       clearTimeout(this.gamesParseTimer);
@@ -401,7 +431,7 @@ class GameService {
     this.gamesParseTimer = setTimeout(() => {
       const games = parseGames(this.broadcast.results);
       if (games.length > 0) {
-        this.broadcast.parsedGames = games;
+        this.broadcast.parsedGames = mergeGames(this.broadcast.parsedGames, games);
         this.broadcast.currentGameNumber = games[0].gameNumber + 1;
 
         // Persist the latest standings + schedule (fixed filename, overwritten each dump).

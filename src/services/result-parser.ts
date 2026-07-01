@@ -159,3 +159,18 @@ export function parseGames(raw: string): GameRecord[] {
 
   return games;
 }
+
+// Merge a freshly-parsed incoming games batch with the existing accumulated list.
+// The CT dump only carries the most-recent games (e.g. 300), so without this merge
+// older games would be dropped once the tournament grows past that window.
+// Matching is by game number only; incoming entries always supersede existing
+// ones for the same number. Result is sorted ascending by game number.
+export function mergeGames(existing: GameRecord[] | null, incoming: GameRecord[]): GameRecord[] {
+  if (!incoming.length) return existing ? [...existing] : [];
+
+  const byNumber = new Map<number, GameRecord>();
+  for (const g of existing ?? []) byNumber.set(g.gameNumber, g);
+  for (const g of incoming) byNumber.set(g.gameNumber, g); // incoming supersedes
+
+  return [...byNumber.values()].sort((a, b) => a.gameNumber - b.gameNumber);
+}
