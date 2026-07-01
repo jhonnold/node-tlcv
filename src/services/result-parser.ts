@@ -159,3 +159,16 @@ export function parseGames(raw: string): GameRecord[] {
 
   return games;
 }
+
+// Merge an incoming games batch into the accumulated list. The CT dump only carries
+// the most-recent games (e.g. 300), so older games are retained by matching on
+// gameNumber (incoming supersedes). Result is sorted ascending by game number.
+export function mergeGames(existing: GameRecord[] | null, incoming: GameRecord[]): GameRecord[] {
+  if (!incoming.length) return existing ? [...existing] : [];
+
+  const byNumber = new Map<number, GameRecord>();
+  for (const g of existing ?? []) byNumber.set(g.gameNumber, g);
+  for (const g of incoming) byNumber.set(g.gameNumber, g);
+
+  return [...byNumber.values()].sort((a, b) => a.gameNumber - b.gameNumber);
+}
