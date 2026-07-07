@@ -20,7 +20,7 @@
     "express": "^4.22.2",
     "express-basic-auth": "^1.2.0",
     "jquery": "^3.6.0",
-    "markdown-it": "^14.1.1",
+    "markdown-it": "^14.2.0",
     "mini.css": "^3.0.1",
     "mkdirp": "^3.0.1",
     "on-finished": "^2.3.0",
