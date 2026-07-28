@@ -62,6 +62,7 @@ class GameService {
   private gamesParseTimer: ReturnType<typeof setTimeout> | null = null;
   private dirty: DirtyFlags = freshFlags();
   private moveCountBefore = 0;
+  private updatedMoveMetaIndex: number | null = null;
   // "Game started" detection: armed for the first game, re-armed after each
   // RESULT. Fires once both colors have been (re)announced for the new game.
   private gameStartArmed = true;
@@ -205,7 +206,51 @@ class GameService {
     const colorCode: ColorCode = command === Command.WPV ? 'w' : 'b';
 
     // Discard PV updates for the non-thinking color (handles stale post-move flush, issue #9)
-    if (colorCode !== this.game.liveData.color) return [EmitType.UPDATE, false];
+    if (colorCode !== this.game.liveData.color) {
+      // Check if this is a trailing PV update for an already-emitted move
+      if (this.game.moveMeta.length > 0) {
+        const lastMove = this.game.moveMeta[this.game.moveMeta.length - 1];
+        if (lastMove.color === colorCode) {
+          // Trailing PV update — retroactively update the last moveMeta entry
+          const [depthStr, scoreStr, , nodesStr, ...pv] = rest;
+          const depth = parseInt(depthStr);
+          const score = parseInt(scoreStr) / 100;
+          const nodes = parseInt(nodesStr);
+
+          const playout = this.playoutPV(pv);
+          if (playout) {
+            const color: Color = colorCode === 'w' ? 'white' : 'black';
+
+            lastMove.depth = depth;
+            lastMove.score = score;
+            lastMove.nodes = nodes;
+            lastMove.time =
+              this.game[color].startTime > 0
+                ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000)
+                : null;
+            lastMove.pv = playout.san;
+            lastMove.pvFen = playout.fen;
+            lastMove.pvFollowup = playout.alg[1] || null;
+            lastMove.pvAlg = playout.alg[0] || null;
+
+            // Update PGN comment for this move
+            const comment = `(${playout.san.join(' ')}) ${score.toFixed(2)}/${depth} ${Math.round(
+              (new Date().getTime() - this.game[color].startTime) / 1000,
+            )}`;
+            this.game.instance.setComment(comment);
+
+            logger.info(
+              `Updated game ${this.game.name} - Trailing PV for move ${lastMove.number}: Color: ${colorCode}, Depth: ${depth}, Score: ${score}, Nodes: ${nodes}`,
+              { port: this.broadcast.port },
+            );
+
+            this.updatedMoveMetaIndex = this.game.moveMeta.length - 1;
+            this.dirty.liveData = true;
+          }
+        }
+      }
+      return [EmitType.UPDATE, false];
+    }
 
     const [depthStr, scoreStr, timeStr, nodesStr, ...pv] = rest;
     this.game.liveData.depth = parseInt(depthStr);
@@ -535,6 +580,11 @@ class GameService {
         gameDelta.resetMoves = true;
         gameDelta.startFen = this.game.startFen;
       }
+    }
+
+    if (this.updatedMoveMetaIndex !== null && this.updatedMoveMetaIndex < this.game.moveMeta.length) {
+      gameDelta.updatedMoves = [this.game.moveMeta[this.updatedMoveMetaIndex]];
+      this.updatedMoveMetaIndex = null;
     }
 
     if (d.liveData || d.move || d.players) {

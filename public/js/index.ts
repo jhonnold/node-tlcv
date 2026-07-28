@@ -45,10 +45,16 @@ function applyDelta(delta: BroadcastDelta): GameEventData | null {
   if (delta.menu !== undefined) cachedState.menu = delta.menu;
 
   if (delta.game) {
-    const { resetMoves, newMoves, ...fields } = delta.game;
+    const { resetMoves, newMoves, updatedMoves, ...fields } = delta.game;
     Object.assign(cachedState.game, fields);
     if (resetMoves) cachedState.game.moves = [];
     if (newMoves?.length) cachedState.game.moves = [...cachedState.game.moves, ...newMoves];
+    if (updatedMoves?.length) {
+      for (const updated of updatedMoves) {
+        const idx = cachedState.game.moves.findIndex((m) => m.number === updated.number && m.color === updated.color);
+        if (idx !== -1) cachedState.game.moves[idx] = updated;
+      }
+    }
   }
 
   return cachedState;
