@@ -17,7 +17,7 @@ import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
 import { commandsProcessed, chatMessages } from './metrics.js';
 import { parseResults, parseGames } from './services/result-parser.js';
-import type { BroadcastDelta, ColorCode, GameDelta } from '../shared/types.js';
+import type { BroadcastDelta, ColorCode, GameDelta, MoveMetaData } from '../shared/types.js';
 
 type Color = 'white' | 'black';
 
@@ -180,9 +180,13 @@ class GameService {
     return [EmitType.UPDATE, false];
   }
 
-  private playoutPV(pv: string[]): { san: string[]; alg: string[]; fen: string } | null {
+  private playoutPV(pv: string[], fromPreviousPly = false): { san: string[]; alg: string[]; fen: string } | null {
     const pvPlayout = new Chess();
     pvPlayout.loadPgn(this.game.instance.pgn());
+
+    // A trailing PV describes the search that produced the move just played, so it
+    // begins with that move — rewind one ply before replaying it.
+    if (fromPreviousPly && !pvPlayout.undo()) return null;
 
     const san: string[] = [];
     const alg: string[] = [];
@@ -200,55 +204,75 @@ class GameService {
     return san.length ? { san, alg, fen: pvPlayout.fen() } : null;
   }
 
+  private applyPvToMeta(
+    meta: MoveMetaData,
+    {
+      depth,
+      score,
+      nodes,
+      pvMoveNumber,
+      playout,
+    }: {
+      depth: number;
+      score: number;
+      nodes: number;
+      pvMoveNumber: number;
+      playout: { san: string[]; alg: string[]; fen: string };
+    },
+  ): void {
+    meta.depth = depth;
+    meta.score = score;
+    meta.nodes = nodes;
+    meta.pv = playout.san.length ? [...playout.san] : null;
+    meta.pvFen = playout.fen;
+    meta.pvMoveNumber = pvMoveNumber;
+    meta.pvFollowup = playout.alg[1] || null;
+    meta.pvAlg = playout.alg[0] || null;
+
+    this.game.instance.setComment(`(${playout.san.join(' ')}) ${score.toFixed(2)}/${depth} ${meta.time ?? 0}`);
+  }
+
+  // A PV for the non-thinking color may be that engine's final flush for the move it
+  // just played (see the "optional trailing XPV flush" in docs/protocol.md). If so,
+  // patch the recorded move's meta rather than dropping the line.
+  private applyTrailingPv(colorCode: ColorCode, rest: string[]): void {
+    const lastMove = this.game.moveMeta[this.game.moveMeta.length - 1];
+    if (!lastMove || lastMove.color !== colorCode) return;
+
+    const [depthStr, scoreStr, , nodesStr, ...pv] = rest;
+    const depth = parseInt(depthStr);
+    const score = parseInt(scoreStr) / 100;
+    const nodes = parseInt(nodesStr);
+    if (!Number.isFinite(depth) || !Number.isFinite(score) || !Number.isFinite(nodes)) return;
+
+    // A shallower line is a stale iteration, not the final flush.
+    if (depth < (lastMove.depth ?? 0)) return;
+
+    const playout = this.playoutPV(pv, true);
+    // The PV must open with the move actually played; otherwise it belongs to a
+    // different position and must not overwrite this move's meta.
+    if (!playout || playout.san[0] !== lastMove.move) return;
+
+    this.applyPvToMeta(lastMove, { depth, score, nodes, pvMoveNumber: lastMove.number, playout });
+
+    logger.info(
+      `Updated game ${this.game.name} - Trailing PV for move ${lastMove.number}: Color: ${colorCode}, Depth: ${depth}, Score: ${score}, Nodes: ${nodes}`,
+      { port: this.broadcast.port },
+    );
+
+    this.updatedMoveMetaIndex = this.game.moveMeta.length - 1;
+    this.dirty.liveData = true;
+  }
+
   private onPV(tokens: CommandTokens): UpdateResult {
     const [command, ...rest] = tokens;
 
     const colorCode: ColorCode = command === Command.WPV ? 'w' : 'b';
 
-    // Discard PV updates for the non-thinking color (handles stale post-move flush, issue #9)
+    // Discard PV updates for the non-thinking color (handles stale post-move flush, issue #9),
+    // unless it is the trailing flush for the move that color just played.
     if (colorCode !== this.game.liveData.color) {
-      // Check if this is a trailing PV update for an already-emitted move
-      if (this.game.moveMeta.length > 0) {
-        const lastMove = this.game.moveMeta[this.game.moveMeta.length - 1];
-        if (lastMove.color === colorCode) {
-          // Trailing PV update — retroactively update the last moveMeta entry
-          const [depthStr, scoreStr, , nodesStr, ...pv] = rest;
-          const depth = parseInt(depthStr);
-          const score = parseInt(scoreStr) / 100;
-          const nodes = parseInt(nodesStr);
-
-          const playout = this.playoutPV(pv);
-          if (playout) {
-            const color: Color = colorCode === 'w' ? 'white' : 'black';
-
-            lastMove.depth = depth;
-            lastMove.score = score;
-            lastMove.nodes = nodes;
-            lastMove.time =
-              this.game[color].startTime > 0
-                ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000)
-                : null;
-            lastMove.pv = playout.san;
-            lastMove.pvFen = playout.fen;
-            lastMove.pvFollowup = playout.alg[1] || null;
-            lastMove.pvAlg = playout.alg[0] || null;
-
-            // Update PGN comment for this move
-            const comment = `(${playout.san.join(' ')}) ${score.toFixed(2)}/${depth} ${Math.round(
-              (new Date().getTime() - this.game[color].startTime) / 1000,
-            )}`;
-            this.game.instance.setComment(comment);
-
-            logger.info(
-              `Updated game ${this.game.name} - Trailing PV for move ${lastMove.number}: Color: ${colorCode}, Depth: ${depth}, Score: ${score}, Nodes: ${nodes}`,
-              { port: this.broadcast.port },
-            );
-
-            this.updatedMoveMetaIndex = this.game.moveMeta.length - 1;
-            this.dirty.liveData = true;
-          }
-        }
-      }
+      this.applyTrailingPv(colorCode, rest);
       return [EmitType.UPDATE, false];
     }
 
@@ -315,50 +339,40 @@ class GameService {
         port: this.broadcast.port,
       });
 
-      if (this.game.liveData.depth > 0) {
-        const kibitzerSnapshot = this.broadcast.kibitzerManager?.snapshotForMove(this.broadcast.port) ?? null;
+      const meta: MoveMetaData = {
+        color: colorCode,
+        number: this.game.moveNumber,
+        move: move.san,
+        depth: null,
+        score: null,
+        nodes: null,
+        time:
+          this.game[color].startTime > 0
+            ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000)
+            : null,
+        pv: null,
+        pvFen: null,
+        pvMoveNumber: null,
+        pvFollowup: null,
+        pvAlg: null,
+        kibitzer: null,
+      };
+      this.game.moveMeta.push(meta);
 
-        this.game.moveMeta.push({
-          color: colorCode,
-          number: this.game.moveNumber,
-          move: move.san,
+      if (this.game.liveData.depth > 0) {
+        meta.kibitzer = this.broadcast.kibitzerManager?.snapshotForMove(this.broadcast.port) ?? null;
+        this.applyPvToMeta(meta, {
           depth: this.game.liveData.depth,
           score: this.game.liveData.score,
           nodes: this.game.liveData.nodes,
-          time:
-            this.game[color].startTime > 0
-              ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000)
-              : null,
-          pv: this.game.liveData.pv.length ? [...this.game.liveData.pv] : null,
-          pvFen: this.game.liveData.pvFen,
           pvMoveNumber: this.game.liveData.pvMoveNumber,
-          pvFollowup: this.game.liveData.pvAlg[1] || null,
-          pvAlg: this.game.liveData.pvAlg[0] || null,
-          kibitzer: kibitzerSnapshot,
+          playout: {
+            san: this.game.liveData.pv,
+            alg: this.game.liveData.pvAlg,
+            fen: this.game.liveData.pvFen,
+          },
         });
-
-        // Set the PGN comment for this move
-        const comment = `(${this.game.liveData.pv.join(' ')}) ${this.game.liveData.score.toFixed(2)}/${
-          this.game.liveData.depth
-        } ${Math.round((new Date().getTime() - this.game[color].startTime) / 1000)}`;
-        this.game.instance.setComment(comment);
       } else {
-        this.game.moveMeta.push({
-          color: colorCode,
-          number: this.game.moveNumber,
-          move: move.san,
-          depth: null,
-          score: null,
-          nodes: null,
-          time: null,
-          pv: null,
-          pvFen: null,
-          pvMoveNumber: null,
-          pvFollowup: null,
-          pvAlg: null,
-          kibitzer: null,
-        });
-
         this.game.instance.setComment('(Book)');
       }
 
@@ -582,9 +596,12 @@ class GameService {
       }
     }
 
-    if (this.updatedMoveMetaIndex !== null && this.updatedMoveMetaIndex < this.game.moveMeta.length) {
-      gameDelta.updatedMoves = [this.game.moveMeta[this.updatedMoveMetaIndex]];
+    // Always clear the index — a reset() between the trailing PV and this flush shrinks
+    // moveMeta, and a stale index would later resolve against an unrelated move.
+    if (this.updatedMoveMetaIndex !== null) {
+      const idx = this.updatedMoveMetaIndex;
       this.updatedMoveMetaIndex = null;
+      if (idx < this.game.moveMeta.length) gameDelta.updatedMoves = [this.game.moveMeta[idx]];
     }
 
     if (d.liveData || d.move || d.players) {

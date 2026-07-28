@@ -50,10 +50,12 @@ function applyDelta(delta: BroadcastDelta): GameEventData | null {
     if (resetMoves) cachedState.game.moves = [];
     if (newMoves?.length) cachedState.game.moves = [...cachedState.game.moves, ...newMoves];
     if (updatedMoves?.length) {
-      for (const updated of updatedMoves) {
-        const idx = cachedState.game.moves.findIndex((m) => m.number === updated.number && m.color === updated.color);
-        if (idx !== -1) cachedState.game.moves[idx] = updated;
-      }
+      // Retroactive PV fills for moves already sent via newMoves. An update with no match
+      // in the cache is dropped silently — there is nothing to patch, and the next full
+      // `state` sync reconciles.
+      cachedState.game.moves = cachedState.game.moves.map(
+        (m) => updatedMoves.find((u) => u.number === m.number && u.color === m.color) ?? m,
+      );
     }
   }
 
