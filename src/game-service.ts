@@ -40,6 +40,7 @@ type DirtyFlags = {
   liveData: boolean;
   clocks: boolean;
   move: boolean;
+  movesPatched: boolean;
   players: boolean;
   site: boolean;
   spectators: boolean;
@@ -47,8 +48,27 @@ type DirtyFlags = {
 };
 
 function freshFlags(): DirtyFlags {
-  return { liveData: false, clocks: false, move: false, players: false, site: false, spectators: false, menu: false };
+  return {
+    liveData: false,
+    clocks: false,
+    move: false,
+    movesPatched: false,
+    players: false,
+    site: false,
+    spectators: false,
+    menu: false,
+  };
 }
+
+type PvUpdate = {
+  depth: number;
+  score: number;
+  nodes: number;
+  pvMoveNumber: number;
+  san: string[];
+  alg: string[];
+  fen: string;
+};
 
 export type GameServiceResult = {
   update: BroadcastDelta | null;
@@ -62,7 +82,10 @@ class GameService {
   private gamesParseTimer: ReturnType<typeof setTimeout> | null = null;
   private dirty: DirtyFlags = freshFlags();
   private moveCountBefore = 0;
-  private updatedMoveMetaIndex: number | null = null;
+  // Moves whose meta was patched retroactively this batch, and the position the most
+  // recent move was played from (the base a trailing PV replays against).
+  private patchedMoves = new Set<MoveMetaData>();
+  private fenBeforeLastMove: string | null = null;
   // "Game started" detection: armed for the first game, re-armed after each
   // RESULT. Fires once both colors have been (re)announced for the new game.
   private gameStartArmed = true;
@@ -180,20 +203,13 @@ class GameService {
     return [EmitType.UPDATE, false];
   }
 
-  private playoutPV(pv: string[], fromPreviousPly = false): { san: string[]; alg: string[]; fen: string } | null {
-    const pvPlayout = new Chess();
-    pvPlayout.loadPgn(this.game.instance.pgn());
-
-    // A trailing PV describes the search that produced the move just played, so it
-    // begins with that move — rewind one ply before replaying it.
-    if (fromPreviousPly && !pvPlayout.undo()) return null;
-
+  private replayPV(chess: Chess, pv: string[]): { san: string[]; alg: string[]; fen: string } | null {
     const san: string[] = [];
     const alg: string[] = [];
 
     for (const move of pv) {
       try {
-        const result = pvPlayout.move(move, { strict: false });
+        const result = chess.move(move, { strict: false });
         san.push(result.san);
         alg.push(`${result.from}${result.to}`);
       } catch {
@@ -201,35 +217,46 @@ class GameService {
       }
     }
 
-    return san.length ? { san, alg, fen: pvPlayout.fen() } : null;
+    return san.length ? { san, alg, fen: chess.fen() } : null;
   }
 
-  private applyPvToMeta(
-    meta: MoveMetaData,
-    {
-      depth,
-      score,
-      nodes,
-      pvMoveNumber,
-      playout,
-    }: {
-      depth: number;
-      score: number;
-      nodes: number;
-      pvMoveNumber: number;
-      playout: { san: string[]; alg: string[]; fen: string };
-    },
-  ): void {
+  private playoutPV(pv: string[]): { san: string[]; alg: string[]; fen: string } | null {
+    const pvPlayout = new Chess();
+    pvPlayout.loadPgn(this.game.instance.pgn());
+
+    return this.replayPV(pvPlayout, pv);
+  }
+
+  // WPV/BPV payloads are positional: depth score time nodes pv...
+  private parsePvTokens(rest: string[]): {
+    depth: number;
+    score: number;
+    nodes: number;
+    usedTime: number;
+    pv: string[];
+  } {
+    const [depthStr, scoreStr, timeStr, nodesStr, ...pv] = rest;
+
+    return {
+      depth: parseInt(depthStr),
+      score: parseInt(scoreStr) / 100,
+      nodes: parseInt(nodesStr),
+      usedTime: parseInt(timeStr) * 10,
+      pv,
+    };
+  }
+
+  private applyPvToMeta(meta: MoveMetaData, { depth, score, nodes, pvMoveNumber, san, alg, fen }: PvUpdate): void {
     meta.depth = depth;
     meta.score = score;
     meta.nodes = nodes;
-    meta.pv = playout.san.length ? [...playout.san] : null;
-    meta.pvFen = playout.fen;
+    meta.pv = san.length ? [...san] : null;
+    meta.pvFen = fen;
     meta.pvMoveNumber = pvMoveNumber;
-    meta.pvFollowup = playout.alg[1] || null;
-    meta.pvAlg = playout.alg[0] || null;
+    meta.pvFollowup = alg[1] || null;
+    meta.pvAlg = alg[0] || null;
 
-    this.game.instance.setComment(`(${playout.san.join(' ')}) ${score.toFixed(2)}/${depth} ${meta.time ?? 0}`);
+    this.game.instance.setComment(`(${san.join(' ')}) ${score.toFixed(2)}/${depth} ${meta.time ?? 0}`);
   }
 
   // A PV for the non-thinking color may be that engine's final flush for the move it
@@ -237,31 +264,30 @@ class GameService {
   // patch the recorded move's meta rather than dropping the line.
   private applyTrailingPv(colorCode: ColorCode, rest: string[]): void {
     const lastMove = this.game.moveMeta[this.game.moveMeta.length - 1];
-    if (!lastMove || lastMove.color !== colorCode) return;
+    if (!lastMove || lastMove.color !== colorCode || !this.fenBeforeLastMove) return;
 
-    const [depthStr, scoreStr, , nodesStr, ...pv] = rest;
-    const depth = parseInt(depthStr);
-    const score = parseInt(scoreStr) / 100;
-    const nodes = parseInt(nodesStr);
+    const { depth, score, nodes, pv } = this.parsePvTokens(rest);
     if (!Number.isFinite(depth) || !Number.isFinite(score) || !Number.isFinite(nodes)) return;
 
     // A shallower line is a stale iteration, not the final flush.
     if (depth < (lastMove.depth ?? 0)) return;
 
-    const playout = this.playoutPV(pv, true);
+    // The trailing PV describes the search that produced the move just played, so it
+    // replays from the position that move was made from.
+    const playout = this.replayPV(new Chess(this.fenBeforeLastMove), pv);
     // The PV must open with the move actually played; otherwise it belongs to a
     // different position and must not overwrite this move's meta.
     if (!playout || playout.san[0] !== lastMove.move) return;
 
-    this.applyPvToMeta(lastMove, { depth, score, nodes, pvMoveNumber: lastMove.number, playout });
+    this.applyPvToMeta(lastMove, { depth, score, nodes, pvMoveNumber: lastMove.number, ...playout });
 
     logger.info(
       `Updated game ${this.game.name} - Trailing PV for move ${lastMove.number}: Color: ${colorCode}, Depth: ${depth}, Score: ${score}, Nodes: ${nodes}`,
       { port: this.broadcast.port },
     );
 
-    this.updatedMoveMetaIndex = this.game.moveMeta.length - 1;
-    this.dirty.liveData = true;
+    this.patchedMoves.add(lastMove);
+    this.dirty.movesPatched = true;
   }
 
   private onPV(tokens: CommandTokens): UpdateResult {
@@ -276,13 +302,13 @@ class GameService {
       return [EmitType.UPDATE, false];
     }
 
-    const [depthStr, scoreStr, timeStr, nodesStr, ...pv] = rest;
-    this.game.liveData.depth = parseInt(depthStr);
-    this.game.liveData.score = parseInt(scoreStr) / 100;
-    this.game.liveData.nodes = parseInt(nodesStr);
-    this.game.liveData.usedTime = parseInt(timeStr) * 10;
+    const parsed = this.parsePvTokens(rest);
+    this.game.liveData.depth = parsed.depth;
+    this.game.liveData.score = parsed.score;
+    this.game.liveData.nodes = parsed.nodes;
+    this.game.liveData.usedTime = parsed.usedTime;
 
-    const playout = this.playoutPV(pv);
+    const playout = this.playoutPV(parsed.pv);
     if (playout) {
       this.game.liveData.pv = playout.san;
       this.game.liveData.pvAlg = playout.alg;
@@ -331,8 +357,10 @@ class GameService {
     const nextPvMoveNumber = color === 'white' ? this.game.moveNumber : this.game.moveNumber + 1;
 
     try {
+      const fenBefore = this.game.instance.fen();
       const move = this.game.instance.move(rest[1], { strict: false });
       const colorCode: ColorCode = color === 'white' ? 'w' : 'b';
+      this.fenBeforeLastMove = fenBefore;
 
       this.game[color].lastMove = move;
       logger.info(`Updated game ${this.game.name} - Color: ${color}, Last Move: ${this.game[color].lastMove?.san}`, {
@@ -366,11 +394,9 @@ class GameService {
           score: this.game.liveData.score,
           nodes: this.game.liveData.nodes,
           pvMoveNumber: this.game.liveData.pvMoveNumber,
-          playout: {
-            san: this.game.liveData.pv,
-            alg: this.game.liveData.pvAlg,
-            fen: this.game.liveData.pvFen,
-          },
+          san: this.game.liveData.pv,
+          alg: this.game.liveData.pvAlg,
+          fen: this.game.liveData.pvFen,
         });
       } else {
         this.game.instance.setComment('(Book)');
@@ -555,7 +581,7 @@ class GameService {
 
   private hasDirty(): boolean {
     const d = this.dirty;
-    return d.liveData || d.clocks || d.move || d.players || d.site || d.spectators || d.menu;
+    return d.liveData || d.clocks || d.move || d.movesPatched || d.players || d.site || d.spectators || d.menu;
   }
 
   private buildGameDelta(): GameDelta {
@@ -596,12 +622,12 @@ class GameService {
       }
     }
 
-    // Always clear the index — a reset() between the trailing PV and this flush shrinks
-    // moveMeta, and a stale index would later resolve against an unrelated move.
-    if (this.updatedMoveMetaIndex !== null) {
-      const idx = this.updatedMoveMetaIndex;
-      this.updatedMoveMetaIndex = null;
-      if (idx < this.game.moveMeta.length) gameDelta.updatedMoves = [this.game.moveMeta[idx]];
+    if (d.movesPatched) {
+      // Filtering moveMeta by identity drops entries a reset() discarded mid-batch.
+      const updatedMoves = this.game.moveMeta.filter((m) => this.patchedMoves.has(m));
+      if (updatedMoves.length > 0) {
+        gameDelta.updatedMoves = updatedMoves;
+      }
     }
 
     if (d.liveData || d.move || d.players) {
@@ -615,7 +641,7 @@ class GameService {
     const delta: BroadcastDelta = {};
     const d = this.dirty;
 
-    if (d.liveData || d.clocks || d.move || d.players || d.site) {
+    if (d.liveData || d.clocks || d.move || d.movesPatched || d.players || d.site) {
       delta.game = this.buildGameDelta();
     }
 
@@ -657,6 +683,7 @@ class GameService {
   async onMessages(messages: string[]): Promise<GameServiceResult> {
     this.dirty = freshFlags();
     this.moveCountBefore = this.game.moveMeta.length;
+    this.patchedMoves.clear();
     const chatEmit: string[] = [];
 
     const processLowPrio = this.broadcast.browserCount > 0;
