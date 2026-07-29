@@ -94,6 +94,7 @@ export type GameDelta = {
   tablebase?: string;
   liveData?: SerializedLiveData;
   newMoves?: MoveMetaData[];
+  updatedMoves?: MoveMetaData[];
   resetMoves?: boolean;
   kibitzerLiveData?: SerializedKibitzerLiveData | null;
 };

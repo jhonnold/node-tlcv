@@ -45,10 +45,18 @@ function applyDelta(delta: BroadcastDelta): GameEventData | null {
   if (delta.menu !== undefined) cachedState.menu = delta.menu;
 
   if (delta.game) {
-    const { resetMoves, newMoves, ...fields } = delta.game;
+    const { resetMoves, newMoves, updatedMoves, ...fields } = delta.game;
     Object.assign(cachedState.game, fields);
     if (resetMoves) cachedState.game.moves = [];
     if (newMoves?.length) cachedState.game.moves = [...cachedState.game.moves, ...newMoves];
+    if (updatedMoves?.length) {
+      // Retroactive PV fills for moves already sent via newMoves. An update with no match
+      // in the cache is dropped silently — there is nothing to patch, and the next full
+      // `state` sync reconciles.
+      cachedState.game.moves = cachedState.game.moves.map(
+        (m) => updatedMoves.find((u) => u.number === m.number && u.color === m.color) ?? m,
+      );
+    }
   }
 
   return cachedState;
