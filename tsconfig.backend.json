@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "moduleResolution": "node",
+    "skipLibCheck": true,
     "allowJs": false,
     "importHelpers": true,
     "sourceMap": true,

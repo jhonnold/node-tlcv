@@ -69,7 +69,6 @@ function loadReplay(gameNumber: number) {
       emit('tab:change', { tab: 'moves' });
     })
     .fail(() => {
-      // eslint-disable-next-line no-console
       console.error(`Failed to load metadata for game ${gameNumber}`);
     });
 }
