@@ -9,6 +9,7 @@ import { savePgn } from './services/pgn.js';
 import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
 import {
   saveTournamentResults,
+  loadTournamentResults,
   invalidateArchiveCache,
   invalidateListingCache,
 } from './services/tournament-results.js';
@@ -16,7 +17,7 @@ import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
 import { Command, splitOnCommand } from './protocol.js';
 import { EmitType } from './socket-io-adapter.js';
 import { commandsProcessed, chatMessages } from './metrics.js';
-import { parseResults, parseGames } from './services/result-parser.js';
+import { parseResults, parseGames, mergeGames } from './services/result-parser.js';
 import type { BroadcastDelta, ColorCode, GameDelta, MoveMetaData } from '../shared/types.js';
 
 type Color = 'white' | 'black';
@@ -80,6 +81,9 @@ class GameService {
   private broadcast: Broadcast;
   private game: ChessGame;
   private gamesParseTimer: ReturnType<typeof setTimeout> | null = null;
+  // Slug the accumulated games table belongs to, so a repeated SITE announcement doesn't
+  // re-hydrate and a genuine tournament change does reset.
+  private hydratedSlug: string | null = null;
   private dirty: DirtyFlags = freshFlags();
   private moveCountBefore = 0;
   // Moves whose meta was patched retroactively this batch, and the position the most
@@ -439,7 +443,7 @@ class GameService {
     return [EmitType.UPDATE, false];
   }
 
-  private onSite(tokens: CommandTokens): UpdateResult {
+  private async onSite(tokens: CommandTokens): Promise<UpdateResult> {
     const site = tokens.slice(1).join(' ');
 
     if (this.game.site) {
@@ -454,6 +458,24 @@ class GameService {
     // new pgns/<slug>/ folder may appear, so the homepage listing scan must re-run.
     invalidateListingCache();
 
+    const slug = siteSlug(this.game.site);
+    if (slug !== this.hydratedSlug) {
+      // A different tournament — drop the previous one's accumulated table, then seed from
+      // pgns/<slug>/tournament-results.json so a restart mid-tournament keeps games the
+      // server's ~300-game window has already scrolled past.
+      if (this.hydratedSlug !== null) {
+        this.broadcast.results = '';
+        this.broadcast.parsedResults = null;
+        this.broadcast.parsedGames = null;
+      }
+
+      const stored = await loadTournamentResults(slug);
+      // Live records win: a CT dump can land before SITE (reloadResults() fires at construction).
+      const merged = mergeGames(stored?.parsedGames ?? [], this.broadcast.parsedGames ?? []);
+      this.broadcast.parsedGames = merged.length ? merged : null;
+      this.hydratedSlug = slug;
+    }
+
     logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`, { port: this.broadcast.port });
 
     this.dirty.site = true;
@@ -463,7 +485,8 @@ class GameService {
   private onCTReset(): UpdateResult {
     this.broadcast.results = '';
     this.broadcast.parsedResults = null;
-    this.broadcast.parsedGames = null;
+    // parsedGames deliberately survives — CTRESET precedes every dump, and the dump only
+    // carries the most recent ~300 games. onCT merges the new batch into what we have.
 
     if (this.gamesParseTimer) {
       clearTimeout(this.gamesParseTimer);
@@ -486,8 +509,10 @@ class GameService {
     this.gamesParseTimer = setTimeout(() => {
       const games = parseGames(this.broadcast.results);
       if (games.length > 0) {
-        this.broadcast.parsedGames = games;
+        // Derive from the raw batch, not the merged list — `games` is in dump order (newest
+        // first) while the merged list spans the whole tournament.
         this.broadcast.currentGameNumber = games[0].gameNumber + 1;
+        this.broadcast.parsedGames = mergeGames(this.broadcast.parsedGames, games);
 
         // Persist the latest standings + schedule (fixed filename, overwritten each dump).
         // Fire-and-forget: saveTournamentResults catches all errors internally.
