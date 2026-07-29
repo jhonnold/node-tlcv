@@ -53,7 +53,6 @@ export function emit<K extends EventKey>(event: K, data: EventMap[K]) {
     try {
       callback(data);
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error(`Error in event handler for "${event}":`, error);
     }
   });
