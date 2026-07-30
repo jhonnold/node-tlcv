@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import { Chess } from 'chess.js';
 import Chessboard from 'chessboardjs';
 import type { ChessboardInstance } from 'chessboardjs';
 import type { SerializedGame, ColorCode } from '../../../../shared/types';
@@ -23,6 +24,7 @@ let navFollowup: string | null = null;
 let navKibitzerAlg: string | null = null;
 let navThinkingAlg: string | null = null;
 let navMoveColor: ColorCode | null = null;
+let navFen = '';
 
 const EMPTY_FEN = '8/8/8/8/8/8/8/8';
 
@@ -67,6 +69,21 @@ function blendColors(colors: string[]): string {
   return `#${[r, g, b, a].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 
+// PV moves can go stale between when an engine reports them and when we draw
+// (e.g. the piece they move gets captured first), so only draw legal ones.
+function isValidUciMove(fen: string, uci: string): boolean {
+  try {
+    new Chess(fen).move({
+      from: uci.substring(0, 2),
+      to: uci.substring(2, 4),
+      promotion: uci[4] || undefined,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function drawArrows() {
   clearArrows();
   if (!lastGameData) return;
@@ -80,6 +97,7 @@ function drawArrows() {
   let tMove: string;
   let tMoveColor: string;
   let fMoveColor: string;
+  let fen: string;
 
   if (live) {
     const { pvAlg = '', color } = lastGameData.liveData;
@@ -91,12 +109,14 @@ function drawArrows() {
     tMove = pvAlg;
     tMoveColor = color === 'w' ? whiteArrow : blackArrow;
     fMoveColor = color === 'w' ? blackArrow : whiteArrow;
+    fen = lastGameData.fen;
   } else {
     kMove = navKibitzerAlg || '';
     fMove = navFollowup || '';
     tMove = navThinkingAlg || '';
     tMoveColor = navMoveColor === 'w' ? whiteArrow : blackArrow;
     fMoveColor = navMoveColor === 'w' ? blackArrow : whiteArrow;
+    fen = navFen;
   }
 
   // Group arrows by move and blend overlapping colors
@@ -106,9 +126,9 @@ function drawArrows() {
     if (existing) existing.push(color);
     else arrowMap.set(move, [color]);
   };
-  if (kMove) addArrow(kMove, kibitzerArrowColor);
-  if (fMove) addArrow(fMove, fMoveColor);
-  if (tMove) addArrow(tMove, tMoveColor);
+  if (kMove && isValidUciMove(fen, kMove)) addArrow(kMove, kibitzerArrowColor);
+  if (fMove && isValidUciMove(fen, fMove)) addArrow(fMove, fMoveColor);
+  if (tMove && isValidUciMove(fen, tMove)) addArrow(tMove, tMoveColor);
 
   for (const [move, colors] of arrowMap) {
     drawMove(move, colors.length === 1 ? colors[0] : blendColors(colors), flipped);
@@ -212,6 +232,7 @@ function getNavMoveColor(navIndex: number): ColorCode | null {
 function handleNavPosition({ fen, isLive, lastMove, index }: NavPosition) {
   const wasLive = live;
   live = isLive;
+  navFen = fen;
   board!.position(fen);
   highlightSquares(lastMove);
 
