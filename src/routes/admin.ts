@@ -18,12 +18,16 @@ router.use(
   }),
 );
 
-router.get('/', (_: Request, res: Response) => {
+router.get('/', async (_: Request, res: Response) => {
   const kibitzerManager = getKibitzerManager();
+  // Already-live connections would only 400 with "Port already in use!" — keep them out of the picker.
+  const active = new Set([...broadcasts.values()].map((b) => b.connection));
+
   res.render('pages/admin', {
     broadcasts: broadcasts.values(),
     kibitzers: kibitzerManager?.getStatus() ?? [],
     webhooks: getWebhookManager()?.getStatus() ?? [],
+    connectionHistory: (await configStore.getConnectionHistory()).filter((c) => !active.has(c)),
   });
 });
 
