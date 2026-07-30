@@ -13,12 +13,20 @@ export type ConnectionEntry = string | ConnectionConfig;
 
 export interface AppConfig {
   connections: ConnectionEntry[];
+  connectionHistory?: string[];
   kibitzers?: KibitzerConfig[];
   webhooks?: WebhookConfig[];
 }
 
+const HISTORY_LIMIT = 50;
+
 function normalizeConnection(entry: ConnectionEntry): ConnectionConfig {
   return typeof entry === 'string' ? { connection: entry, ephemeral: false } : { ephemeral: false, ...entry };
+}
+
+/** Newest-first LRU merge: `added` moves to the front, dupes drop, capped at HISTORY_LIMIT. */
+function mergeHistory(history: string[], added: string[]): string[] {
+  return [...added, ...history.filter((c) => !added.includes(c))].slice(0, HISTORY_LIMIT);
 }
 
 export class ConfigStore {
@@ -50,6 +58,19 @@ export class ConfigStore {
     // ephemeral is set. Reads tolerate both forms via normalizeConnection().
     const entry: ConnectionEntry = ephemeral ? { connection, ephemeral: true } : connection;
     config.connections = [...existing, entry];
+    config.connectionHistory = mergeHistory(config.connectionHistory ?? [], [connection]);
+    await this.save(config);
+  }
+
+  // History deliberately outlives removeConnection() — remembering closed broadcasts is the point.
+  async getConnectionHistory(): Promise<string[]> {
+    const config = await this.load();
+    return config.connectionHistory ?? [];
+  }
+
+  async recordConnectionHistory(connections: string[]): Promise<void> {
+    const config = await this.load();
+    config.connectionHistory = mergeHistory(config.connectionHistory ?? [], connections);
     await this.save(config);
   }
 

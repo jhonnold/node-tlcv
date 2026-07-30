@@ -30,6 +30,8 @@ export function getWebhookManager(): WebhookManager | null {
 
 export async function connect(): Promise<void> {
   const connections = await configStore.getConnections();
+  // Seed the admin autocomplete: boot connections never pass through addConnection().
+  await configStore.recordConnectionHistory(connections.map((c) => c.connection));
 
   for (const { connection, ephemeral } of connections) {
     const [url, port] = connection.split(':');

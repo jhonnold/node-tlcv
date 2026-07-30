@@ -43,7 +43,19 @@
         <form id="add-new" class="admin-form admin-form--inline">
           <div class="field">
             <label for="connection">Connection</label>
-            <input id="connection" name="connection" required placeholder="GrahamCCRL.dyndns.org:16000" />
+            <input
+              id="connection"
+              name="connection"
+              required
+              placeholder="GrahamCCRL.dyndns.org:16000"
+              list="connection-history"
+              autocomplete="off"
+            />
+            <datalist id="connection-history">
+              <% for (const c of connectionHistory) { %>
+              <option value="<%= c %>"></option>
+              <% } %>
+            </datalist>
           </div>
           <div class="field">
             <label class="webhook-event-option">

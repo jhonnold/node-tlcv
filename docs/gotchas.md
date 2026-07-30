@@ -10,6 +10,7 @@ Project-wide pitfalls and constraints that don't fit a single subsystem.
 ## Configuration
 
 - **Connections format**: Each `connections` entry is either a bare `"host:port"` string (default mode) or an object `{ "connection": "host:port", "ephemeral": true }`. Both forms are accepted on read; the admin "Add new" form writes a bare string unless the "Ephemeral local port" checkbox is set.
+- **Connection history**: Optional `connectionHistory` array of bare `"host:port"` strings, newest first, capped at 50. Seeded from `connections` at boot and prepended on every add; **not** pruned when a connection is closed — it backs the `<datalist>` autocomplete on the admin "Add new" form, whose whole purpose is remembering closed broadcasts. Absent in older configs (treated as empty).
 - **Kibitzer config**: Optional. Each entry has an `id` (auto-assigned if missing), `type` (`"local"` or `"ssh"`), `priority` (higher = assigned to more-viewed broadcasts), and type-specific fields. Both types accept optional `threads` (default 1) and `hash` (default 256).
 - **Webhook config**: Optional. Each entry has an `id` (auto-assigned if missing), `type` (`"discord"` only), `url`, optional `name`, optional `ports` array (empty = all broadcasts), and optional `events` array of `"game-started"` / `"game-finished"` (empty = both).
 
