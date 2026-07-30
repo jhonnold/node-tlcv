@@ -159,3 +159,13 @@ export function parseGames(raw: string): GameRecord[] {
 
   return games;
 }
+
+// The CT dump only carries the most recent ~300 games, so older records are retained by
+// merging on gameNumber (incoming supersedes). Sorted newest-first to match dump order.
+export function mergeGames(existing: GameRecord[] | null, incoming: GameRecord[]): GameRecord[] {
+  const byNumber = new Map<number, GameRecord>();
+  for (const g of existing ?? []) byNumber.set(g.gameNumber, g);
+  for (const g of incoming) byNumber.set(g.gameNumber, g);
+
+  return [...byNumber.values()].sort((a, b) => b.gameNumber - a.gameNumber);
+}
