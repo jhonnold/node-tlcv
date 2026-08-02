@@ -43,6 +43,10 @@ function matchesQuery(game: GameRecord, query: string): boolean {
   return fuzzyMatches(query, game.white) || fuzzyMatches(query, game.black);
 }
 
+function isDecisive(result: string): boolean {
+  return result === '1-0' || result === '0-1';
+}
+
 function renderGames(games: GameRecord[]) {
   if (!games.length) {
     return $('<p>')
@@ -111,7 +115,14 @@ function loadReplay(gameNumber: number) {
 
 function applyFilter() {
   const query = String($('#games-filter-input').val() ?? '');
-  const filtered = query ? allGames.filter((g) => matchesQuery(g, query)) : allGames;
+  const decisiveOnly = ($('#games-filter-decisive').is(':checked') ?? false) as boolean;
+
+  const filtered = allGames.filter((g) => {
+    if (query && !matchesQuery(g, query)) return false;
+    if (decisiveOnly && !isDecisive(g.result)) return false;
+    return true;
+  });
+
   const $container = $('#games-container');
   $container.empty();
   $container.append(renderGames(filtered));
@@ -152,6 +163,7 @@ function autoLoadLatest() {
 
 export function init() {
   $('#games-filter-input').on('input', applyFilter);
+  $('#games-filter-decisive').on('change', applyFilter);
 
   on('tab:change', ({ tab }) => {
     if (tab === 'games') fetchAndRender();
