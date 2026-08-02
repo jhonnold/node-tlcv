@@ -1,14 +1,32 @@
 @use 'mixins' as *;
 
 .games-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 0 0 8px;
   margin: 0;
 
   #games-filter-input {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     box-sizing: border-box;
     margin: 0;
     font-size: 0.8rem;
+  }
+
+  .games-filter-decisive {
+    flex: none;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    margin: 0;
+    cursor: pointer;
+
+    input[type='checkbox'] {
+      margin: 0 4px 0 0;
+      vertical-align: middle;
+      cursor: pointer;
+    }
   }
 }
 
