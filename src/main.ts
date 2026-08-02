@@ -1,10 +1,10 @@
 import 'dotenv/config';
 
-import crypto from 'node:crypto';
 import http from 'http';
 import { app } from './app.js';
 import { io } from './socket-io-adapter.js';
 import { logger } from './util/index.js';
+import { genId } from './util/ids.js';
 import { connect, setKibitzerManager, setWebhookManager } from './broadcast-manager.js';
 import { KibitzerManager } from './kibitzer/index.js';
 import { WebhookManager } from './webhooks/index.js';
@@ -29,13 +29,13 @@ io.attach(server);
   let needsSave = false;
   for (const k of kibitzers) {
     if (!k.id) {
-      k.id = crypto.randomUUID().slice(0, 8);
+      k.id = genId();
       needsSave = true;
     }
   }
   for (const w of webhooks) {
     if (!w.id) {
-      w.id = crypto.randomUUID().slice(0, 8);
+      w.id = genId();
       needsSave = true;
     }
   }

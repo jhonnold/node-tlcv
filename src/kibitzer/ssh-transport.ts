@@ -3,31 +3,17 @@ import type { ClientChannel } from 'ssh2';
 import fs from 'node:fs';
 import { createInterface } from 'readline';
 import { logger } from '../util/index.js';
-import { parseInfoLine } from './uci-parser.js';
-import type { AnalysisInfo } from './uci-parser.js';
-import type { KibitzerTransport, SshKibitzerConfig } from './types.js';
+import { UciTransportBase } from './uci-transport-base.js';
+import type { SshKibitzerConfig } from './types.js';
 
-export class SshTransport implements KibitzerTransport {
+export class SshTransport extends UciTransportBase {
   private client: Client | null = null;
   private channel: ClientChannel | null = null;
-  private callback: ((info: AnalysisInfo) => void) | null = null;
-  private _ready = false;
+  private readonly config: SshKibitzerConfig;
 
-  get ready(): boolean {
-    return this._ready;
-  }
-
-  private stm: 'w' | 'b' = 'w';
-  private pendingFen: string | null = null;
-  private engineName: string;
-
-  private readonly threads: number;
-  private readonly hash: number;
-
-  constructor(private readonly config: SshKibitzerConfig) {
-    this.threads = config.threads ?? 1;
-    this.hash = config.hash ?? 256;
-    this.engineName = `Remote Engine @ ${config.host}`;
+  constructor(config: SshKibitzerConfig) {
+    super({ threads: config.threads, hash: config.hash }, `Remote Engine @ ${config.host}`);
+    this.config = config;
   }
 
   create(): void {
@@ -93,9 +79,7 @@ export class SshTransport implements KibitzerTransport {
   }
 
   teardown(): void {
-    this._ready = false;
-    this.callback = null;
-    this.pendingFen = null;
+    this.clearState();
     this.send('quit');
     setTimeout(() => {
       if (this.channel) {
@@ -109,68 +93,9 @@ export class SshTransport implements KibitzerTransport {
     }, 1000);
   }
 
-  startAnalysis(fen: string): void {
-    if (!this.channel) return;
-
-    const parts = fen.split(' ');
-    this.stm = (parts[1] ?? 'w') as 'w' | 'b';
-
-    if (!this._ready) {
-      this.pendingFen = fen;
-      return;
-    }
-
-    this.send('stop');
-    this.send(`position fen ${fen}`);
-    this.send('go infinite');
-  }
-
-  stopAnalysis(): void {
-    this.pendingFen = null;
-    this.send('stop');
-  }
-
-  onAnalysis(callback: (info: AnalysisInfo) => void): void {
-    this.callback = callback;
-  }
-
-  name(): string {
-    return this.engineName;
-  }
-
-  private send(cmd: string): void {
+  protected send(cmd: string): void {
     if (this.channel?.writable) {
       this.channel.write(`${cmd}\n`);
-    }
-  }
-
-  private onLine(line: string): void {
-    if (line.startsWith('id name ')) {
-      this.engineName = line.slice('id name '.length);
-      return;
-    }
-
-    if (line === 'uciok') {
-      this.send(`setoption name Threads value ${this.threads}`);
-      this.send(`setoption name Hash value ${this.hash}`);
-      this.send('isready');
-      return;
-    }
-
-    if (line === 'readyok') {
-      this._ready = true;
-      logger.info(`Kibitzer SSH engine ready on ${this.config.host} (Threads=${this.threads}, Hash=${this.hash})`);
-      if (this.pendingFen) {
-        const fen = this.pendingFen;
-        this.pendingFen = null;
-        this.startAnalysis(fen);
-      }
-      return;
-    }
-
-    if (line.startsWith('info ') && this.callback) {
-      const info = parseInfoLine(line, this.stm);
-      if (info) this.callback(info);
     }
   }
 }

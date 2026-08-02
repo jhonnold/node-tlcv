@@ -21,38 +21,21 @@ export class BroadcastState {
     this.browserCount = 0;
   }
 
-  addChat(message: string): void {
-    this.chat.push(message);
-  }
-
-  addSpectator(name: string): void {
-    this.spectators.add(name);
-  }
-
-  removeSpectator(name: string): boolean {
-    return this.spectators.delete(name);
-  }
-
-  hasSpectator(name: string): boolean {
-    return this.spectators.has(name);
-  }
-
-  setMenu(name: string, url: string): void {
-    this.menu.set(name, url);
-  }
-
   toJSON(includeChat = false): {
     spectators: Array<string>;
     chat: Array<string>;
     menu: { [key: string]: string };
   } {
-    const menu: { [key: string]: string } = {};
-    for (const e of this.menu.entries()) menu[e[0]] = e[1];
-
     return {
       spectators: Array.from(this.spectators),
       chat: includeChat ? this.chat.slice(-1000) : [],
-      menu,
+      menu: menuToObject(this.menu),
     };
   }
+}
+
+export function menuToObject(menu: Map<string, string>): { [key: string]: string } {
+  const obj: { [key: string]: string } = {};
+  for (const e of menu.entries()) obj[e[0]] = e[1];
+  return obj;
 }
