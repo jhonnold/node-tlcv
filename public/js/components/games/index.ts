@@ -9,9 +9,45 @@ const DOWNLOAD_ICON =
 const PLAY_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"></polygon></svg>';
 
+let allGames: GameRecord[] = [];
+
+function normalizeForMatch(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+// Fuzzy match: case-insensitive, tolerant of gaps/typos (subsequence) and of
+// out-of-order query characters (all query chars present in the name).
+function fuzzyMatches(query: string, name: string): boolean {
+  const q = normalizeForMatch(query);
+  const n = normalizeForMatch(name);
+  if (!q) return true;
+  if (n.length < q.length) return false;
+
+  let qi = 0;
+  for (let ni = 0; ni < n.length && qi < q.length; ni++) {
+    if (n.charCodeAt(ni) === q.charCodeAt(qi)) qi++;
+  }
+  if (qi === q.length) return true;
+
+  const remaining = new Map<string, number>();
+  for (const c of n) remaining.set(c, (remaining.get(c) ?? 0) + 1);
+  for (const c of q) {
+    const left = (remaining.get(c) ?? 0) - 1;
+    if (left < 0) return false;
+    remaining.set(c, left);
+  }
+  return true;
+}
+
+function matchesQuery(game: GameRecord, query: string): boolean {
+  return fuzzyMatches(query, game.white) || fuzzyMatches(query, game.black);
+}
+
 function renderGames(games: GameRecord[]) {
   if (!games.length) {
-    return $('<p>').addClass('games-empty').text('No games data available.');
+    return $('<p>')
+      .addClass('games-empty')
+      .text(allGames.length ? 'No games match your filter.' : 'No games data available.');
   }
 
   const $table = $('<table>').addClass('games-table');
@@ -73,6 +109,14 @@ function loadReplay(gameNumber: number) {
     });
 }
 
+function applyFilter() {
+  const query = String($('#games-filter-input').val() ?? '');
+  const filtered = query ? allGames.filter((g) => matchesQuery(g, query)) : allGames;
+  const $container = $('#games-container');
+  $container.empty();
+  $container.append(renderGames(filtered));
+}
+
 function fetchAndRender() {
   const $container = $('#games-container');
   $container.html('<p class="games-loading">Loading games...</p>');
@@ -83,8 +127,8 @@ function fetchAndRender() {
     dataType: 'json',
   })
     .done((data: GameRecord[]) => {
-      $container.empty();
-      $container.append(renderGames(data));
+      allGames = data;
+      applyFilter();
     })
     .fail(() => {
       $container.html('<p class="games-error">No games available.</p>');
@@ -107,6 +151,8 @@ function autoLoadLatest() {
 }
 
 export function init() {
+  $('#games-filter-input').on('input', applyFilter);
+
   on('tab:change', ({ tab }) => {
     if (tab === 'games') fetchAndRender();
   });
