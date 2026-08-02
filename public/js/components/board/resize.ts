@@ -2,6 +2,7 @@
 import $ from 'jquery';
 import type { ChessboardInstance } from 'chessboardjs';
 import { emit } from '../../events/index';
+import { sizeArrowBoard } from './arrows';
 
 const INFO_CARD_HEIGHT = 155;
 const GAP = 32;
@@ -65,8 +66,7 @@ export function initResize(
     pvBoardWhite.resize();
     pvBoardBlack.resize();
 
-    const b = $('#board');
-    $('#arrow-board').attr('height', b.height()!).height(b.height()!).attr('width', b.width()!).width(b.width()!);
+    sizeArrowBoard();
     emit('board:resize', undefined);
   }
 

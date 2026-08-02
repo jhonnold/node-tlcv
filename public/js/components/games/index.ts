@@ -115,7 +115,7 @@ function loadReplay(gameNumber: number) {
 
 function applyFilter() {
   const query = String($('#games-filter-input').val() ?? '');
-  const decisiveOnly = ($('#games-filter-decisive').is(':checked') ?? false) as boolean;
+  const decisiveOnly = $('#games-filter-decisive').is(':checked');
 
   const filtered = allGames.filter((g) => {
     if (query && !matchesQuery(g, query)) return false;
@@ -128,7 +128,7 @@ function applyFilter() {
   $container.append(renderGames(filtered));
 }
 
-function fetchAndRender() {
+function fetchAndRender(onData?: (data: GameRecord[]) => void) {
   const $container = $('#games-container');
   $container.html('<p class="games-loading">Loading games...</p>');
 
@@ -140,6 +140,7 @@ function fetchAndRender() {
     .done((data: GameRecord[]) => {
       allGames = data;
       applyFilter();
+      onData?.(data);
     })
     .fail(() => {
       $container.html('<p class="games-error">No games available.</p>');
@@ -148,17 +149,11 @@ function fetchAndRender() {
 
 // Archive pages have no live feed, so open them on the most recent finished game
 // (highest game number with a saved meta sidecar) to avoid landing on a blank board.
-function autoLoadLatest() {
-  $.ajax({
-    url: `${apiBase()}/games/json`,
-    method: 'GET',
-    dataType: 'json',
-  }).done((data: GameRecord[]) => {
-    const latest = data
-      .filter((g) => g.metaUrl)
-      .reduce<GameRecord | null>((best, g) => (!best || g.gameNumber > best.gameNumber ? g : best), null);
-    if (latest) loadReplay(latest.gameNumber);
-  });
+function loadLatest(fetchData: GameRecord[]) {
+  const latest = fetchData
+    .filter((g) => g.metaUrl)
+    .reduce<GameRecord | null>((best, g) => (!best || g.gameNumber > best.gameNumber ? g : best), null);
+  if (latest) loadReplay(latest.gameNumber);
 }
 
 export function init() {
@@ -170,7 +165,6 @@ export function init() {
   });
 
   if (isArchive()) {
-    fetchAndRender();
-    autoLoadLatest();
+    fetchAndRender(loadLatest);
   }
 }
