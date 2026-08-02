@@ -1,12 +1,13 @@
 @use 'mixins' as *;
 
 .games-filter {
-  padding: 8px 10px;
+  padding: 0 0 8px;
   margin: 0;
 
   #games-filter-input {
     width: 100%;
     box-sizing: border-box;
+    margin: 0;
     font-size: 0.8rem;
   }
 }
