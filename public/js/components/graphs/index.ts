@@ -16,6 +16,7 @@ import { goTo, getNavIndex } from '../navigation/index';
 import GRAPH_TYPES from './graph-types';
 import { init as initSelector, setActive } from './selector';
 import { isReplayMode } from '../replay/index';
+import { getCssVar } from '../../utils/dom';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend);
 
@@ -27,10 +28,6 @@ let gameMoves: MoveMetaData[] = [];
 let whiteName = '';
 let blackName = '';
 let kibitzerName = '';
-
-function getCssVar(name: string) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
 
 function buildPointRadii(dataArray: (number | null)[]) {
   const activeIdx = getNavIndex() - 1;

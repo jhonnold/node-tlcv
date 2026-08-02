@@ -92,3 +92,8 @@ export function clearArrows() {
   if (ctx === null) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
+
+export function sizeArrowBoard() {
+  const b = $('#board');
+  $('#arrow-board').attr('height', b.height()!).height(b.height()!).attr('width', b.width()!).width(b.width()!);
+}

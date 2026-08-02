@@ -6,9 +6,10 @@ import type { SerializedGame, ColorCode } from '../../../../shared/types';
 import { colorName } from '../../../../shared/colors';
 import { on } from '../../events/index';
 import type { GameEventData, NavPosition } from '../../events/index';
-import { drawMove, clearArrows } from './arrows';
+import { drawMove, clearArrows, sizeArrowBoard } from './arrows';
 import { initResize } from './resize';
 import copyFen from '../../utils/fen';
+import { getCssVar } from '../../utils/dom';
 import { isReplayMode } from '../replay/index';
 import { getPieceSet } from '../theme/index';
 import { pieceSrc } from '../theme/piece-sets';
@@ -27,12 +28,6 @@ let navMoveColor: ColorCode | null = null;
 let navFen = '';
 
 const EMPTY_FEN = '8/8/8/8/8/8/8/8';
-
-// Arrow colors are theme tokens (see theme/presets.ts) so they follow the active
-// palette and any custom overrides. Read live at draw time, falling back to the
-// light-preset value if the token is unset (e.g. read before the theme applies).
-const getCssVar = (name: string, fallback: string): string =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
 function updatePvBoards(fens: { white: string; black: string }) {
   pvBoardWhite!.position(fens.white, false);
@@ -259,8 +254,7 @@ export function init() {
 
   // Initialize arrow canvas
   clearArrows();
-  const b = $('#board');
-  $('#arrow-board').attr('height', b.height()!).height(b.height()!).attr('width', b.width()!).width(b.width()!);
+  sizeArrowBoard();
 
   // Initialize PV boards
   const pvBoardSettings = {
@@ -297,8 +291,7 @@ export function init() {
 export function resize() {
   if (board) board.resize();
 
-  const b = $('#board');
-  $('#arrow-board').attr('height', b.height()!).height(b.height()!).attr('width', b.width()!).width(b.width()!);
+  sizeArrowBoard();
   drawArrows();
 }
 
