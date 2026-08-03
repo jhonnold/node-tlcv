@@ -6,6 +6,8 @@
 // chessboardjs token (`wK`…`bP`). DEFAULT_PIECE_SET below must stay in sync with
 // the pre-JS fallback path hardcoded in views/pages/broadcasts.ejs.
 
+import $ from 'jquery';
+
 export type PieceSetId = 'classic' | 'livius' | 'meridian' | 'meridian_shaded';
 
 export interface PieceSetMeta {
@@ -30,4 +32,18 @@ export function pieceSrc(set: PieceSetId, piece: string): string {
 
 export function isPieceSetId(value: string | null): value is PieceSetId {
   return PIECE_SETS.some((s) => s.id === value);
+}
+
+/**
+ * Rewrite the `src` of already-rendered piece images under each selector.
+ * Used both when the live board's set changes and when the server-rendered
+ * mini-boards need to catch up to the stored preference.
+ */
+export function applyPieceSet(set: PieceSetId, selectors: string[]) {
+  selectors.forEach((sel) =>
+    $(`${sel} img[data-piece]`).each(function rewriteSrc() {
+      const piece = $(this).attr('data-piece');
+      if (piece) $(this).attr('src', pieceSrc(set, piece));
+    }),
+  );
 }

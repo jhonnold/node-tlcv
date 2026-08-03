@@ -57,19 +57,3 @@ export function emit<K extends EventKey>(event: K, data: EventMap[K]) {
     }
   });
 }
-
-export function once<K extends EventKey>(event: K, callback: (data: EventMap[K]) => void): () => void {
-  const wrapper = (data: EventMap[K]) => {
-    off(event, wrapper);
-    callback(data);
-  };
-  return on(event, wrapper);
-}
-
-export function removeAllListeners(event?: string) {
-  if (event) {
-    listeners.delete(event);
-  } else {
-    listeners.clear();
-  }
-}

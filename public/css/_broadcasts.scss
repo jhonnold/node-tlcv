@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 .page-header {
   text-align: center;
   padding: 20px;
@@ -13,27 +15,9 @@
 }
 
 .broadcast-card {
-  display: block;
-  min-width: 0; // allow the grid item to shrink below its min-content (fixes #154)
-  background: var(--surfaceColor);
-  border: 1px solid var(--surfaceColorHover);
-  border-radius: 8px;
+  // min-width: 0 lets the grid item shrink below its min-content (fixes #154)
+  @include card-link;
   padding: 12px;
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s, transform 0.2s;
-
-  &:link,
-  &:visited {
-    text-decoration: none;
-    color: inherit;
-  }
-
-  &:hover {
-    background: var(--surfaceColorHover);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: scale(1.02);
-  }
 
   &.featured {
     border-color: var(--primaryColor);
@@ -52,8 +36,7 @@
   flex-shrink: 0;
   width: 120px;
   height: 120px;
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   border-radius: 2px;
   overflow: hidden;
 }
@@ -87,8 +70,7 @@
 // Card info
 .card-info {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   justify-content: space-between;
   min-width: 0;
 }
@@ -97,9 +79,7 @@
   font-size: 0.75em;
   font-weight: 600;
   color: var(--primaryColor);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include text-truncate;
 }
 
 .player-row {
@@ -129,9 +109,7 @@
   flex: 1;
   font-weight: 600;
   font-size: 0.9em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include text-truncate;
 }
 
 .player-clock {
@@ -178,9 +156,7 @@
 .opening {
   font-size: 0.8em;
   color: var(--textColor);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include text-truncate;
 }
 
 .card-footer {
@@ -219,35 +195,14 @@
 }
 
 .archive-card {
-  display: block;
-  min-width: 0;
-  background: var(--surfaceColor);
-  border: 1px solid var(--surfaceColorHover);
-  border-radius: 8px;
+  @include card-link;
   padding: 12px 14px;
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s, transform 0.2s;
-
-  &:link,
-  &:visited {
-    text-decoration: none;
-    color: inherit;
-  }
-
-  &:hover {
-    background: var(--surfaceColorHover);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: scale(1.02);
-  }
 }
 
 .archive-title {
   font-weight: 600;
   font-size: 0.95em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include text-truncate;
 }
 
 .archive-meta {

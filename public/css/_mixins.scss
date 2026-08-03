@@ -137,6 +137,77 @@
   z-index: 1;
 }
 
+// Body treatment shared by the three project data tables (moves, games, results):
+// mini.css reset, sticky header, row separators, cell padding.
+@mixin data-table($width: 100%, $table-layout: false, $th-size: 0.7rem) {
+  @include mini-table-reset($width: $width, $table-layout: $table-layout);
+
+  thead th {
+    @include sticky-th-header($th-size);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--surfaceColorHover);
+  }
+
+  tbody td {
+    padding: 6px 8px;
+    vertical-align: middle;
+  }
+}
+
+// The leading "#" column of a data table.
+@mixin table-index-cell {
+  color: var(--secondaryColor);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-align: right;
+  padding-right: 8px;
+}
+
+// Pill-shaped toggle button, used by the tab bar and the graph selector.
+// Callers supply their own padding, border and transition.
+@mixin pill-toggle($font-size) {
+  font-family: var(--fontFamily);
+  font-weight: 500;
+  font-size: $font-size;
+  background: transparent;
+  border-radius: var(--universal-border-radius);
+  cursor: pointer;
+  color: var(--textColor);
+  opacity: 0.6;
+
+  &.active {
+    opacity: 1;
+    background: var(--primaryColor);
+    color: var(--backgroundColor);
+  }
+}
+
+// A whole card that is itself a link: neutral link colors, lift on hover.
+@mixin card-link {
+  display: block;
+  min-width: 0;
+  background: var(--surfaceColor);
+  border: 1px solid var(--surfaceColorHover);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+
+  &:link,
+  &:visited {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  &:hover {
+    background: var(--surfaceColorHover);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02);
+  }
+}
+
 @mixin table-status-message {
   padding: 16px 8px;
   color: var(--textColor);

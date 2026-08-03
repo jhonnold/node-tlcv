@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 .pv {
   overflow: hidden;
   white-space: nowrap;
@@ -5,12 +7,6 @@
   padding-bottom: var(--universal-margin);
   font-weight: var(--chatFontWeight);
   color: var(--cardTextColor);
-}
-
-.spectator-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
 }
 
 #chat-tab-panel {

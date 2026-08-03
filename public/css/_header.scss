@@ -41,9 +41,7 @@
   font-size: 0.85rem;
   font-weight: 500;
   opacity: 0.7;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include text-truncate;
 }
 
 .header-btn {

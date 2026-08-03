@@ -58,8 +58,7 @@ export function initResize(
   let isResizing = false;
   let startX = 0;
   let startWidths = [0, 0];
-  let lastResizeTime = 0;
-  const THROTTLE_MS = 10;
+  let pendingFrame: number | null = null;
 
   function resizeBoards() {
     board.resize();
@@ -78,12 +77,16 @@ export function initResize(
     resizeBoards();
   }
 
-  function throttledResize() {
-    const now = Date.now();
-    if (now - lastResizeTime >= THROTTLE_MS) {
-      lastResizeTime = now;
+  // mousemove fires far faster than the boards can redraw, so collapse a burst of
+  // moves into one redraw per frame. Doing the chat-height write here too keeps the
+  // layout read and the write inside the same frame.
+  function scheduleResize() {
+    if (pendingFrame !== null) return;
+    pendingFrame = requestAnimationFrame(() => {
+      pendingFrame = null;
       resizeBoards();
-    }
+      $('#chat-area').height(chatHeight());
+    });
   }
 
   resizeHandle.on('mousedown', (e) => {
@@ -92,7 +95,6 @@ export function initResize(
     const styles = window.getComputedStyle(mainLayout[0]);
     const columns = styles.gridTemplateColumns.split(' ');
     startWidths = [parseFloat(columns[0]), parseFloat(columns[2])];
-    lastResizeTime = 0;
     e.preventDefault();
   });
 
@@ -114,8 +116,7 @@ export function initResize(
     }
 
     mainLayout.css('grid-template-columns', `${newLeftWidth}px ${HANDLE_WIDTH}px ${newRightWidth}px`);
-    setTimeout(() => $('#chat-area').height(chatHeight()), 5);
-    throttledResize();
+    scheduleResize();
   });
 
   $(document).on('mouseup', () => {

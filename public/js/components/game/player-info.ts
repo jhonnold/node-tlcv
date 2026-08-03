@@ -1,36 +1,27 @@
 // public/js/components/game/player-info.js
 import $ from 'jquery';
-import type { SerializedGame, MoveMetaData, SerializedKibitzerLiveData, KibitzerMeta } from '../../../../shared/types';
+import type {
+  SerializedGame,
+  MoveMetaData,
+  SerializedKibitzerLiveData,
+  KibitzerMeta,
+  ColorCode,
+} from '../../../../shared/types';
 import { colorName } from '../../../../shared/colors';
-import pv, { formatPv } from '../../utils/pv';
+import { formatPv } from '../../utils/pv';
 import { updateFenDisplay } from '../../utils/fen';
+import { formatScore, formatSignedScore, formatNodes, formatNps } from '../../utils/format';
 
 function updateElText(el: JQuery, val: string) {
   const curr = el.text();
   if (curr !== val) el.text(val);
 }
 
-const MATE_SCORE_THRESHOLD = 100000;
-
-export function formatScore(score: number, color: string) {
-  const s = color === 'black' ? score * -1 : score;
-
-  if (s > MATE_SCORE_THRESHOLD) {
-    return 'M';
-  } else if (s < -MATE_SCORE_THRESHOLD) {
-    return '-M';
-  } else {
-    return s.toFixed(2);
-  }
-}
-
-function formatNodes(nodes: number) {
-  return `${(nodes / 1000000).toFixed(2)}M`;
-}
-
-function formatNps(nodes: number, time: number | null) {
-  if (!time) return '--';
-  return `${(nodes / time / 1000000).toFixed(2)}M`;
+// `game:update` fires up to ~10x/second, but most of these values only change when
+// a move lands. Re-parsing identical PV markup is the most expensive of the writes,
+// so guard it the same way updateElText guards text.
+function updateElHtml(el: JQuery, val: string) {
+  if (el.html() !== val) el.html(val);
 }
 
 export function updateLiveInfo(game: SerializedGame, color: 'white' | 'black') {
@@ -40,11 +31,9 @@ export function updateLiveInfo(game: SerializedGame, color: 'white' | 'black') {
   updateElText($(`#${color}-score`), formatScore(liveData.score, color));
   updateElText($(`#${color}-depth`), String(liveData.depth));
   updateElText($(`#${color}-nodes`), formatNodes(liveData.nodes));
-  updateElText(
-    $(`#${color}-nps`),
-    liveData.usedTime ? `${(liveData.nodes / liveData.usedTime / 1000).toFixed(2)}M` : '--',
-  );
-  $(`#${color}-pv`).html(pv(liveData, color));
+  // usedTime is milliseconds; formatNps takes seconds.
+  updateElText($(`#${color}-nps`), formatNps(liveData.nodes, liveData.usedTime / 1000));
+  updateElHtml($(`#${color}-pv`), formatPv(liveData.pv, liveData.pvMoveNumber, color));
 }
 
 export function updateHistoricalInfo(color: string, meta: MoveMetaData | null) {
@@ -53,13 +42,13 @@ export function updateHistoricalInfo(color: string, meta: MoveMetaData | null) {
     updateElText($(`#${color}-depth`), '--');
     updateElText($(`#${color}-nodes`), '--');
     updateElText($(`#${color}-nps`), '--');
-    $(`#${color}-pv`).html('');
+    updateElHtml($(`#${color}-pv`), '');
   } else {
     updateElText($(`#${color}-score`), meta.score != null ? formatScore(meta.score, color) : '--');
     updateElText($(`#${color}-depth`), meta.depth != null ? String(meta.depth) : '--');
     updateElText($(`#${color}-nodes`), meta.nodes != null ? formatNodes(meta.nodes) : '--');
     updateElText($(`#${color}-nps`), meta.nodes != null ? formatNps(meta.nodes, meta.time) : '--');
-    $(`#${color}-pv`).html(formatPv(meta.pv, meta.pvMoveNumber ?? 1, color));
+    updateElHtml($(`#${color}-pv`), formatPv(meta.pv, meta.pvMoveNumber ?? 1, color));
   }
 }
 
@@ -71,14 +60,22 @@ export function updateTitle(game: SerializedGame) {
 
 export function updateOpening(game: SerializedGame) {
   const text = game.tablebase ? `Tablebase: ${game.tablebase}` : `Opening: ${game.opening}`;
-  $('#caption').text(text);
-  $('#board-caption').text(text);
+  updateElText($('#caption'), text);
+  updateElText($('#board-caption'), text);
 }
 
+// The delta merge only replaces `spectators` when the server actually sends a new
+// list, so an unchanged reference means an unchanged room — skip the rebuild.
+let lastSpectators: string[] | null = null;
+
 export function updateSpectators(spectators: string[]) {
-  $('#spectator-box').children().remove();
-  spectators.sort().forEach((name: string) => {
-    $('#spectator-box').append($('<li>').append($('<p>').text(name)));
+  if (spectators === lastSpectators) return;
+  lastSpectators = spectators;
+
+  const $box = $('#spectator-box');
+  $box.children().remove();
+  [...spectators].sort().forEach((name: string) => {
+    $box.append($('<li>').append($('<p>').text(name)));
   });
 }
 
@@ -115,33 +112,35 @@ export function update(game: SerializedGame) {
   updateHistoricalInfo(otherColor, lastMeta?.depth != null ? lastMeta : null);
 }
 
-function formatKibitzerScore(score: number) {
-  if (score > MATE_SCORE_THRESHOLD) return 'M';
-  if (score < -MATE_SCORE_THRESHOLD) return '-M';
-  return score >= 0 ? `+${score.toFixed(2)}` : score.toFixed(2);
+type KibitzerView = {
+  name: string;
+  score: number;
+  depth: number;
+  nodes: number;
+  pv: string[] | null;
+  pvMoveNumber: number;
+  stm: ColorCode;
+};
+
+function renderKibitzer({ name, score, depth, nodes, pv, pvMoveNumber, stm }: KibitzerView) {
+  updateElText($('#kibitzer-name'), name);
+  updateElText($('#kibitzer-score'), formatSignedScore(score));
+  $('#kibitzer-score').attr('title', `Depth: ${depth} | Nodes: ${formatNodes(nodes)}`);
+  updateElHtml($('#kibitzer-pv'), formatPv(pv, pvMoveNumber, colorName(stm)));
+  $('#kibitzer-bar').removeClass('kibitzer-inactive').prop('hidden', false);
 }
 
 export function updateKibitzerBar(liveData: SerializedKibitzerLiveData) {
-  updateElText($('#kibitzer-name'), liveData.name);
-  updateElText($('#kibitzer-score'), formatKibitzerScore(liveData.score));
-  $('#kibitzer-score').attr('title', `Depth: ${liveData.depth} | Nodes: ${formatNodes(liveData.nodes)}`);
-  const pvHtml = formatPv(liveData.pv, liveData.pvMoveNumber, colorName(liveData.stm));
-  $('#kibitzer-pv').html(pvHtml);
-  $('#kibitzer-bar').removeClass('kibitzer-inactive').prop('hidden', false);
+  renderKibitzer(liveData);
 }
 
 export function updateKibitzerBarFromMeta(meta: KibitzerMeta) {
-  updateElText($('#kibitzer-name'), 'Kibitzer');
-  updateElText($('#kibitzer-score'), formatKibitzerScore(meta.score));
-  $('#kibitzer-score').attr('title', `Depth: ${meta.depth} | Nodes: ${formatNodes(meta.nodes)}`);
-  const pvHtml = formatPv(meta.pv, meta.pvMoveNumber ?? 1, colorName(meta.stm));
-  $('#kibitzer-pv').html(pvHtml);
-  $('#kibitzer-bar').removeClass('kibitzer-inactive').prop('hidden', false);
+  renderKibitzer({ ...meta, name: 'Kibitzer', pvMoveNumber: meta.pvMoveNumber ?? 1 });
 }
 
 export function showKibitzerPlaceholder(message: string) {
-  $('#kibitzer-name').text(message);
+  updateElText($('#kibitzer-name'), message);
   $('#kibitzer-score').text('').removeAttr('title');
-  $('#kibitzer-pv').html('');
+  updateElHtml($('#kibitzer-pv'), '');
   $('#kibitzer-bar').addClass('kibitzer-inactive').prop('hidden', false);
 }

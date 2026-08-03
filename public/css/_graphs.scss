@@ -28,24 +28,14 @@
 }
 
 .graph-btn {
-  font-family: var(--fontFamily);
-  font-weight: 500;
-  font-size: 0.75rem;
-  background: transparent;
+  @include pill-toggle(0.75rem);
   border: 1px solid var(--surfaceColorHover);
-  border-radius: var(--universal-border-radius);
   padding: 5px 10px;
-  cursor: pointer;
-  color: var(--textColor);
-  opacity: 0.6;
   transition: opacity 0.15s, background 0.15s, border-color 0.15s;
   white-space: nowrap;
 
   &.active {
-    opacity: 1;
-    background: var(--primaryColor);
     border-color: var(--primaryColor);
-    color: var(--backgroundColor);
   }
 
   &:hover:not(.active) {

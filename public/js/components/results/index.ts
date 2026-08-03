@@ -1,8 +1,10 @@
 // public/js/components/results/index.js
 import $ from 'jquery';
 import type { H2HCell, StandingsRow } from '../../../../shared/types';
+import type { ParsedResults } from '../../../../shared/types';
 import { on } from '../../events/index';
 import { apiBase } from '../../utils/url';
+import { loadPanel } from '../../utils/http';
 
 function renderH2HCell(cell: H2HCell, isSelf: boolean) {
   const $td = $('<td>').addClass('results-h2h-cell');
@@ -65,22 +67,9 @@ function renderStandings(standings: StandingsRow[]) {
 }
 
 function fetchAndRender() {
-  const $container = $('#results-container');
-  $container.html('<p class="results-loading">Loading results...</p>');
-
-  $.ajax({
-    url: `${apiBase()}/result-table/json`,
-    method: 'GET',
-    dataType: 'json',
-  })
-    .done((data) => {
-      $container.empty();
-
-      $container.append(renderStandings(data.standings || []));
-    })
-    .fail(() => {
-      $container.html('<p class="results-error">No results available.</p>');
-    });
+  loadPanel<ParsedResults>($('#results-container'), `${apiBase()}/result-table/json`, 'results', (data) =>
+    renderStandings(data.standings || []),
+  );
 }
 
 export function init() {

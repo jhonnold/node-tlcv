@@ -12,7 +12,7 @@ export function setSocket(s: Socket) {
   socket = s;
 }
 
-function addChat(msg: string) {
+function buildChatLine(msg: string) {
   let name = msg;
   let rest = '';
 
@@ -30,14 +30,19 @@ function addChat(msg: string) {
     }
   }
 
-  $('#chat-box').append($('<p>').html(renderMarkdown(rest)).prepend($('<strong>').text(name)));
+  return $('<p>').html(renderMarkdown(rest)).prepend($('<strong>').text(name));
 }
 
+function addChat(msg: string) {
+  $('#chat-box').append(buildChatLine(msg));
+}
+
+// History can be hundreds of messages — build them detached and attach once
+// rather than reflowing the box per line.
 function setChat(msgs: string[]) {
-  $('#chat-box').children().remove();
-  msgs.forEach((msg: string) => {
-    addChat(msg);
-  });
+  const $box = $('#chat-box');
+  $box.children().remove();
+  $box.append(msgs.map((msg) => buildChatLine(msg)[0]));
 }
 
 function scrollToBottom() {

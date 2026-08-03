@@ -1,6 +1,7 @@
+@use 'mixins' as *;
+
 #details-links {
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   justify-content: flex-start;
   flex: 1;
   width: 100%;

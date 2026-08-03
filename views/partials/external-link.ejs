@@ -1,0 +1,9 @@
+<%#
+  A row in the Details panel. `label` is the link text; `href` the target.
+  Pass `id` to have the component show/hide the row at runtime (menu links start
+  hidden until the broadcast supplies a URL).
+%>
+<a<% if (typeof id !== 'undefined') { %> id="<%= id %>"<% } %> href="<%= href %>" target="_blank" class="details-link"<% if (typeof hidden !== 'undefined' && hidden) { %> hidden<% } %>>
+  <span class="details-link-label"><%= label %></span>
+  <svg class="details-link-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+</a>

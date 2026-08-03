@@ -53,9 +53,12 @@ function applyDelta(delta: BroadcastDelta): GameEventData | null {
       // Retroactive PV fills for moves already sent via newMoves. An update with no match
       // in the cache is dropped silently — there is nothing to patch, and the next full
       // `state` sync reconciles.
-      cachedState.game.moves = cachedState.game.moves.map(
-        (m) => updatedMoves.find((u) => u.number === m.number && u.color === m.color) ?? m,
-      );
+      const patches = new Map(updatedMoves.map((u) => [`${u.number}${u.color}`, u]));
+      const { moves } = cachedState.game;
+      for (let i = 0; i < moves.length; i += 1) {
+        const patch = patches.get(`${moves[i].number}${moves[i].color}`);
+        if (patch) moves[i] = patch;
+      }
     }
   }
 
@@ -84,10 +87,23 @@ function setupSocketEvents() {
   });
 }
 
-function handleWindowResize() {
+function applyLayout() {
   updateLayout();
   resizeBoard();
   $('#chat-area').height(chatHeight());
+}
+
+// `resize` fires at the native rate while a window is being dragged, and each pass
+// redraws three boards and the arrow canvas. Coalesce to one pass per frame, which
+// also batches the layout reads and writes together.
+let resizeFrame: number | null = null;
+
+function handleWindowResize() {
+  if (resizeFrame !== null) return;
+  resizeFrame = requestAnimationFrame(() => {
+    resizeFrame = null;
+    applyLayout();
+  });
 }
 
 // Initialize all components
@@ -107,7 +123,7 @@ function init() {
   initSounds();
 
   // Set initial chat-area height now that boards are created and resize restored
-  handleWindowResize();
+  applyLayout();
 
   // Setup window resize handler
   $(window).on('resize', handleWindowResize);

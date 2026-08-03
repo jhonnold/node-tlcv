@@ -3,11 +3,10 @@ import type { StoredGameMeta } from '../../../../shared/types';
 import { on, emit } from '../../events/index';
 import type { GameEventData } from '../../events/index';
 import { isArchive } from '../../utils/url';
+import { EMPTY_FEN } from '../../utils/fen';
 
 let replaying = false;
 let lastLiveData: GameEventData | null = null;
-
-const EMPTY_FEN = '8/8/8/8/8/8/8/8';
 
 export function isReplayMode(): boolean {
   return replaying;
