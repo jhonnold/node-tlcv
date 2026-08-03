@@ -1,21 +1,18 @@
 import fs from 'fs/promises';
 import type { Dirent } from 'fs';
-import { mkdirp } from 'mkdirp';
-import type { Broadcast } from '../broadcast.js';
 import type { ArchiveSummary, GameRecord, StoredTournamentResults } from '../../shared/types.js';
-import { logger, siteSlug as toSiteSlug } from '../util/index.js';
-import { getMetaFile, getMetaFiles } from './game-meta.js';
+import { logger, siteSlug } from '../util/index.js';
+import { PGNS_ROOT, pgnDir, pgnPath, writeArchiveFile } from './pgn-storage.js';
+import { getMetaFile, getMetaFiles, invalidate as invalidateMetaCache } from './game-meta.js';
+import { invalidate as invalidatePgnCache } from './pgn-cache.js';
 
 const RESULTS_FILENAME = 'tournament-results.json';
 
-// Reconstructed archives (built from meta sidecars when no results.json exists) are
-// cached per slug: the `/archive/:slug` middleware runs on every sub-request, and a
-// large gauntlet would otherwise re-read every meta file several times per page load.
+// Archives are cached per slug: the `/archive/:slug` middleware runs on every
+// sub-request, so a page load would otherwise re-read (and re-parse) the whole
+// results.json — or, for tournaments predating it, every meta sidecar — several
+// times over. saveTournamentResults() is the only writer and evicts as it goes.
 const archiveCache = new Map<string, StoredTournamentResults>();
-
-export function invalidateArchiveCache(slug: string): void {
-  archiveCache.delete(slug);
-}
 
 // The homepage archive listing scans every pgns/* folder (readdir + JSON.parse of
 // each results.json) — too expensive to run per request on the busiest, auto-
@@ -36,35 +33,34 @@ export function invalidateListingCache(): void {
   listingInflight = null;
 }
 
-export async function saveTournamentResults(broadcast: Broadcast): Promise<void> {
+/**
+ * Drops every cache derived from one tournament's folder — PGN filenames, meta
+ * filenames, the loaded archive, and the homepage listing. Exposed as one call so
+ * mutation sites can't remember a subset of the four.
+ */
+export function invalidateTournament(slug: string): void {
+  invalidatePgnCache(slug);
+  invalidateMetaCache(slug);
+  archiveCache.delete(slug);
+  invalidateListingCache();
+}
+
+export async function saveTournamentResults(data: StoredTournamentResults): Promise<void> {
   // Fire-and-forget from the message loop, so the whole body is guarded — a throw
   // anywhere (slug/path construction included) must never become an unhandled rejection.
   try {
-    const { site } = broadcast.game;
+    const slug = siteSlug(data.site);
+    archiveCache.delete(slug);
 
-    const slug = toSiteSlug(site);
-    const dirname = `pgns/${slug}`;
-    const filepath = `${dirname}/${RESULTS_FILENAME}`;
-
-    const data: StoredTournamentResults = {
-      site,
-      port: broadcast.port,
-      updated: new Date().toISOString(),
-      results: broadcast.results,
-      parsedResults: broadcast.parsedResults,
-      parsedGames: broadcast.parsedGames ?? [],
-    };
-
-    await mkdirp(dirname);
-    await fs.writeFile(filepath, JSON.stringify(data));
+    await writeArchiveFile(slug, RESULTS_FILENAME, JSON.stringify(data), data.port);
   } catch (error) {
-    logger.error(`Unable to write tournament results! - ${error}`, { port: broadcast.port });
+    logger.error(`Unable to write tournament results! - ${error}`, { port: data.port });
   }
 }
 
 export async function loadTournamentResults(slug: string): Promise<StoredTournamentResults | null> {
   try {
-    const raw = await fs.readFile(`pgns/${slug}/${RESULTS_FILENAME}`, 'utf-8');
+    const raw = await fs.readFile(pgnPath(slug, RESULTS_FILENAME), 'utf-8');
     return JSON.parse(raw) as StoredTournamentResults;
   } catch {
     return null;
@@ -76,26 +72,32 @@ export async function loadTournamentResults(slug: string): Promise<StoredTournam
 // null (the result table renders "no information"); the games schedule is rebuilt
 // from each meta's player names + result. Returns null when no meta sidecars exist
 // (e.g. truly-legacy PGN-only folders — we intentionally do not parse PGNs).
-export async function reconstructArchiveFromMeta(slug: string): Promise<StoredTournamentResults | null> {
-  const cached = archiveCache.get(slug);
-  if (cached) return cached;
-
+async function reconstructArchiveFromMeta(slug: string): Promise<StoredTournamentResults | null> {
   const metaFiles = await getMetaFiles(slug);
   if (metaFiles.size === 0) return null;
 
+  // Each sidecar is a full serialized game and a large gauntlet has hundreds of
+  // them, so read them concurrently rather than one disk round trip at a time.
+  const gameNumbers = [...metaFiles.keys()];
+  const metas = await Promise.all(gameNumbers.map((gameNumber) => getMetaFile(slug, gameNumber)));
+
   let site: string | null = null;
   const parsedGames: GameRecord[] = [];
-  for (const gameNumber of metaFiles.keys()) {
-    const meta = await getMetaFile(slug, gameNumber);
-    if (!meta) continue;
+  metas.forEach((meta, i) => {
+    if (!meta) return;
     if (!site) site = meta.site;
-    parsedGames.push({ gameNumber, white: meta.white.name, black: meta.black.name, result: meta.result });
-  }
+    parsedGames.push({
+      gameNumber: gameNumbers[i],
+      white: meta.white.name,
+      black: meta.black.name,
+      result: meta.result,
+    });
+  });
 
   if (parsedGames.length === 0) return null;
   parsedGames.sort((a, b) => a.gameNumber - b.gameNumber);
 
-  const archive: StoredTournamentResults = {
+  return {
     site: site ?? slug,
     port: 0,
     updated: await dirUpdatedAt(slug),
@@ -103,20 +105,23 @@ export async function reconstructArchiveFromMeta(slug: string): Promise<StoredTo
     parsedResults: null,
     parsedGames,
   };
-
-  archiveCache.set(slug, archive);
-  return archive;
 }
 
 // Returns a results.json-backed archive when present, otherwise a meta-reconstructed
 // one. Used by the archive routes so older tournaments are openable.
 export async function loadOrReconstructArchive(slug: string): Promise<StoredTournamentResults | null> {
-  return (await loadTournamentResults(slug)) ?? (await reconstructArchiveFromMeta(slug));
+  const cached = archiveCache.get(slug);
+  if (cached) return cached;
+
+  const archive = (await loadTournamentResults(slug)) ?? (await reconstructArchiveFromMeta(slug));
+  if (archive) archiveCache.set(slug, archive);
+
+  return archive;
 }
 
 async function dirUpdatedAt(slug: string): Promise<string> {
   try {
-    return (await fs.stat(`pgns/${slug}`)).mtime.toISOString();
+    return (await fs.stat(pgnDir(slug))).mtime.toISOString();
   } catch {
     return new Date(0).toISOString();
   }
@@ -148,42 +153,34 @@ export async function listArchivedTournaments(): Promise<ArchiveSummary[]> {
 async function scanArchivedTournaments(): Promise<ArchiveSummary[]> {
   let entries: Dirent[];
   try {
-    entries = await fs.readdir('pgns', { withFileTypes: true });
+    entries = await fs.readdir(PGNS_ROOT, { withFileTypes: true });
   } catch {
     logger.info('No pgns directory found, skipping archive listing');
     return [];
   }
 
-  const summaries: ArchiveSummary[] = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+  // Every folder costs at least a readFile + JSON.parse, and this runs on the cold
+  // path of a boot and of each listing invalidation — summarize them concurrently.
+  const summaries = await Promise.all(
+    entries.filter((entry) => entry.isDirectory()).map((entry) => summarizeTournament(entry.name)),
+  );
 
-    const stored = await loadTournamentResults(entry.name);
-    if (stored) {
-      summaries.push({
-        slug: entry.name,
-        site: stored.site,
-        updated: stored.updated,
-        gameCount: stored.parsedGames.length,
-      });
-      continue;
-    }
+  return summaries.filter((s): s is ArchiveSummary => s !== null).sort((a, b) => b.updated.localeCompare(a.updated));
+}
 
-    // Fallback for tournaments that predate the results.json roll-up but still have
-    // per-game meta sidecars. Build a light summary without reading every meta.
-    const metaFiles = await getMetaFiles(entry.name);
-    if (metaFiles.size === 0) continue;
-
-    const firstKey = metaFiles.keys().next().value as number;
-    const firstMeta = await getMetaFile(entry.name, firstKey);
-
-    summaries.push({
-      slug: entry.name,
-      site: firstMeta?.site ?? entry.name,
-      updated: await dirUpdatedAt(entry.name),
-      gameCount: metaFiles.size,
-    });
+async function summarizeTournament(slug: string): Promise<ArchiveSummary | null> {
+  const stored = await loadTournamentResults(slug);
+  if (stored) {
+    return { slug, site: stored.site, updated: stored.updated, gameCount: stored.parsedGames.length };
   }
 
-  return summaries.sort((a, b) => b.updated.localeCompare(a.updated));
+  // Fallback for tournaments that predate the results.json roll-up but still have
+  // per-game meta sidecars. Build a light summary without reading every meta.
+  const metaFiles = await getMetaFiles(slug);
+  if (metaFiles.size === 0) return null;
+
+  const firstKey = metaFiles.keys().next().value as number;
+  const [firstMeta, updated] = await Promise.all([getMetaFile(slug, firstKey), dirUpdatedAt(slug)]);
+
+  return { slug, site: firstMeta?.site ?? slug, updated, gameCount: metaFiles.size };
 }

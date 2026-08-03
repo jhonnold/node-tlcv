@@ -14,27 +14,21 @@ export type { ColorCode, MoveMetaData, SerializedLiveData, SerializedPlayer, Ser
 
 const EMPTY_FEN = '8/8/8/8/8/8/8/8 w - - 0 1';
 
+// Every field below is assigned by reset(), which the constructor calls — keeping one
+// initializer means a new field can't be added to construction and forgotten on reset.
 export class LiveData {
-  color: ColorCode;
-  depth: number;
-  score: number;
-  nodes: number;
-  usedTime: number;
-  pv: Array<string>;
-  pvAlg: Array<string>;
-  pvFen: string;
-  pvMoveNumber: number;
+  color!: ColorCode;
+  depth!: number;
+  score!: number;
+  nodes!: number;
+  usedTime!: number;
+  pv!: Array<string>;
+  pvAlg!: Array<string>;
+  pvFen!: string;
+  pvMoveNumber!: number;
 
   constructor() {
-    this.color = 'w';
-    this.depth = 0;
-    this.score = 0;
-    this.nodes = 0;
-    this.usedTime = 0;
-    this.pv = [];
-    this.pvAlg = [];
-    this.pvFen = EMPTY_FEN;
-    this.pvMoveNumber = 1;
+    this.reset('w', 1);
   }
 
   reset(color: ColorCode, pvMoveNumber: number): void {
@@ -65,16 +59,13 @@ export class LiveData {
 }
 
 export class Player {
-  name: string;
-  clockTime: number;
-  startTime: number;
-  lastMove: Move | null;
+  name!: string;
+  clockTime!: number;
+  startTime!: number;
+  lastMove!: Move | null;
 
   constructor() {
-    this.name = 'Unknown';
-    this.clockTime = 0;
-    this.startTime = 0;
-    this.lastMove = null;
+    this.reset();
   }
 
   reset(): void {
@@ -99,16 +90,19 @@ export class ChessGame {
   readonly black: Player;
   readonly liveData: LiveData;
   site: string;
-  fen: string;
-  opening: string;
-  openingLookupDisabled: boolean;
-  tablebase: string;
-  moveNumber: number;
-  fmr: number;
-  instance: Chess;
-  loaded: boolean;
-  startFen: string | null;
-  moveMeta: Array<MoveMetaData>;
+  fen!: string;
+  opening!: string;
+  openingLookupDisabled!: boolean;
+  tablebase!: string;
+  moveNumber!: number;
+  fmr!: number;
+  instance!: Chess;
+  loaded!: boolean;
+  startFen!: string | null;
+  moveMeta!: Array<MoveMetaData>;
+  // Moves played so far in coordinate notation, accumulated for the opening lookup
+  // so it never has to rebuild the game from chess.js's history.
+  uciHistory!: Array<string>;
 
   constructor(name: string) {
     this.name = name;
@@ -117,19 +111,10 @@ export class ChessGame {
     this.black = new Player();
     this.liveData = new LiveData();
 
-    this.instance = new Chess();
+    this.reset();
+    // Nothing has been received from the server yet — the first FEN announcement is
+    // what loads a position. reset() marks the game loaded; construction must not.
     this.loaded = false;
-    this.startFen = null;
-
-    this.fen = this.instance.fen();
-    this.opening = 'Unknown';
-    this.openingLookupDisabled = false;
-    this.tablebase = '';
-    this.moveNumber = 1;
-    this.fmr = 0;
-    this.moveMeta = [];
-
-    this.setPGNHeaders();
   }
 
   private setPGNHeaders(): void {
@@ -151,6 +136,7 @@ export class ChessGame {
     this.moveNumber = this.instance.moveNumber();
     this.fmr = 0;
     this.moveMeta = [];
+    this.uciHistory = [];
     this.liveData.reset('w', 1);
 
     this.setPGNHeaders();
@@ -167,6 +153,7 @@ export class ChessGame {
       this.loaded = true;
       this.startFen = fen;
       this.moveMeta = [];
+      this.uciHistory = [];
       this.liveData.reset(this.instance.turn(), this.moveNumber);
       this.setPGNHeaders();
     } else {

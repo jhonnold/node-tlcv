@@ -39,5 +39,4 @@ export interface WebhookSender {
   // Fire-and-forget; implementations must never throw and always resolve,
   // even on HTTP/network failure (logged internally).
   send(event: WebhookEvent, url: string): Promise<void>;
-  type(): string;
 }
