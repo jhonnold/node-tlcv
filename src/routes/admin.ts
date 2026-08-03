@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import basic from 'express-basic-auth';
 import broadcasts from '../broadcast.js';
 import { logger } from '../util/index.js';
@@ -11,6 +11,20 @@ import type { WebhookConfig, WebhookEventKind } from '../webhooks/types.js';
 import { register } from '../metrics.js';
 
 const router = Router();
+
+// Fail closed when TLCV_PASSWORD is unset: express-basic-auth compares the supplied
+// password against the configured one, and an empty configured password matches an
+// empty supplied one — so an unconfigured deployment would accept a blank login.
+if (!env.adminPassword) logger.error('TLCV_PASSWORD is not set — the admin panel is disabled.');
+
+router.use((_: Request, res: Response, next: NextFunction): void => {
+  if (!env.adminPassword) {
+    res.sendStatus(503);
+    return;
+  }
+
+  next();
+});
 
 router.use(
   basic({

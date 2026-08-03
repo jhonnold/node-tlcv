@@ -303,7 +303,7 @@ class GameService {
       const fenBefore = this.game.instance.fen();
       const move = this.game.instance.move(rest[1], { strict: false });
       this.fenBeforeLastMove = fenBefore;
-      this.game.uciHistory.push(`${move.from}${move.to}`);
+      this.game.uciHistory.push(`${move.from}${move.to}${move.promotion ?? ''}`);
 
       this.game[color].lastMove = move;
       logger.info(`Updated game ${this.game.name} - Color: ${color}, Last Move: ${this.game[color].lastMove?.san}`, {

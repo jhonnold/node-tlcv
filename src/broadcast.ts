@@ -12,8 +12,8 @@ export const username = 'tlcv.net';
 const PING_INTERVAL_MS = 10000;
 
 // Chat retention: how much scrollback is kept in memory, and how much of it a newly
-// joining browser is seeded with. Both halves of the policy live here so a writer
-// cannot grow the buffer past the cap by pushing to `chat` directly.
+// joining browser is seeded with. Both halves of the policy live here, next to the
+// private buffer and the one method allowed to append to it.
 const CHAT_LIMIT = 2000;
 const CHAT_EMIT_LIMIT = 1000;
 
@@ -25,7 +25,8 @@ export class Broadcast {
   readonly game: ChessGame;
   readonly kibitzerManager: KibitzerManager | null;
 
-  readonly chat: Array<string> = [];
+  // Private so pushChat() is the only way in — that's what bounds the buffer.
+  private readonly chat: Array<string> = [];
   readonly spectators = new Set<string>();
   readonly menu = new Map<string, string>();
   results = '';

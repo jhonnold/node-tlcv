@@ -13,8 +13,8 @@ export const env = Object.freeze({
   /** Root of the on-disk PGN/meta archive (see services/pgn-storage.ts). */
   pgnsDir: process.env.PGNS_DIR || 'pgns',
   /** Base URL this deployment is reachable at; used for outbound webhook links. */
-  publicBaseUrl: process.env.PUBLIC_BASE_URL || 'https://ccrl.live',
-  /** Admin panel basic-auth password. */
+  publicBaseUrl: (process.env.PUBLIC_BASE_URL || 'https://ccrl.live').replace(/\/+$/, ''),
+  /** Admin panel basic-auth password. Empty disables the panel — see routes/admin.ts. */
   adminPassword: process.env.TLCV_PASSWORD ?? '',
   /** Optional token lifting Lichess API rate limits. */
   lichessToken: process.env.LICHESS_OAUTH_TOKEN,
