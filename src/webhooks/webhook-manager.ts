@@ -3,7 +3,6 @@ import { createSender } from './sender-factory.js';
 import type { WebhookConfig, WebhookEvent, WebhookEventKind, WebhookSender } from './types.js';
 
 interface WebhookEntry {
-  id: string;
   config: WebhookConfig;
   sender: WebhookSender;
 }
@@ -28,7 +27,7 @@ export class WebhookManager {
   constructor(configs: WebhookConfig[]) {
     for (const config of configs) {
       try {
-        this.entries.push({ id: config.id, config, sender: createSender(config) });
+        this.entries.push({ config, sender: createSender(config) });
       } catch (e) {
         logger.warn(`WebhookManager: failed to create sender ${config.id}: ${e}`);
       }
@@ -36,12 +35,12 @@ export class WebhookManager {
   }
 
   addWebhook(config: WebhookConfig): void {
-    this.entries.push({ id: config.id, config, sender: createSender(config) });
+    this.entries.push({ config, sender: createSender(config) });
     logger.info(`WebhookManager: added webhook ${config.id} (${config.type})`);
   }
 
   removeWebhook(id: string): void {
-    const idx = this.entries.findIndex((e) => e.id === id);
+    const idx = this.entries.findIndex((e) => e.config.id === id);
     if (idx === -1) return;
 
     this.entries.splice(idx, 1);
@@ -50,7 +49,7 @@ export class WebhookManager {
 
   getStatus(): WebhookStatus[] {
     return this.entries.map((e) => ({
-      id: e.id,
+      id: e.config.id,
       type: e.config.type,
       name: e.config.name ?? '',
       url: e.config.url,

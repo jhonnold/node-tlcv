@@ -1,7 +1,11 @@
+import { env } from '../config/env.js';
 import { logger } from '../util/index.js';
 import type { WebhookEvent, WebhookSender } from './types.js';
 
-const PUBLIC_BASE = 'https://ccrl.live';
+// Where the embeds point. Configurable so a non-production deployment doesn't
+// advertise links into production.
+const PUBLIC_BASE = env.publicBaseUrl;
+const PUBLIC_HOST = PUBLIC_BASE.replace(/^https?:\/\//, '');
 
 const COLOR_STARTED = 0x4caf50; // green
 const COLOR_FINISHED = 0x2196f3; // blue
@@ -22,10 +26,6 @@ type DiscordEmbed = {
  * links to the live broadcast instead.
  */
 export class DiscordSender implements WebhookSender {
-  type(): string {
-    return 'discord';
-  }
-
   async send(event: WebhookEvent, url: string): Promise<void> {
     try {
       const res = await fetch(url, {
@@ -46,7 +46,7 @@ export class DiscordSender implements WebhookSender {
   private buildEmbed(event: WebhookEvent): DiscordEmbed {
     const broadcastUrl = `${PUBLIC_BASE}/${event.port}`;
     const matchup = `${event.white} vs ${event.black}`;
-    const link = `[ccrl.live/${event.port}](${broadcastUrl})`;
+    const link = `[${PUBLIC_HOST}/${event.port}](${broadcastUrl})`;
 
     if (event.kind === 'game-started') {
       return {

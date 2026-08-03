@@ -87,11 +87,21 @@ function parseStandingRow(line: string, header: HeaderInfo): StandingsRow | null
   };
 }
 
+// The CT dump's footer. Its arrival also tells the game service the standings are
+// complete and worth parsing, so the pattern is owned here rather than restated there.
+const TOTAL_GAMES_RE = /total\s+games\s*=\s*(\d+)/i;
+
+export function hasTotalGames(line: string): boolean {
+  return TOTAL_GAMES_RE.test(line);
+}
+
 function findTotalGames(lines: string[]): number {
-  const totalLine = lines.find((l) => /total\s+games\s*=\s*(\d+)/i.test(l));
-  if (!totalLine) return 0;
-  const m = /total\s+games\s*=\s*(\d+)/i.exec(totalLine);
-  return m ? parseInt(m[1], 10) : 0;
+  for (const line of lines) {
+    const match = TOTAL_GAMES_RE.exec(line);
+    if (match) return parseInt(match[1], 10);
+  }
+
+  return 0;
 }
 
 export function parseResults(raw: string): ParsedResults {

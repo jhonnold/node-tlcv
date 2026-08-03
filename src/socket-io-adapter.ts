@@ -30,7 +30,7 @@ io.on('connection', (socket: Socket) => {
     logger.info(`${username} joined at port ${port}!`, { port: broadcast.port });
 
     socket.join(String(port));
-    socket.emit('state', broadcast.toJSON(true));
+    socket.emit('state', broadcast.toJSON());
     emitSpectators(broadcast);
   });
 

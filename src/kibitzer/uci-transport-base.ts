@@ -1,7 +1,10 @@
 import { logger } from '../util/index.js';
+import { sideToMove } from '../util/uci.js';
 import { parseInfoLine } from './uci-parser.js';
+import { DEFAULT_HASH, DEFAULT_THREADS } from './types.js';
 import type { AnalysisInfo } from './uci-parser.js';
 import type { KibitzerTransport } from './types.js';
+import type { ColorCode } from '../../shared/types.js';
 
 // Shared UCI engine state machine — handshake, option setup, pending-position replay
 // and the info-line callback — used by both the local and SSH transports, which only
@@ -9,7 +12,7 @@ import type { KibitzerTransport } from './types.js';
 export abstract class UciTransportBase implements KibitzerTransport {
   protected callback: ((info: AnalysisInfo) => void) | null = null;
   protected _ready = false;
-  protected stm: 'w' | 'b' = 'w';
+  protected stm: ColorCode = 'w';
   protected pendingFen: string | null = null;
   protected engineName: string;
 
@@ -17,8 +20,8 @@ export abstract class UciTransportBase implements KibitzerTransport {
   protected readonly hash: number;
 
   constructor(options: { threads?: number; hash?: number }, defaultName: string) {
-    this.threads = options.threads ?? 1;
-    this.hash = options.hash ?? 256;
+    this.threads = options.threads ?? DEFAULT_THREADS;
+    this.hash = options.hash ?? DEFAULT_HASH;
     this.engineName = defaultName;
   }
 
@@ -31,8 +34,7 @@ export abstract class UciTransportBase implements KibitzerTransport {
   protected abstract send(cmd: string): void;
 
   startAnalysis(fen: string): void {
-    const parts = fen.split(' ');
-    this.stm = (parts[1] ?? 'w') as 'w' | 'b';
+    this.stm = sideToMove(fen);
 
     if (!this._ready) {
       this.pendingFen = fen;

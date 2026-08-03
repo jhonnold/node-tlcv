@@ -2,9 +2,10 @@ import { Router, Request, Response, NextFunction } from 'express';
 import broadcasts, { Broadcast } from '../broadcast.js';
 import { siteSlug } from '../util/index.js';
 import { getFiles } from '../services/pgn-cache.js';
-import { getMetaFile, getMetaFileUrl } from '../services/game-meta.js';
+import { getMetaFile, getMetaFiles } from '../services/game-meta.js';
+import { pgnUrl } from '../services/pgn-storage.js';
 import { listArchivedTournaments, loadOrReconstructArchive } from '../services/tournament-results.js';
-import type { GameRecord, StoredTournamentResults } from '../../shared/types.js';
+import type { GameRecord, ParsedResults, StoredTournamentResults } from '../../shared/types.js';
 
 interface RequestWithBroadcast extends Request {
   broadcast: Broadcast;
@@ -18,41 +19,60 @@ interface RequestWithArchive extends Request {
 const router = Router();
 
 // Enriches stored game records with on-disk PGN/meta URLs. Shared by the live
-// (`/:port/games/json`) and archive (`/archive/:slug/games/json`) routes.
+// (`/:port/games/json`) and archive (`/archive/:slug/games/json`) routes. Both
+// filename maps are fetched once up front — a tournament runs to hundreds of games.
 async function enrichGames(slug: string, parsedGames: GameRecord[]): Promise<GameRecord[]> {
-  const pgnFiles = await getFiles(slug);
-  return Promise.all(
-    parsedGames.map(async (g) => {
-      const filename = pgnFiles.get(g.gameNumber);
-      const metaUrl = await getMetaFileUrl(slug, g.gameNumber);
-      return {
-        ...g,
-        pgnUrl: filename ? `/pgns/${slug}/${filename}` : undefined,
-        metaUrl,
-      };
-    }),
-  );
+  const [pgnFiles, metaFiles] = await Promise.all([getFiles(slug), getMetaFiles(slug)]);
+
+  return parsedGames.map((g) => {
+    const pgnFile = pgnFiles.get(g.gameNumber);
+    const metaFile = metaFiles.get(g.gameNumber);
+
+    return {
+      ...g,
+      pgnUrl: pgnFile ? pgnUrl(slug, pgnFile) : undefined,
+      metaUrl: metaFile ? pgnUrl(slug, metaFile) : undefined,
+    };
+  });
+}
+
+// The live and archive routes serve the same two payloads off different sources.
+async function sendGameMeta(slug: string, gameNumber: number, res: Response): Promise<void> {
+  const meta = await getMetaFile(slug, gameNumber);
+
+  if (!meta) {
+    res.status(404).json({ error: 'No metadata available for this game' });
+    return;
+  }
+
+  res.status(200).json(meta);
+}
+
+function sendParsedResults(parsedResults: ParsedResults | null, res: Response): void {
+  if (!parsedResults) {
+    res.status(404).json({ error: 'No results available' });
+    return;
+  }
+
+  res.status(200).json(parsedResults);
 }
 
 router.get('/', async (_: Request, res: Response): Promise<void> => {
   const broadcastList = Array.from(broadcasts.values())
-    .map((b) => {
-      const kibitzerData = b.kibitzerManager?.getLiveData(b.port) ?? null;
-
-      return {
-        port: b.port,
-        white: b.game.white.name,
-        black: b.game.black.name,
-        whiteTime: b.game.white.clockTime,
-        blackTime: b.game.black.clockTime,
-        site: b.game.site,
-        fen: b.game.instance.fen(),
-        score: kibitzerData?.score ?? null,
-        opening: b.game.opening,
-        moveCount: b.game.moveMeta.length,
-        viewerCount: b.browserCount,
-      };
-    })
+    .map((b) => ({
+      port: b.port,
+      white: b.game.white.name,
+      black: b.game.black.name,
+      whiteTime: b.game.white.clockTime,
+      blackTime: b.game.black.clockTime,
+      site: b.game.site,
+      fen: b.game.instance.fen(),
+      // Only the score is shown here; getLiveData() would replay the whole PV per card.
+      score: b.kibitzerManager?.getScore(b.port) ?? null,
+      opening: b.game.opening,
+      moveCount: b.game.moveMeta.length,
+      viewerCount: b.browserCount,
+    }))
     .sort((a, b) => b.viewerCount - a.viewerCount);
 
   // "Previous Broadcasts": archived tournaments excluding currently-live ones (those
@@ -112,14 +132,7 @@ router.get('/:port([0-9]+)/result-table', (req: Request, res: Response): void =>
 });
 
 router.get('/:port([0-9]+)/result-table/json', (req: Request, res: Response): void => {
-  const { broadcast } = req as RequestWithBroadcast;
-
-  if (!broadcast.parsedResults) {
-    res.status(404).json({ error: 'No results available' });
-    return;
-  }
-
-  res.status(200).json(broadcast.parsedResults);
+  sendParsedResults((req as RequestWithBroadcast).broadcast.parsedResults, res);
 });
 
 router.get('/:port([0-9]+)/games/json', async (req: Request, res: Response): Promise<void> => {
@@ -138,16 +151,7 @@ router.get('/:port([0-9]+)/games/json', async (req: Request, res: Response): Pro
 
 router.get('/:port([0-9]+)/games/:gameNumber([0-9]+)/meta', async (req: Request, res: Response): Promise<void> => {
   const { broadcast } = req as RequestWithBroadcast;
-  const gameNumber = parseInt(req.params.gameNumber, 10);
-  const slug = siteSlug(broadcast.game.site);
-  const meta = await getMetaFile(slug, gameNumber);
-
-  if (!meta) {
-    res.status(404).json({ error: 'No metadata available for this game' });
-    return;
-  }
-
-  res.status(200).json(meta);
+  await sendGameMeta(siteSlug(broadcast.game.site), parseInt(req.params.gameNumber, 10), res);
 });
 
 // --- Archive (previous broadcasts) ---
@@ -188,26 +192,11 @@ router.get('/archive/:slug/games/json', async (req: Request, res: Response): Pro
 
 router.get('/archive/:slug/games/:gameNumber([0-9]+)/meta', async (req: Request, res: Response): Promise<void> => {
   const { archiveSlug } = req as RequestWithArchive;
-  const gameNumber = parseInt(req.params.gameNumber, 10);
-  const meta = await getMetaFile(archiveSlug, gameNumber);
-
-  if (!meta) {
-    res.status(404).json({ error: 'No metadata available for this game' });
-    return;
-  }
-
-  res.status(200).json(meta);
+  await sendGameMeta(archiveSlug, parseInt(req.params.gameNumber, 10), res);
 });
 
 router.get('/archive/:slug/result-table/json', (req: Request, res: Response): void => {
-  const { archive } = req as RequestWithArchive;
-
-  if (!archive.parsedResults) {
-    res.status(404).json({ error: 'No results available' });
-    return;
-  }
-
-  res.status(200).json(archive.parsedResults);
+  sendParsedResults((req as RequestWithArchive).archive.parsedResults, res);
 });
 
 export default router;

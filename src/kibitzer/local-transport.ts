@@ -3,6 +3,7 @@ import type { ChildProcessWithoutNullStreams } from 'child_process';
 import { createInterface } from 'readline';
 import { logger } from '../util/index.js';
 import { UciTransportBase } from './uci-transport-base.js';
+import { DEFAULT_ENGINE_PATH } from './types.js';
 import type { LocalKibitzerConfig } from './types.js';
 
 export class LocalTransport extends UciTransportBase {
@@ -11,7 +12,7 @@ export class LocalTransport extends UciTransportBase {
 
   constructor(config: LocalKibitzerConfig) {
     super({ threads: config.threads, hash: config.hash }, 'Stockfish');
-    this.enginePath = config.enginePath ?? 'stockfish';
+    this.enginePath = config.enginePath ?? DEFAULT_ENGINE_PATH;
   }
 
   create(): void {

@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { env } from './env.js';
 import type { KibitzerConfig } from '../kibitzer/types.js';
 import type { WebhookConfig } from '../webhooks/types.js';
 
@@ -33,8 +34,7 @@ export class ConfigStore {
   private readonly configPath: string;
 
   constructor() {
-    const configDir = process.env.CONFIG_DIR || 'config';
-    this.configPath = path.join(configDir, 'config.json');
+    this.configPath = path.join(env.configDir, 'config.json');
   }
 
   async load(): Promise<AppConfig> {

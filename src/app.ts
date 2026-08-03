@@ -5,6 +5,7 @@ import compression from 'compression';
 import serveIndex from 'serve-index';
 import routes from './routes/index.js';
 import adminRoutes from './routes/admin.js';
+import { PGNS_ROOT } from './services/pgn-storage.js';
 import { logging, httpMetrics } from './util/index.js';
 
 export const app = express();
@@ -24,7 +25,7 @@ app.use(compression());
 app.use(express.static('build/public'));
 
 // Serve a folder of PGNs
-app.use('/pgns', express.static('pgns'), serveIndex(process.env.PGNS_DIR || 'pgns', { icons: true }));
+app.use('/pgns', express.static(PGNS_ROOT), serveIndex(PGNS_ROOT, { icons: true }));
 
 // GET /
 // GET /:port
@@ -34,7 +35,6 @@ app.use(routes);
 
 // GET /admin
 // POST /admin/new
-// POST /admin/reconnect
 // POST /admin/close
 app.use('/admin', adminRoutes);
 

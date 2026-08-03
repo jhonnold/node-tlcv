@@ -2,6 +2,12 @@ import type { AnalysisInfo } from './uci-parser.js';
 
 export type { AnalysisInfo };
 
+// Applied wherever a config field is left unset — by the transports when they
+// configure the engine, and by the manager when it reports status.
+export const DEFAULT_ENGINE_PATH = 'stockfish';
+export const DEFAULT_THREADS = 1;
+export const DEFAULT_HASH = 256;
+
 export interface KibitzerTransport {
   readonly ready: boolean;
   create(): void;

@@ -12,6 +12,7 @@ import { loadAll as loadPgnCache } from './services/pgn-cache.js';
 import { loadAll as loadMetaCache } from './services/game-meta.js';
 import { listArchivedTournaments } from './services/tournament-results.js';
 import configStore from './config/config-store.js';
+import { env } from './config/env.js';
 
 const server = http.createServer(app);
 io.attach(server);
@@ -55,6 +56,5 @@ io.attach(server);
 
   kibitzerManager.start();
 
-  const port = Number(process.env.PORT) || 8080;
-  server.listen(port, () => logger.info(`Started listening on port ${port}!`));
+  server.listen(env.port, () => logger.info(`Started listening on port ${env.port}!`));
 })();

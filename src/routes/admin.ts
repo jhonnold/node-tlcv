@@ -1,22 +1,55 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import basic from 'express-basic-auth';
 import broadcasts from '../broadcast.js';
 import { logger } from '../util/index.js';
 import { genId } from '../util/ids.js';
 import { closeConnection, getKibitzerManager, getWebhookManager, newConnection } from '../broadcast-manager.js';
 import configStore from '../config/config-store.js';
+import { env } from '../config/env.js';
 import type { KibitzerConfig } from '../kibitzer/types.js';
 import type { WebhookConfig, WebhookEventKind } from '../webhooks/types.js';
 import { register } from '../metrics.js';
 
 const router = Router();
 
+// Fail closed when TLCV_PASSWORD is unset: express-basic-auth compares the supplied
+// password against the configured one, and an empty configured password matches an
+// empty supplied one — so an unconfigured deployment would accept a blank login.
+if (!env.adminPassword) logger.error('TLCV_PASSWORD is not set — the admin panel is disabled.');
+
+router.use((_: Request, res: Response, next: NextFunction): void => {
+  if (!env.adminPassword) {
+    res.sendStatus(503);
+    return;
+  }
+
+  next();
+});
+
 router.use(
   basic({
-    users: { admin: process.env.TLCV_PASSWORD as string },
+    users: { admin: env.adminPassword },
     challenge: true,
   }),
 );
+
+/**
+ * Wraps a mutating admin handler so every one of them reports failure the same way:
+ * a labelled warning, the error itself, and a 400 to the caller.
+ */
+function guard(label: string, fn: (req: Request, res: Response) => Promise<void> | void) {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      await fn(req, res);
+    } catch (error) {
+      logger.warn(label);
+      logger.error(error);
+      res.sendStatus(400);
+    }
+  };
+}
+
+const optionalNumber = (value: unknown): number | undefined => (value ? Number(value) : undefined);
 
 router.get('/', async (_: Request, res: Response) => {
   const kibitzerManager = getKibitzerManager();
@@ -31,41 +64,41 @@ router.get('/', async (_: Request, res: Response) => {
   });
 });
 
-router.post('/close', async (req: Request, res: Response) => {
-  const { connection } = req.body;
+router.post(
+  '/close',
+  guard('Unable to close connection', async (req, res) => {
+    const { connection } = req.body;
 
-  try {
+    logger.info(`Attempting to close connection ${connection}`);
     await closeConnection(connection);
     res.sendStatus(200);
-  } catch (error) {
-    logger.warn(`Unable to close connection ${connection}`);
-    logger.error(error);
-    res.sendStatus(400);
-  }
-});
+  }),
+);
 
-router.post('/new', async (req: Request, res: Response) => {
-  const { connection } = req.body;
-  const ephemeral = Boolean(req.body.ephemeral);
+router.post(
+  '/new',
+  guard('Unable to add connection', async (req, res) => {
+    const { connection } = req.body;
+    const ephemeral = Boolean(req.body.ephemeral);
 
-  try {
     logger.info(`Attempting new connection of ${connection}${ephemeral ? ' (ephemeral)' : ''}`);
     await newConnection(connection, ephemeral);
     res.sendStatus(200);
-  } catch (error) {
-    logger.warn(`Unable to add connection ${connection}`);
-    logger.error(error);
-    res.sendStatus(400);
-  }
-});
+  }),
+);
 
-router.post('/kibitzers', async (req: Request, res: Response) => {
-  const body = req.body;
+router.post(
+  '/kibitzers',
+  guard('Unable to add kibitzer', async (req, res) => {
+    const body = req.body;
+    const base = {
+      id: genId(),
+      priority: Number(body.priority) || 1,
+      threads: optionalNumber(body.threads),
+      hash: optionalNumber(body.hash),
+    };
 
-  try {
-    const id = genId();
     let config: KibitzerConfig;
-
     if (body.type === 'ssh') {
       if (!body.host || !body.username || !body.privateKeyPath || !body.enginePath) {
         res.sendStatus(400);
@@ -73,66 +106,48 @@ router.post('/kibitzers', async (req: Request, res: Response) => {
       }
 
       config = {
-        id,
+        ...base,
         type: 'ssh',
-        priority: Number(body.priority) || 1,
         host: body.host,
-        port: body.port ? Number(body.port) : undefined,
+        port: optionalNumber(body.port),
         username: body.username,
         privateKeyPath: body.privateKeyPath,
         enginePath: body.enginePath,
-        threads: body.threads ? Number(body.threads) : undefined,
-        hash: body.hash ? Number(body.hash) : undefined,
       };
     } else {
-      config = {
-        id,
-        type: 'local',
-        priority: Number(body.priority) || 1,
-        enginePath: body.enginePath || undefined,
-        threads: body.threads ? Number(body.threads) : undefined,
-        hash: body.hash ? Number(body.hash) : undefined,
-      };
+      config = { ...base, type: 'local', enginePath: body.enginePath || undefined };
     }
 
     await configStore.addKibitzer(config);
     getKibitzerManager()?.addTransport(config);
 
-    logger.info(`Added kibitzer ${id} (${config.type})`);
+    logger.info(`Added kibitzer ${config.id} (${config.type})`);
     res.sendStatus(200);
-  } catch (error) {
-    logger.warn('Unable to add kibitzer');
-    logger.error(error);
-    res.sendStatus(400);
-  }
-});
+  }),
+);
 
-router.delete('/kibitzers/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
+router.delete(
+  '/kibitzers/:id',
+  guard('Unable to remove kibitzer', async (req, res) => {
+    const { id } = req.params;
 
-  try {
     getKibitzerManager()?.removeTransport(id);
     await configStore.removeKibitzer(id);
 
     logger.info(`Removed kibitzer ${id}`);
     res.sendStatus(200);
-  } catch (error) {
-    logger.warn(`Unable to remove kibitzer ${id}`);
-    logger.error(error);
-    res.sendStatus(400);
-  }
-});
+  }),
+);
 
-router.post('/webhooks', async (req: Request, res: Response) => {
-  const body = req.body;
+router.post(
+  '/webhooks',
+  guard('Unable to add webhook', async (req, res) => {
+    const body = req.body;
 
-  try {
     if (!body.url || body.type !== 'discord') {
       res.sendStatus(400);
       return;
     }
-
-    const id = genId();
 
     const ports = String(body.ports ?? '')
       .split(',')
@@ -143,7 +158,7 @@ router.post('/webhooks', async (req: Request, res: Response) => {
     const events = rawEvents.filter((e): e is WebhookEventKind => e === 'game-started' || e === 'game-finished');
 
     const config: WebhookConfig = {
-      id,
+      id: genId(),
       type: 'discord',
       name: body.name || undefined,
       url: body.url,
@@ -154,30 +169,23 @@ router.post('/webhooks', async (req: Request, res: Response) => {
     await configStore.addWebhook(config);
     getWebhookManager()?.addWebhook(config);
 
-    logger.info(`Added webhook ${id}`);
+    logger.info(`Added webhook ${config.id}`);
     res.sendStatus(200);
-  } catch (error) {
-    logger.warn('Unable to add webhook');
-    logger.error(error);
-    res.sendStatus(400);
-  }
-});
+  }),
+);
 
-router.delete('/webhooks/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
+router.delete(
+  '/webhooks/:id',
+  guard('Unable to remove webhook', async (req, res) => {
+    const { id } = req.params;
 
-  try {
     getWebhookManager()?.removeWebhook(id);
     await configStore.removeWebhook(id);
 
     logger.info(`Removed webhook ${id}`);
     res.sendStatus(200);
-  } catch (error) {
-    logger.warn(`Unable to remove webhook ${id}`);
-    logger.error(error);
-    res.sendStatus(400);
-  }
-});
+  }),
+);
 
 router.get('/metrics', async (_: Request, res: Response) => {
   try {
