@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import { logger } from '../util/index.js';
+import { PGNS_ROOT, pgnDir } from './pgn-storage.js';
 
 export class FileCache {
   private cache = new Map<string, Map<number, string>>();
@@ -11,7 +12,7 @@ export class FileCache {
 
   private async loadFromDisk(siteSlug: string): Promise<Map<number, string>> {
     const map = new Map<number, string>();
-    const dir = `pgns/${siteSlug}`;
+    const dir = pgnDir(siteSlug);
 
     try {
       const entries = await fs.readdir(dir);
@@ -46,7 +47,7 @@ export class FileCache {
 
   async loadAll(): Promise<void> {
     try {
-      const entries = await fs.readdir('pgns', { withFileTypes: true });
+      const entries = await fs.readdir(PGNS_ROOT, { withFileTypes: true });
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const map = await this.loadFromDisk(entry.name);

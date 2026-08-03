@@ -1,19 +1,18 @@
-import { Chess } from 'chess.js';
 import broadcasts from '../broadcast.js';
 import { emitUpdate } from '../socket-io-adapter.js';
 import { kibitzerAssignments } from '../metrics.js';
 import { logger } from '../util/index.js';
-import { replayUci } from '../util/uci.js';
+import { replayUciFromFen, sideToMove } from '../util/uci.js';
 import { createTransport } from './transport-factory.js';
+import { DEFAULT_ENGINE_PATH, DEFAULT_HASH, DEFAULT_THREADS } from './types.js';
 import type { KibitzerTransport, KibitzerConfig, AnalysisInfo } from './types.js';
-import type { ColorCode, KibitzerMeta, SerializedKibitzerLiveData } from '../../shared/types.js';
+import type { KibitzerMeta, SerializedKibitzerLiveData } from '../../shared/types.js';
 
 const POLL_INTERVAL_MS = 10_000;
 const EMIT_INTERVAL_MS = 1_000;
 const SWITCH_THRESHOLD = 2;
 
 interface TransportEntry {
-  id: string;
   config: KibitzerConfig;
   transport: KibitzerTransport;
 }
@@ -53,7 +52,7 @@ export class KibitzerManager {
     for (const config of sorted) {
       try {
         const transport = createTransport(config);
-        this.transports.push({ id: config.id, config, transport });
+        this.transports.push({ config, transport });
       } catch (e) {
         logger.warn(`Kibitzer: failed to create transport ${config.id}: ${e}`);
       }
@@ -85,7 +84,7 @@ export class KibitzerManager {
 
   addTransport(config: KibitzerConfig): void {
     const transport = createTransport(config);
-    const entry: TransportEntry = { id: config.id, config, transport };
+    const entry: TransportEntry = { config, transport };
 
     const idx = this.transports.findIndex((e) => e.config.priority < config.priority);
     if (idx === -1) {
@@ -100,7 +99,7 @@ export class KibitzerManager {
   }
 
   removeTransport(id: string): void {
-    const idx = this.transports.findIndex((e) => e.id === id);
+    const idx = this.transports.findIndex((e) => e.config.id === id);
     if (idx === -1) return;
 
     const entry = this.transports[idx];
@@ -125,50 +124,55 @@ export class KibitzerManager {
       transportToPort.set(slot.transport, port);
     }
 
-    return this.transports.map((entry) => {
-      const targetPort = transportToPort.get(entry.transport) ?? null;
-      const broadcast = targetPort !== null ? broadcasts.get(targetPort) : null;
+    return this.transports.map(({ config, transport }) => {
+      const targetPort = transportToPort.get(transport) ?? null;
 
+      // Spreading the config carries the transport-specific fields (host, username,
+      // …) through without the status builder having to branch per type.
       return {
-        id: entry.id,
-        type: entry.config.type,
-        priority: entry.config.priority,
-        enginePath: entry.config.enginePath ?? 'stockfish',
-        threads: entry.config.threads ?? 1,
-        hash: entry.config.hash ?? 256,
-        ready: entry.transport.ready,
-        engineName: entry.transport.name(),
+        ...config,
+        enginePath: config.enginePath ?? DEFAULT_ENGINE_PATH,
+        threads: config.threads ?? DEFAULT_THREADS,
+        hash: config.hash ?? DEFAULT_HASH,
+        ready: transport.ready,
+        engineName: transport.name(),
         targetPort,
-        targetName: broadcast?.game.site ?? null,
-        ...(entry.config.type === 'ssh'
-          ? {
-              host: entry.config.host,
-              port: entry.config.port,
-              username: entry.config.username,
-              privateKeyPath: entry.config.privateKeyPath,
-            }
-          : {}),
+        targetName: targetPort !== null ? broadcasts.get(targetPort)?.game.site ?? null : null,
       };
     });
   }
 
-  snapshotForMove(port: number): KibitzerMeta | null {
+  /**
+   * The current analysis for a port, or null when nothing is being analyzed there.
+   * Both the move-history snapshot and the live panel are shaped from this; they
+   * differ only in how they render "nothing yet".
+   */
+  private buildSnapshot(port: number): KibitzerMeta | null {
     const slot = this.slots.get(port);
     if (!slot || !slot.currentInfo || !slot.currentFen) return null;
 
-    const pv = this.playoutPV(slot.currentInfo.pv, slot.currentFen);
-    const stm = extractStm(slot.currentFen);
+    const pv = replayUciFromFen(slot.currentFen, slot.currentInfo.pv);
 
     return {
       depth: slot.currentInfo.depth,
       score: slot.currentInfo.score / 100,
       nodes: slot.currentInfo.nodes,
-      stm,
+      stm: sideToMove(slot.currentFen),
       pv: pv?.san ?? null,
       pvAlg: pv?.alg[0] ?? null,
       pvFen: pv?.fen ?? null,
       pvMoveNumber: pv?.moveNumber ?? null,
     };
+  }
+
+  snapshotForMove(port: number): KibitzerMeta | null {
+    return this.buildSnapshot(port);
+  }
+
+  /** Just the evaluation, for callers (the homepage cards) that would discard the rest. */
+  getScore(port: number): number | null {
+    const info = this.slots.get(port)?.currentInfo;
+    return info ? info.score / 100 : null;
   }
 
   onPositionChange(port: number, fen: string): void {
@@ -182,21 +186,16 @@ export class KibitzerManager {
   }
 
   getLiveData(port: number): SerializedKibitzerLiveData | null {
-    const slot = this.slots.get(port);
-    if (!slot || !slot.currentInfo || !slot.currentFen) return null;
-
-    const pv = this.playoutPV(slot.currentInfo.pv, slot.currentFen);
+    const snapshot = this.buildSnapshot(port);
+    if (!snapshot) return null;
 
     return {
-      depth: slot.currentInfo.depth,
-      score: slot.currentInfo.score / 100,
-      nodes: slot.currentInfo.nodes,
-      stm: extractStm(slot.currentFen),
-      pv: pv?.san ?? [],
-      pvAlg: pv?.alg[0] ?? '',
-      pvFen: pv?.fen ?? '',
-      pvMoveNumber: pv?.moveNumber ?? 1,
-      name: slot.transport.name(),
+      ...snapshot,
+      pv: snapshot.pv ?? [],
+      pvAlg: snapshot.pvAlg ?? '',
+      pvFen: snapshot.pvFen ?? '',
+      pvMoveNumber: snapshot.pvMoveNumber ?? 1,
+      name: this.slots.get(port)!.transport.name(),
     };
   }
 
@@ -216,20 +215,15 @@ export class KibitzerManager {
   private poll(): void {
     if (this.transports.length === 0) return;
 
-    const ranked: { port: number; count: number }[] = [];
-    for (const [port, broadcast] of broadcasts) {
-      ranked.push({ port, count: broadcast.browserCount });
-    }
-    ranked.sort((a, b) => b.count - a.count);
-
-    const currentPorts = new Set(this.slots.keys());
-
-    const candidates = ranked.map(({ port, count }) => ({
-      port,
-      effectiveCount: count + (currentPorts.has(port) ? SWITCH_THRESHOLD : 0),
-      actualCount: count,
-    }));
-    candidates.sort((a, b) => b.effectiveCount - a.effectiveCount);
+    // Ports already being analyzed get a handicap, so a marginally busier broadcast
+    // doesn't cause the engine to hop back and forth.
+    const analyzed = new Set(this.slots.keys());
+    const candidates = [...broadcasts]
+      .map(([port, broadcast]) => ({
+        port,
+        effectiveCount: broadcast.browserCount + (analyzed.has(port) ? SWITCH_THRESHOLD : 0),
+      }))
+      .sort((a, b) => b.effectiveCount - a.effectiveCount);
 
     const desiredCount = Math.min(this.transports.length, candidates.length);
     const desired = new Map<number, KibitzerTransport>();
@@ -271,7 +265,7 @@ export class KibitzerManager {
     this.slots.set(port, slot);
 
     const entry = this.transports.find((e) => e.transport === transport);
-    if (entry) kibitzerAssignments.inc({ id: entry.id });
+    if (entry) kibitzerAssignments.inc({ id: entry.config.id });
 
     const fen = broadcast.game.instance.fen();
     slot.currentFen = fen;
@@ -279,23 +273,4 @@ export class KibitzerManager {
 
     logger.info(`Kibitzer: started analyzing port ${port} (${broadcast.browserCount} viewers)`);
   }
-
-  private playoutPV(
-    uciMoves: string[],
-    fen: string,
-  ): { san: string[]; alg: string[]; fen: string; moveNumber: number } | null {
-    try {
-      const chess = new Chess(fen);
-      const moveNumber = chess.moveNumber();
-      const replay = replayUci(chess, uciMoves);
-      return replay ? { ...replay, moveNumber } : null;
-    } catch {
-      return null;
-    }
-  }
-}
-
-function extractStm(fen: string | null): ColorCode {
-  const parts = fen?.split(' ');
-  return (parts?.[1] === 'b' ? 'b' : 'w') as ColorCode;
 }

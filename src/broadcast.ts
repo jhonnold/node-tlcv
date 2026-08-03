@@ -1,16 +1,21 @@
 import Connection from './connection.js';
 import GameService from './game-service.js';
 import { ChessGame } from './chess-game.js';
-import { BroadcastState } from './broadcast-state.js';
 import { emitUpdate, emitChat } from './socket-io-adapter.js';
 import type { ParsedResults, GameRecord } from './services/result-parser.js';
-import type { SerializedBroadcast } from '../shared/types.js';
+import type { SerializedBroadcast, StoredTournamentResults } from '../shared/types.js';
 import type { KibitzerManager } from './kibitzer/kibitzer-manager.js';
 
 export type { SerializedBroadcast } from '../shared/types.js';
 
 export const username = 'tlcv.net';
 const PING_INTERVAL_MS = 10000;
+
+// Chat retention: how much scrollback is kept in memory, and how much of it a newly
+// joining browser is seeded with. Both halves of the policy live here so a writer
+// cannot grow the buffer past the cap by pushing to `chat` directly.
+const CHAT_LIMIT = 2000;
+const CHAT_EMIT_LIMIT = 1000;
 
 export class Broadcast {
   readonly host: string;
@@ -19,7 +24,16 @@ export class Broadcast {
   readonly ephemeral: boolean;
   readonly game: ChessGame;
   readonly kibitzerManager: KibitzerManager | null;
-  private state: BroadcastState;
+
+  readonly chat: Array<string> = [];
+  readonly spectators = new Set<string>();
+  readonly menu = new Map<string, string>();
+  results = '';
+  parsedResults: ParsedResults | null = null;
+  parsedGames: GameRecord[] | null = null;
+  currentGameNumber = 1;
+  browserCount = 0;
+
   private gameService: GameService;
   private conn: Connection;
   private pings!: NodeJS.Timeout;
@@ -31,7 +45,6 @@ export class Broadcast {
     this.ephemeral = ephemeral;
 
     this.kibitzerManager = kibitzerManager ?? null;
-    this.state = new BroadcastState();
     this.game = new ChessGame(String(this.port));
     this.gameService = new GameService(this);
     this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this), this.ephemeral);
@@ -60,15 +73,10 @@ export class Broadcast {
     this.conn.send(`CHAT: ${msg}`);
   }
 
-  reconnect(): void {
-    clearInterval(this.pings);
-    this.conn.send('LOGOFF');
-    this.conn.close();
-
-    setTimeout(() => {
-      this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this), this.ephemeral);
-      this.connect();
-    }, 500);
+  /** Appends to the chat scrollback, trimming the oldest entries past CHAT_LIMIT. */
+  pushChat(message: string): void {
+    if (this.chat.length >= CHAT_LIMIT) this.chat.splice(0, this.chat.length - (CHAT_LIMIT - 1));
+    this.chat.push(message);
   }
 
   close(): void {
@@ -78,68 +86,34 @@ export class Broadcast {
     setTimeout(() => this.conn.close(), 500);
   }
 
-  toJSON(includeChat = false): SerializedBroadcast {
-    const kibitzerLiveData = this.kibitzerManager?.getLiveData(this.port) ?? null;
+  toJSON(): SerializedBroadcast {
     return {
-      game: this.game.toJSON(kibitzerLiveData),
-      ...this.state.toJSON(includeChat),
+      game: this.game.toJSON(this.kibitzerManager?.getLiveData(this.port) ?? null),
+      spectators: Array.from(this.spectators),
+      chat: this.chat.slice(-CHAT_EMIT_LIMIT),
+      menu: Object.fromEntries(this.menu),
     };
   }
 
-  public get connection(): string {
+  /** The persisted shape of this tournament's standings + schedule. */
+  toStoredResults(): StoredTournamentResults {
+    return {
+      site: this.game.site,
+      port: this.port,
+      updated: new Date().toISOString(),
+      results: this.results,
+      parsedResults: this.parsedResults,
+      parsedGames: this.parsedGames ?? [],
+    };
+  }
+
+  get connection(): string {
     return `${this.host}:${this.port}`;
   }
 
-  public get results(): string {
-    return this.state.results;
-  }
-
-  public set results(v: string) {
-    this.state.results = v;
-  }
-
-  public get spectators(): Set<string> {
-    return this.state.spectators;
-  }
-
-  public get chat(): Array<string> {
-    return this.state.chat;
-  }
-
-  public get browserCount(): number {
-    return this.state.browserCount;
-  }
-
-  public set browserCount(v: number) {
-    this.state.browserCount = v;
-  }
-
-  public get menu(): Map<string, string> {
-    return this.state.menu;
-  }
-
-  public get parsedResults(): ParsedResults | null {
-    return this.state.parsedResults;
-  }
-
-  public set parsedResults(v: ParsedResults | null) {
-    this.state.parsedResults = v;
-  }
-
-  public get parsedGames(): GameRecord[] | null {
-    return this.state.parsedGames;
-  }
-
-  public set parsedGames(v: GameRecord[] | null) {
-    this.state.parsedGames = v;
-  }
-
-  public get currentGameNumber(): number {
-    return this.state.currentGameNumber;
-  }
-
-  public set currentGameNumber(v: number) {
-    this.state.currentGameNumber = v;
+  /** Metrics/display label for the tournament, falling back before an event is announced. */
+  get eventLabel(): string {
+    return this.game.site || 'unknown';
   }
 }
 

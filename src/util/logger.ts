@@ -1,5 +1,6 @@
 import { createLogger, transports, format } from 'winston';
 import chalk from 'chalk';
+import { env } from '../config/env.js';
 
 const { blue, green, yellow, red } = chalk;
 const { combine, timestamp, printf } = format;
@@ -12,7 +13,7 @@ const colorMap: { [key: string]: chalk.Chalk } = {
 };
 
 const logger = createLogger({
-  transports: [new transports.Console({ level: process.env.LOG_LEVEL || 'info' })],
+  transports: [new transports.Console({ level: env.logLevel })],
   format: combine(
     timestamp(),
     printf(

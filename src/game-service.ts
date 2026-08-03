@@ -1,36 +1,26 @@
-import { Chess } from 'chess.js';
 import { ChessGame } from './chess-game.js';
-import { logger, siteSlug } from './util/index.js';
+import { logger, normalizeSite, siteSlug } from './util/index.js';
 import { Broadcast, username } from './broadcast.js';
 import { getWebhookManager } from './broadcast-manager.js';
 import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import type { OpeningResult } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
-import { saveGameMeta, invalidate as invalidateMetaCache } from './services/game-meta.js';
-import {
-  saveTournamentResults,
-  loadTournamentResults,
-  invalidateArchiveCache,
-  invalidateListingCache,
-} from './services/tournament-results.js';
-import { invalidate as invalidatePgnCache } from './services/pgn-cache.js';
+import { saveGameMeta } from './services/game-meta.js';
+import { saveTournamentResults, loadTournamentResults, invalidateTournament } from './services/tournament-results.js';
 import { Command, splitOnCommand } from './protocol.js';
-import { EmitType } from './socket-io-adapter.js';
 import { commandsProcessed, chatMessages } from './metrics.js';
-import { parseResults, parseGames, mergeGames } from './services/result-parser.js';
-import { menuToObject } from './broadcast-state.js';
-import { replayUci } from './util/uci.js';
+import { parseResults, parseGames, mergeGames, hasTotalGames } from './services/result-parser.js';
+import { replayUciFromFen } from './util/uci.js';
+import { colorName } from '../shared/colors.js';
+import type { ColorName } from '../shared/colors.js';
 import type { BroadcastDelta, ColorCode, GameDelta, MoveMetaData } from '../shared/types.js';
-
-type Color = 'white' | 'black';
 
 type CommandTokens = [Command, ...Array<string>];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type UpdateResult = [EmitType, boolean, ...Array<any>];
-
+// A handler returns a chat line to emit, or nothing. Everything else it changed is
+// signalled through `dirty`, which drives the delta the batch ends up emitting.
 type ConfigItem = {
-  fn: (tokens: CommandTokens) => Promise<UpdateResult> | UpdateResult;
+  fn: (tokens: CommandTokens) => Promise<string | void> | string | void;
   split: boolean;
 };
 
@@ -38,29 +28,10 @@ type CommandConfig = {
   [key in Command]: ConfigItem;
 };
 
-type DirtyFlags = {
-  liveData: boolean;
-  clocks: boolean;
-  move: boolean;
-  movesPatched: boolean;
-  players: boolean;
-  site: boolean;
-  spectators: boolean;
-  menu: boolean;
-};
+type DirtyKey = 'liveData' | 'clocks' | 'move' | 'movesPatched' | 'players' | 'site' | 'spectators' | 'menu';
 
-function freshFlags(): DirtyFlags {
-  return {
-    liveData: false,
-    clocks: false,
-    move: false,
-    movesPatched: false,
-    players: false,
-    site: false,
-    spectators: false,
-    menu: false,
-  };
-}
+// The subset describing the game itself, as opposed to broadcast-level state.
+const GAME_KEYS: DirtyKey[] = ['liveData', 'clocks', 'move', 'movesPatched', 'players', 'site'];
 
 type PvUpdate = {
   depth: number;
@@ -85,7 +56,7 @@ class GameService {
   // Slug the accumulated games table belongs to, so a repeated SITE announcement doesn't
   // re-hydrate and a genuine tournament change does reset.
   private hydratedSlug: string | null = null;
-  private dirty: DirtyFlags = freshFlags();
+  private dirty = new Set<DirtyKey>();
   private moveCountBefore = 0;
   // Moves whose meta was patched retroactively this batch, and the position the most
   // recent move was played from (the base a trailing PV replays against).
@@ -94,7 +65,7 @@ class GameService {
   // "Game started" detection: armed for the first game, re-armed after each
   // RESULT. Fires once both colors have been (re)announced for the new game.
   private gameStartArmed = true;
-  private startColorsSeen = new Set<Color>();
+  private startColorsSeen = new Set<ColorName>();
 
   constructor(broadcast: Broadcast) {
     this.broadcast = broadcast;
@@ -113,7 +84,7 @@ class GameService {
       [Command.SITE]: { fn: this.onSite.bind(this), split: false },
       [Command.CTRESET]: { fn: this.onCTReset.bind(this), split: false },
       [Command.CT]: { fn: this.onCT.bind(this), split: false },
-      [Command.PONG]: { fn: () => [EmitType.UPDATE, false], split: false },
+      [Command.PONG]: { fn: () => {}, split: false },
       [Command.ADDUSER]: { fn: this.onAddUser.bind(this), split: false },
       [Command.DELUSER]: { fn: this.onDelUser.bind(this), split: false },
       [Command.CHAT]: { fn: this.onChat.bind(this), split: false },
@@ -122,24 +93,22 @@ class GameService {
       [Command.FMR]: { fn: this.onFmr.bind(this), split: false },
       // Recognized but intentionally ignored — connection-time handshake/config
       // lines the viewer derives nothing from (see docs/protocol.md "No-op protocol commands").
-      [Command.LOGON]: { fn: () => [EmitType.UPDATE, false], split: false },
-      [Command.FEATURE]: { fn: () => [EmitType.UPDATE, false], split: false },
-      [Command.LEVEL]: { fn: () => [EmitType.UPDATE, false], split: false },
+      [Command.LOGON]: { fn: () => {}, split: false },
+      [Command.FEATURE]: { fn: () => {}, split: false },
+      [Command.LEVEL]: { fn: () => {}, split: false },
     };
   }
 
-  private onFmr(tokens: CommandTokens): UpdateResult {
+  private onFmr(tokens: CommandTokens): void {
     const [, fmr] = tokens;
 
     this.game.fmr = parseInt(fmr);
-    logger.info(`Updated game ${this.game.name} - FMR: ${this.game.fmr}`, {
+    logger.debug(`Updated game ${this.game.name} - FMR: ${this.game.fmr}`, {
       port: this.broadcast.port,
     });
-
-    return [EmitType.UPDATE, false];
   }
 
-  private onFen(tokens: CommandTokens): UpdateResult {
+  private onFen(tokens: CommandTokens): void {
     const [, ...fenTokens] = tokens;
     const lastToken = fenTokens.slice(-1)[0];
 
@@ -153,29 +122,25 @@ class GameService {
 
     if (!this.game.loaded) {
       this.game.resetFromFen();
-      this.dirty.move = true;
-      this.dirty.liveData = true;
+      this.dirty.add('move').add('liveData');
       logger.info(`Unloaded game ${this.game.name}, setting to FEN: ${this.game.instance.fen()}`, {
         port: this.broadcast.port,
       });
     } else if (this.game.fen.startsWith('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq')) {
       // Reset everything on startpos
       this.game.reset();
-      this.dirty.move = true;
-      this.dirty.liveData = true;
+      this.dirty.add('move').add('liveData');
       logger.info(`Received startpos for game ${this.game.name}, reseting the game.`, { port: this.broadcast.port });
     } else {
-      logger.info(`Set backup FEN for ${this.game.name}: ${this.game.fen}`, { port: this.broadcast.port });
+      logger.debug(`Set backup FEN for ${this.game.name}: ${this.game.fen}`, { port: this.broadcast.port });
     }
-
-    return [EmitType.UPDATE, false];
   }
 
-  private onPlayer(tokens: CommandTokens): UpdateResult {
+  private onPlayer(tokens: CommandTokens): void {
     const [command, ...rest] = tokens;
     const name = rest.join(' ');
 
-    const color: Color = command === Command.WPLAYER ? 'white' : 'black';
+    const color = colorName(command === Command.WPLAYER ? 'w' : 'b');
     this.game[color].reset();
     this.game[color].name = name;
     this.game.liveData.reset(this.game.instance.turn(), this.game.moveNumber);
@@ -183,8 +148,7 @@ class GameService {
       port: this.broadcast.port,
     });
 
-    this.dirty.players = true;
-    this.dirty.liveData = true;
+    this.dirty.add('players').add('liveData');
 
     // onPlayer fires once per color. Notify "game started" exactly once, when
     // both colors have been announced for this game (independent of the
@@ -204,12 +168,6 @@ class GameService {
         });
       }
     }
-
-    return [EmitType.UPDATE, false];
-  }
-
-  private playoutPV(pv: string[]): { san: string[]; alg: string[]; fen: string } | null {
-    return replayUci(new Chess(this.game.instance.fen()), pv);
   }
 
   // WPV/BPV payloads are positional: depth score time nodes pv...
@@ -259,7 +217,7 @@ class GameService {
 
     // The trailing PV describes the search that produced the move just played, so it
     // replays from the position that move was made from.
-    const playout = replayUci(new Chess(this.fenBeforeLastMove), pv);
+    const playout = replayUciFromFen(this.fenBeforeLastMove, pv);
     // The PV must open with the move actually played; otherwise it belongs to a
     // different position and must not overwrite this move's meta.
     if (!playout || playout.san[0] !== lastMove.move) return;
@@ -272,19 +230,19 @@ class GameService {
     );
 
     this.patchedMoves.add(lastMove);
-    this.dirty.movesPatched = true;
+    this.dirty.add('movesPatched');
   }
 
-  private onPV(tokens: CommandTokens): UpdateResult {
+  private onPV(tokens: CommandTokens): void {
     const [command, ...rest] = tokens;
 
-    const colorCode: ColorCode = command === Command.WPV ? 'w' : 'b';
+    const color: ColorCode = command === Command.WPV ? 'w' : 'b';
 
     // Discard PV updates for the non-thinking color (handles stale post-move flush, issue #9),
     // unless it is the trailing flush for the move that color just played.
-    if (colorCode !== this.game.liveData.color) {
-      this.applyTrailingPv(colorCode, rest);
-      return [EmitType.UPDATE, false];
+    if (color !== this.game.liveData.color) {
+      this.applyTrailingPv(color, rest);
+      return;
     }
 
     const parsed = this.parsePvTokens(rest);
@@ -293,19 +251,20 @@ class GameService {
     this.game.liveData.nodes = parsed.nodes;
     this.game.liveData.usedTime = parsed.usedTime;
 
-    const playout = this.playoutPV(parsed.pv);
+    const playout = replayUciFromFen(this.game.instance.fen(), parsed.pv);
     if (playout) {
       this.game.liveData.pv = playout.san;
       this.game.liveData.pvAlg = playout.alg;
       this.game.liveData.pvFen = playout.fen;
     }
 
-    logger.info(
-      `Updated game ${this.game.name} - Color: ${colorCode}, Depth: ${this.game.liveData.depth}, Score: ${this.game.liveData.score}, Nodes: ${this.game.liveData.nodes}, UsedTime: ${this.game.liveData.usedTime}`,
+    // 20-60 PV lines land per move per broadcast, so these stay off the default level.
+    logger.debug(
+      `Updated game ${this.game.name} - Color: ${color}, Depth: ${this.game.liveData.depth}, Score: ${this.game.liveData.score}, Nodes: ${this.game.liveData.nodes}, UsedTime: ${this.game.liveData.usedTime}`,
       { port: this.broadcast.port },
     );
-    logger.info(
-      `Updated game ${this.game.name} - Color: ${colorCode}, PVFen: ${
+    logger.debug(
+      `Updated game ${this.game.name} - Color: ${color}, PVFen: ${
         this.game.liveData.pvFen
       }, PV: ${this.game.liveData.pv.join(' ')}`,
       {
@@ -313,39 +272,38 @@ class GameService {
       },
     );
 
-    this.dirty.liveData = true;
-    return [EmitType.UPDATE, false];
+    this.dirty.add('liveData');
   }
 
-  private onTime(tokens: CommandTokens): UpdateResult {
+  private onTime(tokens: CommandTokens): void {
     const [command, ...rest] = tokens;
 
-    const color: Color = command === Command.WTIME ? 'white' : 'black';
+    const color = colorName(command === Command.WTIME ? 'w' : 'b');
     this.game[color].clockTime = parseInt(rest[0]) * 10;
 
-    logger.info(`Updated game ${this.game.name} - Color: ${color}, ClockTime: ${this.game[color].clockTime}`, {
+    logger.debug(`Updated game ${this.game.name} - Color: ${color}, ClockTime: ${this.game[color].clockTime}`, {
       port: this.broadcast.port,
     });
 
-    this.dirty.clocks = true;
-    return [EmitType.UPDATE, false];
+    this.dirty.add('clocks');
   }
 
-  private async onMove(tokens: CommandTokens): Promise<UpdateResult> {
+  private async onMove(tokens: CommandTokens): Promise<void> {
     const [command, ...rest] = tokens;
 
-    const color: Color = command === Command.WMOVE ? 'white' : 'black';
-    const notColor: Color = command === Command.WMOVE ? 'black' : 'white';
-    const nextColorCode: ColorCode = command === Command.WMOVE ? 'b' : 'w';
+    const code: ColorCode = command === Command.WMOVE ? 'w' : 'b';
+    const nextColorCode: ColorCode = code === 'w' ? 'b' : 'w';
+    const color = colorName(code);
+    const notColor = colorName(nextColorCode);
 
     this.game.moveNumber = parseInt(rest[0].replace('.', ''));
-    const nextPvMoveNumber = color === 'white' ? this.game.moveNumber : this.game.moveNumber + 1;
+    const nextPvMoveNumber = code === 'w' ? this.game.moveNumber : this.game.moveNumber + 1;
 
     try {
       const fenBefore = this.game.instance.fen();
       const move = this.game.instance.move(rest[1], { strict: false });
-      const colorCode: ColorCode = color === 'white' ? 'w' : 'b';
       this.fenBeforeLastMove = fenBefore;
+      this.game.uciHistory.push(`${move.from}${move.to}`);
 
       this.game[color].lastMove = move;
       logger.info(`Updated game ${this.game.name} - Color: ${color}, Last Move: ${this.game[color].lastMove?.san}`, {
@@ -353,7 +311,7 @@ class GameService {
       });
 
       const meta: MoveMetaData = {
-        color: colorCode,
+        color: code,
         number: this.game.moveNumber,
         move: move.san,
         depth: null,
@@ -399,7 +357,7 @@ class GameService {
 
     // start the timer for the other side
     this.game[notColor].startTime = new Date().getTime();
-    this.dirty.clocks = true;
+    this.dirty.add('clocks');
 
     this.broadcast.kibitzerManager?.onPositionChange(this.broadcast.port, this.game.instance.fen());
 
@@ -408,7 +366,7 @@ class GameService {
     const [openingResult, tablebase] = await Promise.all([
       skipOpening
         ? Promise.resolve<OpeningResult>({ failed: false, opening: null })
-        : fetchOpening(this.game.name, this.game.instance),
+        : fetchOpening(this.game.name, this.game.uciHistory),
       fetchTablebase(this.game.name, this.game.fen, this.game.instance.turn()),
     ]);
 
@@ -419,51 +377,45 @@ class GameService {
     }
     this.game.tablebase = tablebase;
 
-    this.dirty.move = true;
-    this.dirty.liveData = true;
-    return [EmitType.UPDATE, false];
+    this.dirty.add('move').add('liveData');
   }
 
-  private async onSite(tokens: CommandTokens): Promise<UpdateResult> {
-    const site = tokens.slice(1).join(' ');
+  private async onSite(tokens: CommandTokens): Promise<void> {
+    const previousSite = this.game.site;
 
-    if (this.game.site) {
-      const oldSlug = siteSlug(this.game.site);
-      invalidatePgnCache(oldSlug);
-      invalidateMetaCache(oldSlug);
-      invalidateArchiveCache(oldSlug);
-    }
-    this.game.site = site.replace('GrahamCCRL.dyndns.org\\', '').replace(/\.[\w]+$/, '');
-
-    // A site change moves the old slug out of the live set (it becomes archived) and a
-    // new pgns/<slug>/ folder may appear, so the homepage listing scan must re-run.
-    invalidateListingCache();
-
-    const slug = siteSlug(this.game.site);
-    if (slug !== this.hydratedSlug) {
-      // A different tournament — drop the previous one's accumulated table, then seed from
-      // pgns/<slug>/tournament-results.json so a restart mid-tournament keeps games the
-      // server's ~300-game window has already scrolled past.
-      if (this.hydratedSlug !== null) {
-        this.broadcast.results = '';
-        this.broadcast.parsedResults = null;
-        this.broadcast.parsedGames = null;
-      }
-
-      const stored = await loadTournamentResults(slug);
-      // Live records win: a CT dump can land before SITE (reloadResults() fires at construction).
-      const merged = mergeGames(stored?.parsedGames ?? [], this.broadcast.parsedGames ?? []);
-      this.broadcast.parsedGames = merged.length ? merged : null;
-      this.hydratedSlug = slug;
-    }
+    this.game.site = normalizeSite(tokens.slice(1).join(' '));
+    this.dirty.add('site');
 
     logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`, { port: this.broadcast.port });
 
-    this.dirty.site = true;
-    return [EmitType.UPDATE, false];
+    // SITE is re-announced once per game, so only a genuine tournament change is worth
+    // acting on — dropping the caches on every announcement forces a full archive
+    // re-scan per finished game.
+    const slug = siteSlug(this.game.site);
+    if (slug === this.hydratedSlug) return;
+
+    // The old slug has moved out of the live set (it is archived now) and a new
+    // pgns/<slug>/ folder may appear, so everything derived from either is stale.
+    if (previousSite) invalidateTournament(siteSlug(previousSite));
+    invalidateTournament(slug);
+
+    // Drop the previous tournament's accumulated table, then seed from
+    // pgns/<slug>/tournament-results.json so a restart mid-tournament keeps games the
+    // server's ~300-game window has already scrolled past.
+    if (this.hydratedSlug !== null) {
+      this.broadcast.results = '';
+      this.broadcast.parsedResults = null;
+      this.broadcast.parsedGames = null;
+    }
+
+    const stored = await loadTournamentResults(slug);
+    // Live records win: a CT dump can land before SITE (reloadResults() fires at construction).
+    const merged = mergeGames(stored?.parsedGames ?? [], this.broadcast.parsedGames ?? []);
+    this.broadcast.parsedGames = merged.length ? merged : null;
+    this.hydratedSlug = slug;
   }
 
-  private onCTReset(): UpdateResult {
+  private onCTReset(): void {
     this.broadcast.results = '';
     this.broadcast.parsedResults = null;
     // parsedGames deliberately survives — CTRESET precedes every dump, and the dump only
@@ -473,14 +425,12 @@ class GameService {
       clearTimeout(this.gamesParseTimer);
       this.gamesParseTimer = null;
     }
-
-    return [EmitType.UPDATE, false];
   }
 
-  private onCT(tokens: CommandTokens): UpdateResult {
+  private onCT(tokens: CommandTokens): void {
     this.broadcast.results += `${tokens[1]}\n`;
 
-    if (/total\s+games\s*=/i.test(tokens[1])) {
+    if (hasTotalGames(tokens[1])) {
       this.broadcast.parsedResults = parseResults(this.broadcast.results);
     }
 
@@ -497,47 +447,33 @@ class GameService {
 
         // Persist the latest standings + schedule (fixed filename, overwritten each dump).
         // Fire-and-forget: saveTournamentResults catches all errors internally.
-        saveTournamentResults(this.broadcast);
+        saveTournamentResults(this.broadcast.toStoredResults());
       }
       this.gamesParseTimer = null;
     }, 100);
-
-    return [EmitType.UPDATE, false];
   }
 
-  private onAddUser(tokens: CommandTokens): UpdateResult {
-    if (username === tokens[1] || this.broadcast.spectators.has(tokens[1])) return [EmitType.UPDATE, false];
+  private onAddUser(tokens: CommandTokens): void {
+    if (username === tokens[1] || this.broadcast.spectators.has(tokens[1])) return;
 
     this.broadcast.spectators.add(tokens[1]);
-    this.dirty.spectators = true;
-    return [EmitType.UPDATE, false];
+    this.dirty.add('spectators');
   }
 
-  private onDelUser(tokens: CommandTokens): UpdateResult {
-    const result = this.broadcast.spectators.delete(tokens[1]);
-
-    if (result) this.dirty.spectators = true;
-    return [EmitType.UPDATE, false];
+  private onDelUser(tokens: CommandTokens): void {
+    if (this.broadcast.spectators.delete(tokens[1])) this.dirty.add('spectators');
   }
 
-  private onChat(tokens: CommandTokens): UpdateResult {
+  private onChat(tokens: CommandTokens): string | void {
     chatMessages.inc({ port: String(this.broadcast.port) });
     // Disable connection messages. TODO: Make this configurable
-    if (tokens[1].endsWith('has arrived!') || tokens[1].endsWith('has left!')) return [EmitType.CHAT, false];
+    if (tokens[1].endsWith('has arrived!') || tokens[1].endsWith('has left!')) return;
 
-    this.pushChat(tokens[1]);
-    return [EmitType.CHAT, true, tokens[1]];
+    this.broadcast.pushChat(tokens[1]);
+    return tokens[1];
   }
 
-  // Bound the retained chat buffer (toJSON only trims the emitted tail).
-  private pushChat(message: string): void {
-    if (this.broadcast.chat.length >= 2000) {
-      this.broadcast.chat.splice(0, this.broadcast.chat.length - 1999);
-    }
-    this.broadcast.chat.push(message);
-  }
-
-  private onMenu(tokens: CommandTokens): UpdateResult {
+  private onMenu(tokens: CommandTokens): void {
     let nameIdx = -1;
     let valueIdx = -1;
 
@@ -546,7 +482,7 @@ class GameService {
       if (v.startsWith('URL=')) valueIdx = i;
     });
 
-    if (nameIdx === -1 || valueIdx === -1) return [EmitType.UPDATE, false];
+    if (nameIdx === -1 || valueIdx === -1) return;
 
     const name = tokens[nameIdx].slice('NAME="'.length, -1).toLowerCase();
     const url = tokens[valueIdx].slice('URL="'.length, -1);
@@ -557,15 +493,14 @@ class GameService {
       port: this.broadcast.port,
     });
 
-    this.dirty.menu = true;
-    return [EmitType.UPDATE, false];
+    this.dirty.add('menu');
   }
 
-  private async onResult(tokens: CommandTokens): Promise<UpdateResult> {
+  private async onResult(tokens: CommandTokens): Promise<string> {
     const message = `[Server] - Game ${this.broadcast.currentGameNumber}: ${this.game.white.name} - ${
       this.game.black.name
     } (${tokens[1].trim()})`;
-    this.pushChat(message);
+    this.broadcast.pushChat(message);
 
     const result = tokens[1].trim();
     this.game.instance.header('Result', result);
@@ -590,35 +525,30 @@ class GameService {
 
     this.broadcast.reloadResults();
 
-    return [EmitType.CHAT, true, message];
-  }
-
-  private hasDirty(): boolean {
-    const d = this.dirty;
-    return d.liveData || d.clocks || d.move || d.movesPatched || d.players || d.site || d.spectators || d.menu;
+    return message;
   }
 
   private buildGameDelta(): GameDelta {
     const d = this.dirty;
     const gameDelta: GameDelta = {};
 
-    if (d.players) {
+    if (d.has('players')) {
       gameDelta.white = this.game.white.toJSON();
       gameDelta.black = this.game.black.toJSON();
       gameDelta.startFen = this.game.startFen;
       gameDelta.resetMoves = true;
     }
 
-    if (d.clocks) {
+    if (d.has('clocks')) {
       gameDelta.white = this.game.white.toJSON();
       gameDelta.black = this.game.black.toJSON();
     }
 
-    if (d.site) {
+    if (d.has('site')) {
       gameDelta.site = this.game.site;
     }
 
-    if (d.move) {
+    if (d.has('move')) {
       gameDelta.fen = this.game.instance.fen();
       gameDelta.stm = this.game.instance.turn();
       gameDelta.opening = this.game.opening;
@@ -636,7 +566,7 @@ class GameService {
       }
     }
 
-    if (d.movesPatched) {
+    if (d.has('movesPatched')) {
       // Filtering moveMeta by identity drops entries a reset() discarded mid-batch.
       const updatedMoves = this.game.moveMeta.filter((m) => this.patchedMoves.has(m));
       if (updatedMoves.length > 0) {
@@ -644,7 +574,7 @@ class GameService {
       }
     }
 
-    if (d.liveData || d.move || d.players) {
+    if (d.has('liveData') || d.has('move') || d.has('players')) {
       gameDelta.liveData = this.game.liveData.toJSON();
     }
 
@@ -653,18 +583,17 @@ class GameService {
 
   private buildDelta(): BroadcastDelta {
     const delta: BroadcastDelta = {};
-    const d = this.dirty;
 
-    if (d.liveData || d.clocks || d.move || d.movesPatched || d.players || d.site) {
+    if (GAME_KEYS.some((key) => this.dirty.has(key))) {
       delta.game = this.buildGameDelta();
     }
 
-    if (d.spectators) {
+    if (this.dirty.has('spectators')) {
       delta.spectators = Array.from(this.broadcast.spectators);
     }
 
-    if (d.menu) {
-      delta.menu = menuToObject(this.broadcast.menu);
+    if (this.dirty.has('menu')) {
+      delta.menu = Object.fromEntries(this.broadcast.menu);
     }
 
     return delta;
@@ -674,20 +603,20 @@ class GameService {
     const ready: [Command, string][] = [];
 
     for (const msg of messages) {
-      const [cmd, rest] = splitOnCommand(msg);
-      if (!this.commandConfig[cmd]) {
-        logger.warn(`Unable to process ${cmd}!`, { port: this.broadcast.port });
+      const parsed = splitOnCommand(msg);
+      if (!parsed) {
+        logger.warn(`Unable to process ${msg}!`, { port: this.broadcast.port });
         continue;
       }
 
-      ready.push([cmd, rest]);
+      ready.push(parsed);
     }
 
     return ready;
   }
 
   async onMessages(messages: string[]): Promise<GameServiceResult> {
-    this.dirty = freshFlags();
+    this.dirty.clear();
     this.moveCountBefore = this.game.moveMeta.length;
     this.patchedMoves.clear();
     const chatEmit: string[] = [];
@@ -695,20 +624,16 @@ class GameService {
     for (const [cmd, rest] of this.categorizeMessages(messages)) {
       const commandConfig = this.commandConfig[cmd];
 
-      const [emit, updated, ...updateData] = await commandConfig.fn(
-        commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest],
-      );
+      const chat = await commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
 
       commandsProcessed.inc({ port: String(this.broadcast.port), command: cmd });
 
-      if (updated && emit === EmitType.CHAT) {
-        chatEmit.push(updateData[0]);
-      }
+      if (chat) chatEmit.push(chat);
     }
 
-    const update = this.hasDirty() ? this.buildDelta() : null;
+    const update = this.dirty.size > 0 ? this.buildDelta() : null;
 
-    logger.info(`Successfully processed ${messages.length} message(s)`, { port: this.broadcast.port });
+    logger.debug(`Successfully processed ${messages.length} message(s)`, { port: this.broadcast.port });
 
     return { update, chat: chatEmit };
   }

@@ -23,7 +23,14 @@ export enum Command {
   LEVEL = 'level',
 }
 
-export function splitOnCommand(line: string): [Command, string] {
+const KNOWN_COMMANDS = new Set<string>(Object.values(Command));
+
+/**
+ * Splits a protocol line into its command and argument. Returns null when the
+ * leading token isn't a command we know — validating here means callers can trust
+ * the `Command` in the result rather than re-checking a cast.
+ */
+export function splitOnCommand(line: string): [Command, string] | null {
   const semiIdx = line.indexOf(':');
   const spaceIdx = line.indexOf(' ');
 
@@ -35,7 +42,8 @@ export function splitOnCommand(line: string): [Command, string] {
   // If both, then choose the first one
   else if (spaceIdx >= 0) argSplit = Math.min(semiIdx, spaceIdx);
 
-  if (argSplit < 0) return [line as Command, ''];
+  const command = argSplit < 0 ? line : line.substring(0, argSplit);
+  if (!KNOWN_COMMANDS.has(command)) return null;
 
-  return [line.substring(0, argSplit) as Command, line.substring(argSplit + 1).trim()];
+  return [command as Command, argSplit < 0 ? '' : line.substring(argSplit + 1).trim()];
 }

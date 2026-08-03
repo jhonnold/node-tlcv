@@ -1,12 +1,47 @@
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 import broadcasts from './broadcast.js';
 import { getKibitzerManager } from './broadcast-manager.js';
+import type { Broadcast } from './broadcast.js';
+import type { KibitzerStatus } from './kibitzer/kibitzer-manager.js';
 
 export const register = new Registry();
 
 collectDefaultMetrics({ register, prefix: 'ccrl_' });
 
 // --- Gauges (collected at scrape time) ---
+
+// The per-broadcast and per-kibitzer gauges differ only in the number they read, so
+// the label set and the scrape-time iteration are declared once here. Adding a label
+// to either family is then a single edit rather than one per gauge.
+function perBroadcastGauge(name: string, help: string, value: (broadcast: Broadcast) => number) {
+  return new Gauge({
+    name,
+    help,
+    labelNames: ['port', 'event'] as const,
+    registers: [register],
+    collect() {
+      this.reset();
+      for (const [port, broadcast] of broadcasts) {
+        this.set({ port: String(port), event: broadcast.eventLabel }, value(broadcast));
+      }
+    },
+  });
+}
+
+function perKibitzerGauge(name: string, help: string, value: (status: KibitzerStatus) => number) {
+  return new Gauge({
+    name,
+    help,
+    labelNames: ['id', 'engine', 'type'] as const,
+    registers: [register],
+    collect() {
+      this.reset();
+      for (const s of getKibitzerManager()?.getStatus() ?? []) {
+        this.set({ id: s.id, engine: s.engineName || 'unknown', type: s.type }, value(s));
+      }
+    },
+  });
+}
 
 export const broadcastsActive = new Gauge({
   name: 'ccrl_broadcasts_active',
@@ -17,82 +52,44 @@ export const broadcastsActive = new Gauge({
   },
 });
 
-export const broadcastSpectators = new Gauge({
-  name: 'ccrl_broadcast_spectators',
-  help: 'Current spectator count per broadcast',
-  labelNames: ['port', 'event'] as const,
-  registers: [register],
-  collect() {
-    this.reset();
-    for (const [port, broadcast] of broadcasts) {
-      this.set({ port: String(port), event: broadcast.game.site ?? 'unknown' }, broadcast.spectators.size);
-    }
-  },
-});
+export const broadcastSpectators = perBroadcastGauge(
+  'ccrl_broadcast_spectators',
+  'Current spectator count per broadcast',
+  (b) => b.spectators.size,
+);
 
-export const broadcastBrowserConnections = new Gauge({
-  name: 'ccrl_broadcast_browser_connections',
-  help: 'Current browser connection count per broadcast',
-  labelNames: ['port', 'event'] as const,
-  registers: [register],
-  collect() {
-    this.reset();
-    for (const [port, broadcast] of broadcasts) {
-      this.set({ port: String(port), event: broadcast.game.site ?? 'unknown' }, broadcast.browserCount);
-    }
-  },
-});
+export const broadcastBrowserConnections = perBroadcastGauge(
+  'ccrl_broadcast_browser_connections',
+  'Current browser connection count per broadcast',
+  (b) => b.browserCount,
+);
 
-export const gameMoveNumber = new Gauge({
-  name: 'ccrl_game_move_number',
-  help: 'Current move number in the active game per broadcast',
-  labelNames: ['port', 'event'] as const,
-  registers: [register],
-  collect() {
-    this.reset();
-    for (const [port, broadcast] of broadcasts) {
-      this.set({ port: String(port), event: broadcast.game.site ?? 'unknown' }, broadcast.game.moveMeta.length);
-    }
-  },
-});
+export const gameMoveNumber = perBroadcastGauge(
+  'ccrl_game_move_number',
+  'Current move number in the active game per broadcast',
+  (b) => b.game.moveMeta.length,
+);
 
 export const kibitzerTotal = new Gauge({
   name: 'ccrl_kibitzer_total',
   help: 'Total number of configured kibitzer transports',
   registers: [register],
   collect() {
-    const statuses = getKibitzerManager()?.getStatus() ?? [];
-    this.set(statuses.length);
+    this.set((getKibitzerManager()?.getStatus() ?? []).length);
   },
 });
 
-export const kibitzerReady = new Gauge({
-  name: 'ccrl_kibitzer_ready',
-  help: 'Whether a kibitzer transport is ready (1) or not (0)',
-  labelNames: ['id', 'engine', 'type'] as const,
-  registers: [register],
-  collect() {
-    this.reset();
-    const statuses = getKibitzerManager()?.getStatus() ?? [];
-    for (const s of statuses) {
-      this.set({ id: s.id, engine: s.engineName || 'unknown', type: s.type }, s.ready ? 1 : 0);
-    }
-  },
-});
+export const kibitzerReady = perKibitzerGauge(
+  'ccrl_kibitzer_ready',
+  'Whether a kibitzer transport is ready (1) or not (0)',
+  (s) => (s.ready ? 1 : 0),
+);
 
-export const kibitzerTargetPort = new Gauge({
-  name: 'ccrl_kibitzer_target_port',
-  help: 'Port number the kibitzer is currently analyzing (0 if unassigned)',
-  labelNames: ['id', 'engine', 'type'] as const,
-  registers: [register],
-  collect() {
-    this.reset();
-    const statuses = getKibitzerManager()?.getStatus() ?? [];
-    for (const s of statuses) {
-      this.set({ id: s.id, engine: s.engineName || 'unknown', type: s.type }, s.targetPort ?? 0);
-    }
-  },
-});
+export const kibitzerTargetPort = perKibitzerGauge(
+  'ccrl_kibitzer_target_port',
+  'Port number the kibitzer is currently analyzing (0 if unassigned)',
+  (s) => s.targetPort ?? 0,
+);
 
 // --- Histograms (observed at call sites) ---
 
