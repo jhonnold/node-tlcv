@@ -24,6 +24,10 @@ interface BroadcastSlot {
   dirty: boolean;
 }
 
+// A slot that has both a position and an analysis of it — the only state any of the
+// read accessors can report from.
+type ActiveSlot = BroadcastSlot & { currentInfo: AnalysisInfo; currentFen: string };
+
 export interface KibitzerStatus {
   id: string;
   type: string;
@@ -143,14 +147,23 @@ export class KibitzerManager {
   }
 
   /**
-   * The current analysis for a port, or null when nothing is being analyzed there.
-   * Both the move-history snapshot and the live panel are shaped from this; they
-   * differ only in how they render "nothing yet".
+   * The slot for a port, but only once it holds both a position and an analysis of
+   * it. Every read accessor goes through this so they all agree on what "analyzing"
+   * means — reporting off `currentInfo` alone would surface the transient state
+   * between a transport's first info line and the slot's FEN being recorded.
    */
-  private buildSnapshot(port: number): KibitzerMeta | null {
+  private activeSlot(port: number): ActiveSlot | null {
     const slot = this.slots.get(port);
     if (!slot || !slot.currentInfo || !slot.currentFen) return null;
 
+    return slot as ActiveSlot;
+  }
+
+  /**
+   * The current analysis, shaped for the move history. The live panel builds on the
+   * same object; the two differ only in how they render "nothing yet".
+   */
+  private buildSnapshot(slot: ActiveSlot): KibitzerMeta {
     const pv = replayUciFromFen(slot.currentFen, slot.currentInfo.pv);
 
     return {
@@ -166,13 +179,14 @@ export class KibitzerManager {
   }
 
   snapshotForMove(port: number): KibitzerMeta | null {
-    return this.buildSnapshot(port);
+    const slot = this.activeSlot(port);
+    return slot ? this.buildSnapshot(slot) : null;
   }
 
   /** Just the evaluation, for callers (the homepage cards) that would discard the rest. */
   getScore(port: number): number | null {
-    const info = this.slots.get(port)?.currentInfo;
-    return info ? info.score / 100 : null;
+    const slot = this.activeSlot(port);
+    return slot ? slot.currentInfo.score / 100 : null;
   }
 
   onPositionChange(port: number, fen: string): void {
@@ -186,8 +200,10 @@ export class KibitzerManager {
   }
 
   getLiveData(port: number): SerializedKibitzerLiveData | null {
-    const snapshot = this.buildSnapshot(port);
-    if (!snapshot) return null;
+    const slot = this.activeSlot(port);
+    if (!slot) return null;
+
+    const snapshot = this.buildSnapshot(slot);
 
     return {
       ...snapshot,
@@ -195,7 +211,7 @@ export class KibitzerManager {
       pvAlg: snapshot.pvAlg ?? '',
       pvFen: snapshot.pvFen ?? '',
       pvMoveNumber: snapshot.pvMoveNumber ?? 1,
-      name: this.slots.get(port)!.transport.name(),
+      name: slot.transport.name(),
     };
   }
 
