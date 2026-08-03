@@ -2,32 +2,16 @@ import { spawn } from 'child_process';
 import type { ChildProcessWithoutNullStreams } from 'child_process';
 import { createInterface } from 'readline';
 import { logger } from '../util/index.js';
-import { parseInfoLine } from './uci-parser.js';
-import type { AnalysisInfo } from './uci-parser.js';
-import type { KibitzerTransport, LocalKibitzerConfig } from './types.js';
+import { UciTransportBase } from './uci-transport-base.js';
+import type { LocalKibitzerConfig } from './types.js';
 
-export class LocalTransport implements KibitzerTransport {
+export class LocalTransport extends UciTransportBase {
   private proc: ChildProcessWithoutNullStreams | null = null;
-  private callback: ((info: AnalysisInfo) => void) | null = null;
-  private _ready = false;
-
-  get ready(): boolean {
-    return this._ready;
-  }
-
-  private stm: 'w' | 'b' = 'w';
-  private pendingFen: string | null = null;
-  private engineName: string;
-
   private readonly enginePath: string;
-  private readonly threads: number;
-  private readonly hash: number;
 
   constructor(config: LocalKibitzerConfig) {
+    super({ threads: config.threads, hash: config.hash }, 'Stockfish');
     this.enginePath = config.enginePath ?? 'stockfish';
-    this.threads = config.threads ?? 1;
-    this.hash = config.hash ?? 256;
-    this.engineName = 'Stockfish';
   }
 
   create(): void {
@@ -54,9 +38,7 @@ export class LocalTransport implements KibitzerTransport {
   }
 
   teardown(): void {
-    this._ready = false;
-    this.callback = null;
-    this.pendingFen = null;
+    this.clearState();
     if (this.proc) {
       this.send('quit');
       setTimeout(() => {
@@ -68,68 +50,9 @@ export class LocalTransport implements KibitzerTransport {
     }
   }
 
-  startAnalysis(fen: string): void {
-    if (!this.proc) return;
-
-    const parts = fen.split(' ');
-    this.stm = (parts[1] ?? 'w') as 'w' | 'b';
-
-    if (!this._ready) {
-      this.pendingFen = fen;
-      return;
-    }
-
-    this.send('stop');
-    this.send(`position fen ${fen}`);
-    this.send('go infinite');
-  }
-
-  stopAnalysis(): void {
-    this.pendingFen = null;
-    this.send('stop');
-  }
-
-  onAnalysis(callback: (info: AnalysisInfo) => void): void {
-    this.callback = callback;
-  }
-
-  name(): string {
-    return this.engineName;
-  }
-
-  private send(cmd: string): void {
+  protected send(cmd: string): void {
     if (this.proc?.stdin.writable) {
       this.proc.stdin.write(`${cmd}\n`);
-    }
-  }
-
-  private onLine(line: string): void {
-    if (line.startsWith('id name ')) {
-      this.engineName = line.slice('id name '.length);
-      return;
-    }
-
-    if (line === 'uciok') {
-      this.send(`setoption name Threads value ${this.threads}`);
-      this.send(`setoption name Hash value ${this.hash}`);
-      this.send('isready');
-      return;
-    }
-
-    if (line === 'readyok') {
-      this._ready = true;
-      logger.info(`Kibitzer engine ready (Threads=${this.threads}, Hash=${this.hash})`);
-      if (this.pendingFen) {
-        const fen = this.pendingFen;
-        this.pendingFen = null;
-        this.startAnalysis(fen);
-      }
-      return;
-    }
-
-    if (line.startsWith('info ') && this.callback) {
-      const info = parseInfoLine(line, this.stm);
-      if (info) this.callback(info);
     }
   }
 }

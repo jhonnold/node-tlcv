@@ -1,8 +1,8 @@
-import crypto from 'node:crypto';
 import { Router, Request, Response } from 'express';
 import basic from 'express-basic-auth';
 import broadcasts from '../broadcast.js';
 import { logger } from '../util/index.js';
+import { genId } from '../util/ids.js';
 import { closeConnection, getKibitzerManager, getWebhookManager, newConnection } from '../broadcast-manager.js';
 import configStore from '../config/config-store.js';
 import type { KibitzerConfig } from '../kibitzer/types.js';
@@ -63,7 +63,7 @@ router.post('/kibitzers', async (req: Request, res: Response) => {
   const body = req.body;
 
   try {
-    const id = crypto.randomUUID().slice(0, 8);
+    const id = genId();
     let config: KibitzerConfig;
 
     if (body.type === 'ssh') {
@@ -132,7 +132,7 @@ router.post('/webhooks', async (req: Request, res: Response) => {
       return;
     }
 
-    const id = crypto.randomUUID().slice(0, 8);
+    const id = genId();
 
     const ports = String(body.ports ?? '')
       .split(',')

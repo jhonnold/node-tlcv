@@ -3,6 +3,7 @@ import broadcasts from '../broadcast.js';
 import { emitUpdate } from '../socket-io-adapter.js';
 import { kibitzerAssignments } from '../metrics.js';
 import { logger } from '../util/index.js';
+import { replayUci } from '../util/uci.js';
 import { createTransport } from './transport-factory.js';
 import type { KibitzerTransport, KibitzerConfig, AnalysisInfo } from './types.js';
 import type { ColorCode, KibitzerMeta, SerializedKibitzerLiveData } from '../../shared/types.js';
@@ -132,7 +133,7 @@ export class KibitzerManager {
         id: entry.id,
         type: entry.config.type,
         priority: entry.config.priority,
-        enginePath: entry.config.type === 'ssh' ? entry.config.enginePath : entry.config.enginePath ?? 'stockfish',
+        enginePath: entry.config.enginePath ?? 'stockfish',
         threads: entry.config.threads ?? 1,
         hash: entry.config.hash ?? 256,
         ready: entry.transport.ready,
@@ -197,23 +198,6 @@ export class KibitzerManager {
       pvMoveNumber: pv?.moveNumber ?? 1,
       name: slot.transport.name(),
     };
-  }
-
-  getTargetPort(): number | null {
-    let best: number | null = null;
-    let bestCount = 0;
-    for (const port of this.slots.keys()) {
-      const bc = broadcasts.get(port);
-      if (bc && bc.browserCount > bestCount) {
-        bestCount = bc.browserCount;
-        best = port;
-      }
-    }
-    return best;
-  }
-
-  isTargeted(port: number): boolean {
-    return this.slots.has(port);
   }
 
   private emitKibitzerUpdates(): void {
@@ -303,20 +287,8 @@ export class KibitzerManager {
     try {
       const chess = new Chess(fen);
       const moveNumber = chess.moveNumber();
-      const san: string[] = [];
-      const alg: string[] = [];
-
-      for (const move of uciMoves) {
-        try {
-          const result = chess.move(move, { strict: false });
-          san.push(result.san);
-          alg.push(`${result.from}${result.to}`);
-        } catch {
-          break;
-        }
-      }
-
-      return san.length ? { san, alg, fen: chess.fen(), moveNumber } : null;
+      const replay = replayUci(chess, uciMoves);
+      return replay ? { ...replay, moveNumber } : null;
     } catch {
       return null;
     }
