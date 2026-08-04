@@ -1,5 +1,3 @@
-import type { SerializedLiveData } from '../../../shared/types';
-
 export function formatPv(pv: string[] | null, pvMoveNumber: number, color: string) {
   if (!pv || !pv.length) return '';
 
@@ -12,8 +10,4 @@ export function formatPv(pv: string[] | null, pvMoveNumber: number, color: strin
       }${move} `,
     color === 'white' ? '' : `<strong>${pvMoveNumber}...</strong> `,
   );
-}
-
-export default function pvString(liveData: SerializedLiveData, color: string) {
-  return formatPv(liveData.pv, liveData.pvMoveNumber, color);
 }

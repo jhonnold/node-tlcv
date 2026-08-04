@@ -41,28 +41,14 @@
 }
 
 .games-table {
-  @include mini-table-reset($width: 100%, $table-layout: true);
-
-  thead th {
-    @include sticky-th-header(0.7rem);
-  }
-
-  tbody tr {
-    border-bottom: 1px solid var(--surfaceColorHover);
-  }
+  @include data-table($width: 100%, $table-layout: true);
 
   tbody td {
-    padding: 6px 8px;
-    vertical-align: middle;
     white-space: nowrap;
   }
 
   .games-num {
-    color: var(--secondaryColor);
-    font-weight: 700;
-    font-size: 0.75rem;
-    text-align: right;
-    padding-right: 8px;
+    @include table-index-cell;
   }
 }
 
@@ -122,8 +108,7 @@
 }
 
 .games-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include text-truncate;
 }
 
 .games-loading,

@@ -3,6 +3,15 @@ import $ from 'jquery';
 
 const CHAR_CODE_A = 96; // 'a'.charCodeAt(0) - 1, so file 'a' = 1
 
+// Both elements are server-rendered and never recreated, so resolve them once
+// instead of re-querying on every arrow.
+let canvasEl: HTMLCanvasElement | null = null;
+
+function canvas(): HTMLCanvasElement | null {
+  if (!canvasEl) canvasEl = ($('#arrow-board')[0] as HTMLCanvasElement) ?? null;
+  return canvasEl;
+}
+
 function rotatePoint(point: number[], angle: number, origin: number[]) {
   const dx = point[0] - origin[0];
   const dy = point[1] - origin[1];
@@ -52,13 +61,14 @@ function drawArrow(
 }
 
 export function drawMove(move: string, color: string, flipped = false) {
-  const board = $('#board');
-  const boardSize = board.height()!;
+  const el = canvas();
+  const ctx = el?.getContext('2d');
 
-  const canvas = $('#arrow-board')[0] as HTMLCanvasElement;
-  const ctx = canvas.getContext('2d');
+  if (!el || !ctx) return;
 
-  if (ctx === null) return;
+  // sizeArrowBoard keeps the canvas square and matched to the board, so its own
+  // height is the board size — reading it costs no layout.
+  const boardSize = el.height;
 
   let fromFile = move.charCodeAt(0) - CHAR_CODE_A;
   let fromRank = Number(move.charAt(1));
@@ -72,14 +82,12 @@ export function drawMove(move: string, color: string, flipped = false) {
     toRank = 9 - toRank;
   }
 
-  const canvasHeight = $('#arrow-board').height()!;
-
   const squareSize = boardSize / 8;
   const squareCenter = squareSize / 2;
   const startX = fromFile * squareSize - squareCenter;
-  const startY = canvasHeight - (fromRank * squareSize - squareCenter);
+  const startY = boardSize - (fromRank * squareSize - squareCenter);
   const endX = toFile * squareSize - squareCenter;
-  const endY = canvasHeight - (toRank * squareSize - squareCenter);
+  const endY = boardSize - (toRank * squareSize - squareCenter);
   const arrowWidth = (squareSize / 3.5) * 0.5;
 
   ctx.fillStyle = color;
@@ -87,10 +95,10 @@ export function drawMove(move: string, color: string, flipped = false) {
 }
 
 export function clearArrows() {
-  const canvas = $('#arrow-board')[0] as HTMLCanvasElement;
-  const ctx = canvas.getContext('2d');
-  if (ctx === null) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const el = canvas();
+  const ctx = el?.getContext('2d');
+  if (!el || !ctx) return;
+  ctx.clearRect(0, 0, el.width, el.height);
 }
 
 export function sizeArrowBoard() {

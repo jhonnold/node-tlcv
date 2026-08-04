@@ -12,25 +12,12 @@
 }
 
 .tab-btn {
+  @include pill-toggle(0.8rem);
   flex: 1;
   text-align: center;
-  font-family: var(--fontFamily);
-  font-weight: 500;
-  font-size: 0.8rem;
-  background: transparent;
   border: none;
-  border-radius: var(--universal-border-radius);
   padding: 1px 6px;
-  cursor: pointer;
-  color: var(--textColor);
-  opacity: 0.6;
   transition: opacity 0.15s, background 0.15s;
-
-  &.active {
-    opacity: 1;
-    background: var(--primaryColor);
-    color: var(--backgroundColor);
-  }
 
   &:hover {
     opacity: 1;

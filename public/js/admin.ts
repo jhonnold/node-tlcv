@@ -1,67 +1,29 @@
 import $ from 'jquery';
 import { init as initTheme } from './components/theme/index';
+import { postJson, del } from './utils/http';
+
+const reload = () => window.location.reload();
+
+// The admin page has no client-side state to reconcile — every mutation is followed
+// by a full reload, so the server rendering stays the single source of truth.
+function submitAndReload(request: JQuery.jqXHR) {
+  request.always(reload);
+}
 
 // --- Broadcast handlers ---
 
 function closeBroadcast(connection: string) {
-  $.ajax({
-    type: 'POST',
-    url: '/admin/close',
-    data: JSON.stringify({ connection }),
-    contentType: 'application/json',
-    complete() {
-      window.location.reload();
-    },
-  });
+  submitAndReload(postJson('/admin/close', { connection }));
 }
 
 function addNewBroadcast(connection: string, ephemeral: boolean) {
-  $.ajax({
-    type: 'POST',
-    url: '/admin/new',
-    data: JSON.stringify({ connection, ephemeral }),
-    contentType: 'application/json',
-    complete() {
-      window.location.reload();
-    },
-  });
-}
-
-// --- Kibitzer handlers ---
-
-function removeKibitzer(id: string) {
-  $.ajax({
-    type: 'DELETE',
-    url: `/admin/kibitzers/${id}`,
-    complete() {
-      window.location.reload();
-    },
-  });
-}
-
-function addKibitzer(data: Record<string, string>) {
-  $.ajax({
-    type: 'POST',
-    url: '/admin/kibitzers',
-    data: JSON.stringify(data),
-    contentType: 'application/json',
-    complete() {
-      window.location.reload();
-    },
-  });
+  submitAndReload(postJson('/admin/new', { connection, ephemeral }));
 }
 
 function toggleSshFields() {
   const isSsh = $('#kibitzer-type').val() === 'ssh';
   $('#ssh-fields').toggle(isSsh);
-  $('#kibitzer-host').prop('required', isSsh);
-  $('#kibitzer-username').prop('required', isSsh);
-  $('#kibitzer-private-key-path').prop('required', isSsh);
-  if (isSsh) {
-    $('#kibitzer-engine-path').prop('required', true);
-  } else {
-    $('#kibitzer-engine-path').prop('required', false);
-  }
+  $('#kibitzer-host, #kibitzer-username, #kibitzer-private-key-path, #kibitzer-engine-path').prop('required', isSsh);
 }
 
 function resetKibitzerForm() {
@@ -105,28 +67,6 @@ function collectKibitzerFormData(): Record<string, string> {
 
 // --- Webhook handlers ---
 
-function removeWebhook(id: string) {
-  $.ajax({
-    type: 'DELETE',
-    url: `/admin/webhooks/${id}`,
-    complete() {
-      window.location.reload();
-    },
-  });
-}
-
-function addWebhook(data: Record<string, unknown>) {
-  $.ajax({
-    type: 'POST',
-    url: '/admin/webhooks',
-    data: JSON.stringify(data),
-    contentType: 'application/json',
-    complete() {
-      window.location.reload();
-    },
-  });
-}
-
 function resetWebhookForm() {
   $('#webhook-editing-id').val('');
   $('#webhook-type').val('discord');
@@ -154,6 +94,34 @@ function collectWebhookFormData(): Record<string, unknown> {
   };
 }
 
+/**
+ * Wire the remove/submit handlers for one collection. Kibitzers and webhooks are
+ * the same CRUD shape — only the id prefix and the form's field collection differ.
+ * Editing is delete-then-add because the admin API exposes no PUT.
+ */
+function initEntityForm(prefix: 'kibitzer' | 'webhook', collect: () => Record<string, unknown>) {
+  const collection = `/admin/${prefix}s`;
+  const create = (data: Record<string, unknown>) => submitAndReload(postJson(collection, data));
+
+  $(document).on('click', `.${prefix}-remove`, function handleRemove() {
+    submitAndReload(del(`${collection}/${$(this).data('id')}`));
+  });
+
+  $(`#${prefix}-form`).on('submit', (e) => {
+    e.preventDefault();
+    const editingId = ($(`#${prefix}-editing-id`).val() as string).trim();
+    const data = collect();
+
+    if (editingId) {
+      del(`${collection}/${editingId}`)
+        .done(() => create(data))
+        .fail(reload);
+    } else {
+      create(data);
+    }
+  });
+}
+
 $(document).ready(() => {
   initTheme();
 
@@ -174,11 +142,8 @@ $(document).ready(() => {
   // Kibitzer type toggle
   $('#kibitzer-type').on('change', toggleSshFields);
 
-  // Kibitzer remove
-  $(document).on('click', '.kibitzer-remove', function handleRemove() {
-    const id = $(this).data('id');
-    removeKibitzer(id);
-  });
+  initEntityForm('kibitzer', collectKibitzerFormData);
+  initEntityForm('webhook', collectWebhookFormData);
 
   // Kibitzer edit — populate form with row data
   $(document).on('click', '.kibitzer-edit', function handleEdit() {
@@ -205,35 +170,6 @@ $(document).ready(() => {
     resetKibitzerForm();
   });
 
-  // Kibitzer form submit (add or edit)
-  $('#kibitzer-form').on('submit', (e) => {
-    e.preventDefault();
-    const editingId = ($('#kibitzer-editing-id').val() as string).trim();
-    const data = collectKibitzerFormData();
-
-    if (editingId) {
-      // Edit = delete old, then add new
-      $.ajax({
-        type: 'DELETE',
-        url: `/admin/kibitzers/${editingId}`,
-        success() {
-          addKibitzer(data);
-        },
-        error() {
-          window.location.reload();
-        },
-      });
-    } else {
-      addKibitzer(data);
-    }
-  });
-
-  // Webhook remove
-  $(document).on('click', '.webhook-remove', function handleWebhookRemove() {
-    const id = $(this).data('id');
-    removeWebhook(id);
-  });
-
   // Webhook edit — populate form with row data
   $(document).on('click', '.webhook-edit', function handleWebhookEdit() {
     const $btn = $(this);
@@ -254,28 +190,5 @@ $(document).ready(() => {
   $('#webhook-cancel').on('click', (e) => {
     e.preventDefault();
     resetWebhookForm();
-  });
-
-  // Webhook form submit (add or edit)
-  $('#webhook-form').on('submit', (e) => {
-    e.preventDefault();
-    const editingId = ($('#webhook-editing-id').val() as string).trim();
-    const data = collectWebhookFormData();
-
-    if (editingId) {
-      // Edit = delete old, then add new
-      $.ajax({
-        type: 'DELETE',
-        url: `/admin/webhooks/${editingId}`,
-        success() {
-          addWebhook(data);
-        },
-        error() {
-          window.location.reload();
-        },
-      });
-    } else {
-      addWebhook(data);
-    }
   });
 });

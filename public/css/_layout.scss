@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 .main-layout {
   display: grid;
   grid-template-columns: minmax(475px, 1.5fr) 16px minmax(475px, 1fr);
@@ -5,8 +7,7 @@
 }
 
 .right-column {
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   justify-content: center;
   gap: calc(2 * var(--universal-margin));
 

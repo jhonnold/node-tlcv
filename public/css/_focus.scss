@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 // Focus-info strips are hidden outside of focus mode.
 // Using a class selector (.focus-info, specificity=10) so that the body.focus-mode .focus-info
 // rule (specificity=21) can override it without needing !important.
@@ -53,11 +55,9 @@ body.focus-mode {
     font-size: 1rem;
 
     .focus-name {
+      @include text-truncate;
       font-weight: 600;
       flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
       margin-right: 1rem;
     }
 

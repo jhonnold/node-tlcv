@@ -5,9 +5,8 @@ import { chatHeight } from '../board/resize';
 import { on, off } from '../../events/index';
 import type { GameEventData, NavPosition } from '../../events/index';
 import type { SerializedGame } from '../../../../shared/types';
-import { colorName } from '../../../../shared/colors';
-import { formatScore } from '../game/player-info';
-import { msToString } from '../game/timers';
+import { colorName, colorCode } from '../../../../shared/colors';
+import { formatScore, msToString } from '../../utils/format';
 import { isReplayMode } from '../replay/index';
 
 let active = false;
@@ -16,6 +15,11 @@ let live = true;
 let navIndex = 0;
 let lastGame: SerializedGame | null = null;
 const focusClockIntervals = new Map<string, ReturnType<typeof setInterval>>();
+
+// Renders arrive ~10x/second while an engine is thinking, but the clocks only need
+// restarting when the underlying inputs change. Tearing the intervals down every
+// render meant the 1s tick could never actually fire.
+let clockKey = '';
 
 function topColor(): 'white' | 'black' {
   return flipped ? 'white' : 'black';
@@ -28,6 +32,12 @@ function bottomColor(): 'white' | 'black' {
 function clearFocusClocks() {
   focusClockIntervals.forEach((interval) => clearInterval(interval));
   focusClockIntervals.clear();
+}
+
+/** Drop the memoized clock inputs so the next render rebuilds the intervals. */
+function invalidateClocks() {
+  clearFocusClocks();
+  clockKey = '';
 }
 
 function renderStrip(color: 'white' | 'black', game: SerializedGame) {
@@ -55,7 +65,7 @@ function renderStrip(color: 'white' | 'black', game: SerializedGame) {
     }
   } else {
     // Historical navigation: search backward for the most recent eval for this color
-    const colorChar = color === 'white' ? 'w' : 'b';
+    const colorChar = colorCode(color);
     const moves = game.moves || [];
     for (let i = Math.min(navIndex - 1, moves.length - 1); i >= 0; i--) {
       const move = moves[i];
@@ -80,8 +90,7 @@ function startFocusClock(color: 'white' | 'black', game: SerializedGame) {
     return;
   }
 
-  const sideToMove = game.stm === 'w' ? 'white' : 'black';
-  if (color === sideToMove) {
+  if (color === colorName(game.stm)) {
     // Ticking clock for the side-to-move
     const tick = () => {
       const remaining = Math.max(0, clockTime - (Date.now() - startTime));
@@ -97,9 +106,25 @@ function startFocusClock(color: 'white' | 'black', game: SerializedGame) {
 
 function render(game: SerializedGame) {
   if (!active) return;
-  clearFocusClocks();
+
   renderStrip(topColor(), game);
   renderStrip(bottomColor(), game);
+
+  const key = [
+    game.stm,
+    game.white.clockTime,
+    game.white.startTime,
+    game.black.clockTime,
+    game.black.startTime,
+    live,
+    flipped,
+    isReplayMode(),
+  ].join('|');
+
+  if (key === clockKey) return;
+  clockKey = key;
+
+  clearFocusClocks();
   startFocusClock(topColor(), game);
   startFocusClock(bottomColor(), game);
 }
@@ -136,7 +161,7 @@ function toggle() {
   setTimeout(() => {
     resizeBoard();
     if (!active) {
-      clearFocusClocks();
+      invalidateClocks();
       $('#chat-area').height(chatHeight());
     } else if (lastGame) {
       render(lastGame);
@@ -163,7 +188,7 @@ export function init() {
 export function destroy() {
   $('#focus-toggle').off('click');
   $(document).off('keydown', handleKeyDown);
-  clearFocusClocks();
+  invalidateClocks();
   off('game:state', handleGameState);
   off('game:update', handleGameUpdate);
   off('nav:position', handleNavPosition);

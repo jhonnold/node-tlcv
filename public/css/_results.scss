@@ -11,21 +11,8 @@
 }
 
 .results-table {
-  @include mini-table-reset($width: auto);
+  @include data-table($width: auto, $th-size: 0.65rem);
   white-space: nowrap;
-
-  thead th {
-    @include sticky-th-header(0.65rem);
-  }
-
-  tbody tr {
-    border-bottom: 1px solid var(--surfaceColorHover);
-  }
-
-  tbody td {
-    padding: 6px 8px;
-    vertical-align: middle;
-  }
 
   .results-rank,
   .results-col-rank {
@@ -46,10 +33,9 @@
 
   .results-col-name,
   .results-name {
+    @include text-truncate;
     text-align: left;
     max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .results-col-games,

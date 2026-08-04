@@ -13,7 +13,7 @@ import type { MoveMetaData, SerializedGame } from '../../../../shared/types';
 import { on } from '../../events/index';
 import { getActiveTab } from '../tabs/index';
 import { goTo, getNavIndex } from '../navigation/index';
-import GRAPH_TYPES from './graph-types';
+import GRAPH_TYPES, { clampEval } from './graph-types';
 import { init as initSelector, setActive } from './selector';
 import { isReplayMode } from '../replay/index';
 import { getCssVar } from '../../utils/dom';
@@ -23,6 +23,7 @@ Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryS
 // Module state
 let chart: Chart | null = null;
 let chartInitialized = false;
+let dirty = false;
 let activeGraph = 'eval';
 let gameMoves: MoveMetaData[] = [];
 let whiteName = '';
@@ -66,8 +67,7 @@ function buildChartData(type: string) {
 
     // Kibitzer data — only on eval graph, one point per move
     if (type === 'eval' && m.kibitzer?.score != null) {
-      const normalizedScore = Math.max(-10, Math.min(10, m.kibitzer.score));
-      kibitzerData[i] = normalizedScore;
+      kibitzerData[i] = clampEval(m.kibitzer.score);
     }
   }
 
@@ -90,6 +90,7 @@ function destroyChart() {
     chart = null;
   }
   chartInitialized = false;
+  dirty = false;
 }
 
 function createChart() {
@@ -210,22 +211,33 @@ function createChart() {
 
 function refreshChart() {
   if (!chartInitialized || !chart) return;
+
+  // The chart keeps its canvas (and stays "initialized") while another tab is
+  // showing, so defer the repaint until Graphs is visible again.
+  if (getActiveTab() !== 'graphs') {
+    dirty = true;
+    return;
+  }
+  dirty = false;
+
   const { labels, whiteData, blackData, kibitzerData, yAxis } = prepareChartPayload();
   chart.data.labels = labels;
-  chart.data.datasets[0].label = whiteName || 'White';
-  chart.data.datasets[0].data = whiteData;
-  // @ts-expect-error -- pointRadius exists on line dataset but not on the generic union
-  chart.data.datasets[0].pointRadius = buildPointRadii(whiteData);
-  chart.data.datasets[1].label = blackName || 'Black';
-  chart.data.datasets[1].data = blackData;
-  // @ts-expect-error -- pointRadius exists on line dataset but not on the generic union
-  chart.data.datasets[1].pointRadius = buildPointRadii(blackData);
-  if (chart.data.datasets[2]) {
-    chart.data.datasets[2].label = kibitzerName || 'Kibitzer';
-    chart.data.datasets[2].data = kibitzerData;
+
+  const series: [string, (number | null)[]][] = [
+    [whiteName || 'White', whiteData],
+    [blackName || 'Black', blackData],
+    [kibitzerName || 'Kibitzer', kibitzerData],
+  ];
+
+  series.forEach(([label, data], i) => {
+    const dataset = chart!.data.datasets[i];
+    if (!dataset) return;
+    dataset.label = label;
+    dataset.data = data;
     // @ts-expect-error -- pointRadius exists on line dataset but not on the generic union
-    chart.data.datasets[2].pointRadius = buildPointRadii(kibitzerData);
-  }
+    dataset.pointRadius = buildPointRadii(data);
+  });
+
   Object.assign(chart.options!.scales!.y!, yAxis);
   chart.update('none');
 }
@@ -267,9 +279,9 @@ export function init() {
   });
 
   on('tab:change', ({ tab }) => {
-    if (tab === 'graphs' && !chartInitialized) {
-      createChart();
-    }
+    if (tab !== 'graphs') return;
+    if (!chartInitialized) createChart();
+    else if (dirty) refreshChart();
   });
 
   on('theme:change', () => {

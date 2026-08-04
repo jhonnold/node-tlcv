@@ -8,31 +8,37 @@ export type GraphTypeConfig = {
   formatTooltip(value: number, datasetIndex: number): string;
 };
 
+/** Evals are plotted on a fixed ±10 pawn scale so mate scores don't flatten the curve. */
+export function clampEval(score: number) {
+  return Math.max(-10, Math.min(10, score));
+}
+
 function normalizeScore(score: number, color: string) {
-  const signed = color === 'black' ? -score : score;
-  return Math.max(-10, Math.min(10, signed));
+  return clampEval(color === 'black' ? -score : score);
+}
+
+// Dataset order is fixed by createChart: white, black, then the optional kibitzer.
+const SERIES_LABELS = ['White', 'Black', 'Kibitzer'];
+const seriesLabel = (datasetIndex: number) => SERIES_LABELS[datasetIndex] ?? 'Kibitzer';
+
+function peak(datasets: (number | null)[][], transform: (v: number) => number) {
+  let max = 0;
+  datasets.forEach((data) => {
+    data.forEach((val) => {
+      if (val !== null) max = Math.max(max, transform(val));
+    });
+  });
+  return max;
 }
 
 function computeEvalYBound(whiteData: (number | null)[], blackData: (number | null)[]) {
-  let maxAbs = 0;
-  whiteData.forEach((val: number | null) => {
-    if (val !== null) maxAbs = Math.max(maxAbs, Math.abs(val));
-  });
-  blackData.forEach((val: number | null) => {
-    if (val !== null) maxAbs = Math.max(maxAbs, Math.abs(val));
-  });
+  const maxAbs = peak([whiteData, blackData], Math.abs);
   const bound = Math.max(1, Math.min(10, Math.ceil(maxAbs)));
   return bound % 2 === 0 ? bound : Math.min(10, bound + 1);
 }
 
 function computePositiveYBound(whiteData: (number | null)[], blackData: (number | null)[]) {
-  let maxVal = 0;
-  whiteData.forEach((val: number | null) => {
-    if (val !== null) maxVal = Math.max(maxVal, val);
-  });
-  blackData.forEach((val: number | null) => {
-    if (val !== null) maxVal = Math.max(maxVal, val);
-  });
+  const maxVal = peak([whiteData, blackData], (v) => v);
   if (!maxVal) return 1;
   const withPadding = maxVal * 1.1;
   const magnitude = 10 ** Math.floor(Math.log10(withPadding));
@@ -45,6 +51,20 @@ function abbreviateNumber(n: number) {
   if (n >= 1e6) return `${+(n / 1e6).toFixed(1)}M`;
   if (n >= 1e3) return `${+(n / 1e3).toFixed(1)}K`;
   return String(n);
+}
+
+/**
+ * Y-axis shared by every non-eval graph: zero-based, auto-bounded from the data,
+ * dashed grid. Only the tick rendering differs between them.
+ */
+function positiveAxis(ticks: Record<string, unknown>): GraphTypeConfig['buildYAxis'] {
+  return (whiteData, blackData, textColor, gridColor) => ({
+    min: 0,
+    suggestedMax: computePositiveYBound(whiteData, blackData),
+    ticks: { color: textColor, font: { size: 10 }, ...ticks },
+    grid: { color: gridColor, drawTicks: false },
+    border: { dash: [2, 4] },
+  });
 }
 
 const GRAPH_TYPES: Record<string, GraphTypeConfig> = {
@@ -72,8 +92,7 @@ const GRAPH_TYPES: Record<string, GraphTypeConfig> = {
       };
     },
     formatTooltip(value: number, datasetIndex: number) {
-      const prefix = datasetIndex === 0 ? 'White' : datasetIndex === 1 ? 'Black' : 'Kibitzer';
-      return `${prefix}: ${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
+      return `${seriesLabel(datasetIndex)}: ${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
     },
   },
 
@@ -82,23 +101,9 @@ const GRAPH_TYPES: Record<string, GraphTypeConfig> = {
     getValue(meta: MoveMetaData) {
       return meta.depth;
     },
-    buildYAxis(whiteData: (number | null)[], blackData: (number | null)[], textColor: string, gridColor: string) {
-      const maxVal = computePositiveYBound(whiteData, blackData);
-      return {
-        min: 0,
-        suggestedMax: maxVal,
-        ticks: {
-          color: textColor,
-          font: { size: 10 },
-          precision: 0,
-        },
-        grid: { color: gridColor, drawTicks: false },
-        border: { dash: [2, 4] },
-      };
-    },
+    buildYAxis: positiveAxis({ precision: 0 }),
     formatTooltip(value: number, datasetIndex: number) {
-      const prefix = datasetIndex === 0 ? 'White' : 'Black';
-      return `${prefix}: ${value}`;
+      return `${seriesLabel(datasetIndex)}: ${value}`;
     },
   },
 
@@ -107,25 +112,9 @@ const GRAPH_TYPES: Record<string, GraphTypeConfig> = {
     getValue(meta: MoveMetaData) {
       return meta.nodes;
     },
-    buildYAxis(whiteData: (number | null)[], blackData: (number | null)[], textColor: string, gridColor: string) {
-      const maxVal = computePositiveYBound(whiteData, blackData);
-      return {
-        min: 0,
-        suggestedMax: maxVal,
-        ticks: {
-          color: textColor,
-          font: { size: 10 },
-          callback(v: number) {
-            return abbreviateNumber(v);
-          },
-        },
-        grid: { color: gridColor, drawTicks: false },
-        border: { dash: [2, 4] },
-      };
-    },
+    buildYAxis: positiveAxis({ callback: (v: number) => abbreviateNumber(v) }),
     formatTooltip(value: number, datasetIndex: number) {
-      const prefix = datasetIndex === 0 ? 'White' : 'Black';
-      return `${prefix}: ${abbreviateNumber(value)}`;
+      return `${seriesLabel(datasetIndex)}: ${abbreviateNumber(value)}`;
     },
   },
 
@@ -134,25 +123,9 @@ const GRAPH_TYPES: Record<string, GraphTypeConfig> = {
     getValue(meta: MoveMetaData) {
       return meta.time != null && meta.time > 0 && meta.nodes != null ? Math.round(meta.nodes / meta.time) : null;
     },
-    buildYAxis(whiteData: (number | null)[], blackData: (number | null)[], textColor: string, gridColor: string) {
-      const maxVal = computePositiveYBound(whiteData, blackData);
-      return {
-        min: 0,
-        suggestedMax: maxVal,
-        ticks: {
-          color: textColor,
-          font: { size: 10 },
-          callback(v: number) {
-            return `${abbreviateNumber(v)}/s`;
-          },
-        },
-        grid: { color: gridColor, drawTicks: false },
-        border: { dash: [2, 4] },
-      };
-    },
+    buildYAxis: positiveAxis({ callback: (v: number) => `${abbreviateNumber(v)}/s` }),
     formatTooltip(value: number, datasetIndex: number) {
-      const prefix = datasetIndex === 0 ? 'White' : 'Black';
-      return `${prefix}: ${abbreviateNumber(value)} NPS`;
+      return `${seriesLabel(datasetIndex)}: ${abbreviateNumber(value)} NPS`;
     },
   },
 
@@ -161,25 +134,9 @@ const GRAPH_TYPES: Record<string, GraphTypeConfig> = {
     getValue(meta: MoveMetaData) {
       return meta.time;
     },
-    buildYAxis(whiteData: (number | null)[], blackData: (number | null)[], textColor: string, gridColor: string) {
-      const maxVal = computePositiveYBound(whiteData, blackData);
-      return {
-        min: 0,
-        suggestedMax: maxVal,
-        ticks: {
-          color: textColor,
-          font: { size: 10 },
-          callback(v: number) {
-            return `${v}s`;
-          },
-        },
-        grid: { color: gridColor, drawTicks: false },
-        border: { dash: [2, 4] },
-      };
-    },
+    buildYAxis: positiveAxis({ callback: (v: number) => `${v}s` }),
     formatTooltip(value: number, datasetIndex: number) {
-      const prefix = datasetIndex === 0 ? 'White' : 'Black';
-      return `${prefix}: ${value}s`;
+      return `${seriesLabel(datasetIndex)}: ${value}s`;
     },
   },
 };

@@ -2,12 +2,15 @@ import $ from 'jquery';
 import type { GameRecord, StoredGameMeta } from '../../../../shared/types';
 import { on, emit } from '../../events/index';
 import { apiBase, isArchive } from '../../utils/url';
+import { getJson, loadPanel } from '../../utils/http';
 
 const DOWNLOAD_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
 
 const PLAY_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"></polygon></svg>';
+
+const FILTER_DEBOUNCE_MS = 150;
 
 let allGames: GameRecord[] = [];
 
@@ -16,9 +19,9 @@ function normalizeForMatch(s: string): string {
 }
 
 // Fuzzy match: case-insensitive, tolerant of gaps/typos (subsequence) and of
-// out-of-order query characters (all query chars present in the name).
-function fuzzyMatches(query: string, name: string): boolean {
-  const q = normalizeForMatch(query);
+// out-of-order query characters (all query chars present in the name). `q` is
+// already normalized — it is loop-invariant across the whole games list.
+function fuzzyMatches(q: string, name: string): boolean {
   const n = normalizeForMatch(name);
   if (!q) return true;
   if (n.length < q.length) return false;
@@ -39,12 +42,19 @@ function fuzzyMatches(query: string, name: string): boolean {
   return true;
 }
 
-function matchesQuery(game: GameRecord, query: string): boolean {
-  return fuzzyMatches(query, game.white) || fuzzyMatches(query, game.black);
-}
-
 function isDecisive(result: string): boolean {
   return result === '1-0' || result === '0-1';
+}
+
+function filteredGames(): GameRecord[] {
+  const query = normalizeForMatch(String($('#games-filter-input').val() ?? ''));
+  const decisiveOnly = $('#games-filter-decisive').is(':checked');
+
+  return allGames.filter((g) => {
+    if (query && !(fuzzyMatches(query, g.white) || fuzzyMatches(query, g.black))) return false;
+    if (decisiveOnly && !isDecisive(g.result)) return false;
+    return true;
+  });
 }
 
 function renderGames(games: GameRecord[]) {
@@ -76,11 +86,10 @@ function renderGames(games: GameRecord[]) {
     $tr.append($('<td>').addClass('games-result').text(game.result));
     const $replayCell = $('<td>').addClass('games-replay');
     if (game.metaUrl) {
+      // Click handling is delegated on #games-container, so the button only needs
+      // to carry its game number — no per-row closure to allocate.
       $replayCell.append(
-        $('<button>')
-          .addClass('games-replay-btn')
-          .html(PLAY_ICON)
-          .on('click', () => loadReplay(game.gameNumber)),
+        $('<button>').addClass('games-replay-btn').attr('data-game-number', game.gameNumber).html(PLAY_ICON),
       );
     }
     $tr.append($replayCell);
@@ -99,12 +108,8 @@ function renderGames(games: GameRecord[]) {
 }
 
 function loadReplay(gameNumber: number) {
-  $.ajax({
-    url: `${apiBase()}/games/${gameNumber}/meta`,
-    method: 'GET',
-    dataType: 'json',
-  })
-    .done((data: StoredGameMeta) => {
+  getJson<StoredGameMeta>(`${apiBase()}/games/${gameNumber}/meta`)
+    .done((data) => {
       emit('game:replay', data);
       emit('tab:change', { tab: 'moves' });
     })
@@ -114,37 +119,20 @@ function loadReplay(gameNumber: number) {
 }
 
 function applyFilter() {
-  const query = String($('#games-filter-input').val() ?? '');
-  const decisiveOnly = $('#games-filter-decisive').is(':checked');
-
-  const filtered = allGames.filter((g) => {
-    if (query && !matchesQuery(g, query)) return false;
-    if (decisiveOnly && !isDecisive(g.result)) return false;
-    return true;
-  });
-
-  const $container = $('#games-container');
-  $container.empty();
-  $container.append(renderGames(filtered));
+  $('#games-container').empty().append(renderGames(filteredGames()));
 }
 
 function fetchAndRender(onData?: (data: GameRecord[]) => void) {
-  const $container = $('#games-container');
-  $container.html('<p class="games-loading">Loading games...</p>');
-
-  $.ajax({
-    url: `${apiBase()}/games/json`,
-    method: 'GET',
-    dataType: 'json',
-  })
-    .done((data: GameRecord[]) => {
+  loadPanel<GameRecord[]>(
+    $('#games-container'),
+    `${apiBase()}/games/json`,
+    'games',
+    (data) => {
       allGames = data;
-      applyFilter();
-      onData?.(data);
-    })
-    .fail(() => {
-      $container.html('<p class="games-error">No games available.</p>');
-    });
+      return renderGames(filteredGames());
+    },
+    onData,
+  );
 }
 
 // Archive pages have no live feed, so open them on the most recent finished game
@@ -157,8 +145,18 @@ function loadLatest(fetchData: GameRecord[]) {
 }
 
 export function init() {
-  $('#games-filter-input').on('input', applyFilter);
+  // Typing re-runs the fuzzy match over every game and rebuilds the table, so wait
+  // for a pause rather than doing it per keystroke.
+  let filterHandle: ReturnType<typeof setTimeout> | undefined;
+  $('#games-filter-input').on('input', () => {
+    if (filterHandle) clearTimeout(filterHandle);
+    filterHandle = setTimeout(applyFilter, FILTER_DEBOUNCE_MS);
+  });
   $('#games-filter-decisive').on('change', applyFilter);
+
+  $('#games-container').on('click', '.games-replay-btn', function handleReplayClick() {
+    loadReplay(Number($(this).attr('data-game-number')));
+  });
 
   on('tab:change', ({ tab }) => {
     if (tab === 'games') fetchAndRender();

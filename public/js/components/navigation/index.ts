@@ -6,7 +6,7 @@ import { on, emit } from '../../events/index';
 import type { GameEventData } from '../../events/index';
 import { getActiveTab } from '../tabs/index';
 import { isReplayMode } from '../replay/index';
-import { updateFenDisplay } from '../../utils/fen';
+import { updateFenDisplay, START_FEN } from '../../utils/fen';
 
 // State
 // navIndex ranges from 0 to sanMoves.length inclusive:
@@ -20,8 +20,6 @@ let lastMoves: { from: string; to: string }[] = []; // { from, to } for each hal
 let navIndex = 0;
 let liveFen = 'start';
 let dirty = false;
-
-const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 function isLive() {
   return navIndex === sanMoves.length;
@@ -56,8 +54,19 @@ function getLastMove(idx: number) {
   return null;
 }
 
-function emitPosition() {
+// `nav:position` fans out to the board, graphs, focus strip and player info, so it
+// is the most expensive event on the page. Live updates arrive ~10x/second but the
+// position only moves when a move actually lands, so drop the repeats. A full
+// `game:state` (reconnect, replay exit) always re-emits — subscribers rely on it to
+// resynchronize even when the position is unchanged.
+let lastEmitted = '';
+
+function emitPosition(force = false) {
   const fen = getFen(navIndex);
+  const signature = `${navIndex}|${fen}`;
+  if (!force && signature === lastEmitted) return;
+  lastEmitted = signature;
+
   emit('nav:position', { fen, isLive: isLive(), index: navIndex, lastMove: getLastMove(navIndex) });
   updateFenDisplay(fen);
 }
@@ -191,7 +200,7 @@ export function getNavIndex() {
 export function goTo(idx: number) {
   navIndex = Math.max(0, Math.min(idx, sanMoves.length));
   updateActiveHighlight();
-  emitPosition();
+  emitPosition(true);
 }
 
 function handleGameState(data: GameEventData) {
@@ -202,7 +211,7 @@ function handleGameState(data: GameEventData) {
   rebuildFens();
   navIndex = isReplayMode() ? 0 : sanMoves.length;
   renderMoveList();
-  emitPosition();
+  emitPosition(true);
 }
 
 function handleGameUpdate(data: GameEventData) {

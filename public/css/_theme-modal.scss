@@ -1,3 +1,5 @@
+@use 'mixins' as *;
+
 .theme-modal-overlay {
   position: fixed;
   inset: 0;
@@ -102,8 +104,7 @@
 }
 
 .theme-rows {
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
 }
 
 .theme-row {

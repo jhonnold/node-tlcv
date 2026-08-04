@@ -129,3 +129,9 @@ export const PRESETS: Record<PresetName, ThemeColors> = {
 };
 
 export const DEFAULT_PRESET: PresetName = 'light';
+
+/**
+ * Value a token falls back to when the custom property isn't resolvable yet.
+ * Keeps call sites from inlining their own copies of the palette.
+ */
+export const themeDefault = (key: ThemeTokenKey): string => PRESETS[DEFAULT_PRESET][key];

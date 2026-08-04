@@ -2,19 +2,21 @@
 import $ from 'jquery';
 import type { SerializedGame } from '../../../../shared/types';
 import type { GameEventData } from '../../events/index';
+import { msToString } from '../../utils/format';
 
 const timerIntervals = new Map<string, ReturnType<typeof setInterval>>();
 
-export function msToString(ms: number) {
-  const s = Math.floor((ms / 1000) % 60);
-  const m = Math.floor(ms / 1000 / 60);
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
 function updateTimer(time: number, start: number, color: string) {
   const used = new Date().getTime() - start;
-  $(`#${color}-time`).html('');
-  $(`#${color}-time`).append($('<mark>').text(msToString(Math.max(0, time - used))));
+
+  // Reuse the <mark> across ticks rather than tearing it down every second.
+  const $time = $(`#${color}-time`);
+  let $mark = $time.children('mark');
+  if (!$mark.length) {
+    $mark = $('<mark>').appendTo($time.empty());
+  }
+
+  $mark.text(msToString(Math.max(0, time - used)));
   $(`#${color}-think`).text(msToString(used));
 }
 

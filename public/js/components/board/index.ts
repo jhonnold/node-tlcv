@@ -2,18 +2,22 @@ import $ from 'jquery';
 import { Chess } from 'chess.js';
 import Chessboard from 'chessboardjs';
 import type { ChessboardInstance } from 'chessboardjs';
-import type { SerializedGame, ColorCode } from '../../../../shared/types';
+import type { SerializedGame, MoveMetaData, ColorCode } from '../../../../shared/types';
 import { colorName } from '../../../../shared/colors';
 import { on } from '../../events/index';
 import type { GameEventData, NavPosition } from '../../events/index';
 import { drawMove, clearArrows, sizeArrowBoard } from './arrows';
 import { initResize } from './resize';
-import copyFen from '../../utils/fen';
+import copyFen, { EMPTY_FEN } from '../../utils/fen';
 import { getCssVar } from '../../utils/dom';
+import { blendColors } from '../../utils/color';
 import { isReplayMode } from '../replay/index';
 import { getPieceSet } from '../theme/index';
-import { pieceSrc } from '../theme/piece-sets';
+import { applyPieceSet, pieceSrc } from '../theme/piece-sets';
 import type { PieceSetId } from '../theme/piece-sets';
+import { themeDefault } from '../theme/presets';
+
+const BOARD_SELECTORS = ['#board', '#white-pv-board', '#black-pv-board'];
 
 let board: ChessboardInstance | null = null;
 let pvBoardWhite: ChessboardInstance | null = null;
@@ -21,13 +25,24 @@ let pvBoardBlack: ChessboardInstance | null = null;
 let live = true;
 let flipped = false;
 let lastGameData: SerializedGame | null = null;
-let navFollowup: string | null = null;
-let navKibitzerAlg: string | null = null;
-let navThinkingAlg: string | null = null;
-let navMoveColor: ColorCode | null = null;
+// Historical position: the move the engines were thinking about (moves[index])
+// and the one before it (moves[index - 1]), which carries the followup arrow.
+let navMove: MoveMetaData | null = null;
+let navPrevMove: MoveMetaData | null = null;
 let navFen = '';
 
-const EMPTY_FEN = '8/8/8/8/8/8/8/8';
+// Arrow colors come from CSS custom properties, which cost a getComputedStyle to
+// read. They only change with the theme, so resolve them once and refresh on
+// `theme:change` rather than on every draw.
+let arrowColors = { white: '', black: '', kibitzer: '' };
+
+function refreshArrowColors() {
+  arrowColors = {
+    white: getCssVar('--whiteArrowColor', themeDefault('--whiteArrowColor')),
+    black: getCssVar('--blackArrowColor', themeDefault('--blackArrowColor')),
+    kibitzer: getCssVar('--kibitzerArrowColor', themeDefault('--kibitzerArrowColor')),
+  };
+}
 
 function updatePvBoards(fens: { white: string; black: string }) {
   pvBoardWhite!.position(fens.white, false);
@@ -46,73 +61,69 @@ function getLivePvFens(game: SerializedGame): { white: string; black: string } {
   } as { white: string; black: string };
 }
 
-function parseHexColor(hex: string): [number, number, number, number] {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const a = hex.length >= 9 ? parseInt(hex.slice(7, 9), 16) : 255;
-  return [r, g, b, a];
-}
+type ArrowSources = {
+  kMove: string;
+  fMove: string;
+  tMove: string;
+  stm: ColorCode | null;
+  fen: string;
+};
 
-function blendColors(colors: string[]): string {
-  const parsed = colors.map(parseHexColor);
-  const n = parsed.length;
-  const r = Math.round(parsed.reduce((s, c) => s + c[0], 0) / n);
-  const g = Math.round(parsed.reduce((s, c) => s + c[1], 0) / n);
-  const b = Math.round(parsed.reduce((s, c) => s + c[2], 0) / n);
-  const a = Math.round(parsed.reduce((s, c) => s + c[3], 0) / n);
-  return `#${[r, g, b, a].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-}
-
-// PV moves can go stale between when an engine reports them and when we draw
-// (e.g. the piece they move gets captured first), so only draw legal ones.
-function isValidUciMove(fen: string, uci: string): boolean {
-  try {
-    new Chess(fen).move({
-      from: uci.substring(0, 2),
-      to: uci.substring(2, 4),
-      promotion: uci[4] || undefined,
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function drawArrows() {
-  clearArrows();
-  if (!lastGameData) return;
-
-  const whiteArrow = getCssVar('--whiteArrowColor', '#ddddddDD');
-  const blackArrow = getCssVar('--blackArrowColor', '#222222DD');
-  const kibitzerArrowColor = getCssVar('--kibitzerArrowColor', '#114f8aDD');
-
-  let kMove: string;
-  let fMove: string;
-  let tMove: string;
-  let tMoveColor: string;
-  let fMoveColor: string;
-  let fen: string;
+/** The three candidate arrows for the currently displayed position. */
+function arrowSources(): ArrowSources | null {
+  if (!lastGameData) return null;
 
   if (live) {
     const { pvAlg = '', color } = lastGameData.liveData;
     const moves = lastGameData.moves || [];
     const lastMeta = moves.length ? moves[moves.length - 1] : null;
 
-    kMove = lastGameData.kibitzerLiveData?.pvAlg || '';
-    fMove = lastMeta?.pvFollowup || '';
-    tMove = pvAlg;
-    tMoveColor = color === 'w' ? whiteArrow : blackArrow;
-    fMoveColor = color === 'w' ? blackArrow : whiteArrow;
-    fen = lastGameData.fen;
-  } else {
-    kMove = navKibitzerAlg || '';
-    fMove = navFollowup || '';
-    tMove = navThinkingAlg || '';
-    tMoveColor = navMoveColor === 'w' ? whiteArrow : blackArrow;
-    fMoveColor = navMoveColor === 'w' ? blackArrow : whiteArrow;
-    fen = navFen;
+    return {
+      kMove: lastGameData.kibitzerLiveData?.pvAlg || '',
+      fMove: lastMeta?.pvFollowup || '',
+      tMove: pvAlg,
+      stm: color,
+      fen: lastGameData.fen,
+    };
   }
+
+  return {
+    kMove: navMove?.kibitzer?.pvAlg || '',
+    fMove: navPrevMove?.pvFollowup || '',
+    tMove: navMove?.pvAlg || '',
+    stm: navMove?.color ?? null,
+    fen: navFen,
+  };
+}
+
+function drawArrows() {
+  clearArrows();
+
+  const src = arrowSources();
+  if (!src) return;
+
+  const thinkingColor = src.stm === 'w' ? arrowColors.white : arrowColors.black;
+  const followupColor = src.stm === 'w' ? arrowColors.black : arrowColors.white;
+
+  // PV moves can go stale between when an engine reports them and when we draw
+  // (e.g. the piece they move gets captured first), so only draw legal ones. One
+  // position is built per draw and rewound between checks.
+  let chess: Chess | null = null;
+  try {
+    chess = new Chess(src.fen);
+  } catch {
+    return; // unparseable position — nothing can be validated against it
+  }
+
+  const isLegal = (uci: string): boolean => {
+    try {
+      chess!.move({ from: uci.substring(0, 2), to: uci.substring(2, 4), promotion: uci[4] || undefined });
+      chess!.undo();
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   // Group arrows by move and blend overlapping colors
   const arrowMap = new Map<string, string[]>();
@@ -121,9 +132,9 @@ function drawArrows() {
     if (existing) existing.push(color);
     else arrowMap.set(move, [color]);
   };
-  if (kMove && isValidUciMove(fen, kMove)) addArrow(kMove, kibitzerArrowColor);
-  if (fMove && isValidUciMove(fen, fMove)) addArrow(fMove, fMoveColor);
-  if (tMove && isValidUciMove(fen, tMove)) addArrow(tMove, tMoveColor);
+  if (src.kMove && isLegal(src.kMove)) addArrow(src.kMove, arrowColors.kibitzer);
+  if (src.fMove && isLegal(src.fMove)) addArrow(src.fMove, followupColor);
+  if (src.tMove && isLegal(src.tMove)) addArrow(src.tMove, thinkingColor);
 
   for (const [move, colors] of arrowMap) {
     drawMove(move, colors.length === 1 ? colors[0] : blendColors(colors), flipped);
@@ -157,18 +168,14 @@ function handleGameState(data: GameEventData) {
 }
 
 function handleThemeChange() {
+  refreshArrowColors();
   drawArrows();
 }
 
 // The function pieceTheme only affects future renders, so rewrite the pieces that
 // are already on the boards in place. No board recreation (keeps resize refs valid).
 function handlePiecesChange({ set }: { set: string }) {
-  ['#board', '#white-pv-board', '#black-pv-board'].forEach((sel) =>
-    $(`${sel} img[data-piece]`).each(function () {
-      const piece = $(this).attr('data-piece');
-      if (piece) $(this).attr('src', pieceSrc(set as PieceSetId, piece));
-    }),
-  );
+  applyPieceSet(set as PieceSetId, BOARD_SELECTORS);
 }
 
 function highlightSquares(lastMove: { from: string; to: string } | null) {
@@ -180,48 +187,23 @@ function highlightSquares(lastMove: { from: string; to: string } | null) {
 }
 
 function getPvFenAtIndex(navIndex: number): { white: string; black: string } {
-  if (!lastGameData || navIndex <= 0) return { white: EMPTY_FEN, black: EMPTY_FEN };
+  if (!navPrevMove) return { white: EMPTY_FEN, black: EMPTY_FEN };
 
-  const moves = lastGameData.moves || [];
-  if (navIndex > moves.length) return { white: EMPTY_FEN, black: EMPTY_FEN };
-
+  const moves = lastGameData!.moves || [];
+  const movedColor = colorName(navPrevMove.color);
+  const otherColor = colorName(navPrevMove.color === 'w' ? 'b' : 'w');
   const halfIdx = navIndex - 1;
-  const moved = moves[halfIdx];
-  const movedColor = colorName(moved.color);
-  const otherColor = colorName(moved.color === 'w' ? 'b' : 'w');
 
   return {
-    [movedColor]: moved.pvFen || EMPTY_FEN,
+    [movedColor]: navPrevMove.pvFen || EMPTY_FEN,
     [otherColor]: halfIdx > 0 ? moves[halfIdx - 1].pvFen || EMPTY_FEN : EMPTY_FEN,
   } as { white: string; black: string };
 }
 
-function getFollowupAtIndex(navIndex: number) {
-  if (!lastGameData || navIndex <= 0) return null;
-  const moves = lastGameData.moves || [];
-  if (navIndex > moves.length) return null;
-  return moves[navIndex - 1].pvFollowup || null;
-}
-
-function getKibitzerAlgAtIndex(navIndex: number): string | null {
-  if (!lastGameData || navIndex <= 0) return null;
-  const moves = lastGameData.moves || [];
-  if (navIndex >= moves.length) return null;
-  return moves[navIndex].kibitzer?.pvAlg || null;
-}
-
-function getThinkingAlgAtIndex(navIndex: number): string | null {
-  if (!lastGameData || navIndex <= 0) return null;
-  const moves = lastGameData.moves || [];
-  if (navIndex >= moves.length) return null;
-  return moves[navIndex].pvAlg || null;
-}
-
-function getNavMoveColor(navIndex: number): ColorCode | null {
-  if (!lastGameData || navIndex <= 0) return null;
-  const moves = lastGameData.moves || [];
-  if (navIndex >= moves.length) return null;
-  return moves[navIndex].color || null;
+function setNavMoves(index: number) {
+  const moves = lastGameData?.moves ?? [];
+  navPrevMove = index > 0 && index <= moves.length ? moves[index - 1] : null;
+  navMove = index > 0 && index < moves.length ? moves[index] : null;
 }
 
 function handleNavPosition({ fen, isLive, lastMove, index }: NavPosition) {
@@ -231,21 +213,21 @@ function handleNavPosition({ fen, isLive, lastMove, index }: NavPosition) {
   board!.position(fen);
   highlightSquares(lastMove);
 
-  navFollowup = isLive ? null : getFollowupAtIndex(index);
-  navKibitzerAlg = isLive ? null : getKibitzerAlgAtIndex(index);
-  navThinkingAlg = isLive ? null : getThinkingAlgAtIndex(index);
-  navMoveColor = isLive ? null : getNavMoveColor(index);
-
-  if (!isLive) {
+  if (isLive) {
+    navMove = null;
+    navPrevMove = null;
+    if (!wasLive && lastGameData) updatePvBoards(getLivePvFens(lastGameData));
+  } else {
+    setNavMoves(index);
     updatePvBoards(getPvFenAtIndex(index));
-  } else if (!wasLive && lastGameData) {
-    updatePvBoards(getLivePvFens(lastGameData));
   }
 
   drawArrows();
 }
 
 export function init() {
+  refreshArrowColors();
+
   // Initialize main board. pieceTheme is a function so chessboardjs picks up the
   // active piece set on every (re)render; handlePiecesChange covers pieces already
   // on the board when the set changes.
@@ -293,8 +275,4 @@ export function resize() {
 
   sizeArrowBoard();
   drawArrows();
-}
-
-export function getBoards() {
-  return { board, pvBoardWhite, pvBoardBlack };
 }
