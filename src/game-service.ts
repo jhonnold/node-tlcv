@@ -96,7 +96,20 @@ class GameService {
       [Command.LOGON]: { fn: () => {}, split: false },
       [Command.FEATURE]: { fn: () => {}, split: false },
       [Command.LEVEL]: { fn: () => {}, split: false },
+      [Command.MSG]: { fn: this.onServerMessage.bind(this), split: false },
     };
+  }
+
+  /**
+   * Out-of-band server notice. The one that matters is the logout announcement —
+   * TLCS keeps answering our PINGs afterwards, so without acting on this the
+   * broadcast silently sits dead until the process is restarted.
+   */
+  private onServerMessage(tokens: CommandTokens): void {
+    const [, text] = tokens;
+
+    logger.warn(`Server message: ${text}`, { port: this.broadcast.port });
+    if (/no longer connected/i.test(text)) this.broadcast.relogin('server-notice');
   }
 
   private onFmr(tokens: CommandTokens): void {

@@ -11,6 +11,8 @@ The chess server pushes messages over UDP. Two delivery modes exist:
 
 **Unwrapped commands**: `WTIME`, `BTIME`, `WPV`, `BPV`, `CTRESET`, `CT:`, `LOGON SUCCESSFUL`.
 
+**Out-of-band**: `MSG` — free-text server notices. Delivery mode is unconfirmed; the transport strips any id before the line is logged, so observed samples don't say which channel it arrived on.
+
 ## Per-Move Cycle
 
 For the side about to move (call it X, with opponent Y):
@@ -53,3 +55,4 @@ XPV: ...                          (iterative deepening as X thinks)
 - **Message batching**: The `MessageBuffer` drains every 100ms, so `GameService.onMessages()` receives batches. Low-priority commands are de-duplicated (last value wins) within a batch.
 - **FEN backup recovery**: If `chess.js` fails to parse a move, the game reloads from the most recent FEN command — the `fen` field on `ChessGame` is kept as a backup for this purpose.
 - **No-op protocol commands**: `LOGON` (the `LOGON SUCCESSFUL` handshake reply), `FEATURE`, and `level` are recognized in the `Command` enum with no-op handlers. They exist purely to suppress the `Unable to process <cmd>!` warning in `categorizeMessages`.
+- **Session loss is silent on the wire**: TLCS can drop a client's login while continuing to answer `PING` with `PONG`, so the socket looks healthy while no broadcast data arrives at all. It sometimes — but not reliably — announces this with `MSG: You are no longer connected to the server.  Please re-connect.`; during the 2026-09-12 incident only 2 of 13 dead broadcasts got that notice. Two things respond to it: `GameService.onServerMessage()` re-logs-in immediately on the notice, and `Broadcast`'s ping interval re-logs-in after `env.dataTimeoutMs` (default 10 min) with no non-keepalive message. `PONG` and `MSG` are therefore excluded from the liveness clock — see `isBroadcastData` in `src/broadcast.ts`. Every re-login also clears `UdpTransport.lastMessage`, since a new session restarts the server's id counter and the stale high-water mark would otherwise reject the whole stream as out-of-order.

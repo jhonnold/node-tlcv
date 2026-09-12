@@ -2,6 +2,9 @@ import Connection from './connection.js';
 import GameService from './game-service.js';
 import { ChessGame } from './chess-game.js';
 import { emitUpdate, emitChat } from './socket-io-adapter.js';
+import { logger } from './util/index.js';
+import { env } from './config/env.js';
+import { reloginAttempts } from './metrics.js';
 import type { ParsedResults, GameRecord } from './services/result-parser.js';
 import type { SerializedBroadcast, StoredTournamentResults } from '../shared/types.js';
 import type { KibitzerManager } from './kibitzer/kibitzer-manager.js';
@@ -10,6 +13,15 @@ export type { SerializedBroadcast } from '../shared/types.js';
 
 export const username = 'tlcv.net';
 const PING_INTERVAL_MS = 10000;
+
+/** Why a LOGON was re-sent — a metrics label, so keep the values stable. */
+export type ReloginReason = 'watchdog' | 'server-notice';
+
+// PONG is a keepalive TLCS keeps answering after it has logged us out, and MSG is
+// how it announces that logout. Neither is evidence of a live session, so neither
+// may refresh the data-liveness clock the watchdog reads.
+const KEEPALIVE_ONLY = ['PONG', 'MSG'];
+const isBroadcastData = (msg: string): boolean => !KEEPALIVE_ONLY.some((cmd) => msg.startsWith(cmd));
 
 // Chat retention: how much scrollback is kept in memory, and how much of it a newly
 // joining browser is seeded with. Both halves of the policy live here, next to the
@@ -38,6 +50,7 @@ export class Broadcast {
   private gameService: GameService;
   private conn: Connection;
   private pings!: NodeJS.Timeout;
+  private lastDataAt = Date.now();
 
   constructor(host: string, ip: string, port: number, kibitzerManager?: KibitzerManager, ephemeral = false) {
     this.host = host;
@@ -55,11 +68,43 @@ export class Broadcast {
   }
 
   private connect(): void {
+    this.login();
+
+    this.pings = setInterval(() => {
+      this.conn.send('PING');
+
+      // A dead session still answers PING, so socket silence never happens — only
+      // the data channel goes quiet. That's what we watch.
+      if (Date.now() - this.lastDataAt > env.dataTimeoutMs) this.relogin('watchdog');
+    }, PING_INTERVAL_MS);
+  }
+
+  private login(): void {
+    // A fresh session restarts TLCS's message ids, so the old high-water mark has
+    // to go with it or the new stream is rejected as out-of-order.
+    this.conn.resetMessageIds();
     this.conn.send(`LOGONv15:${username}`);
-    this.pings = setInterval(() => this.conn.send('PING'), PING_INTERVAL_MS);
+  }
+
+  /**
+   * Re-establishes the TLCS session after it was dropped. Bumping `lastDataAt` is
+   * also the backoff: the watchdog can't fire again until another full timeout of
+   * silence has passed, so a genuinely unreachable server sees one LOGON per
+   * window rather than one per ping.
+   */
+  relogin(reason: ReloginReason): void {
+    logger.warn(`Re-sending LOGON (${reason}); ${Math.round(this.secondsSinceData)}s since last broadcast data`, {
+      port: this.port,
+    });
+
+    this.lastDataAt = Date.now();
+    this.login();
+    reloginAttempts.inc({ port: String(this.port), reason });
   }
 
   private async processMessages(messages: string[]): Promise<void> {
+    if (messages.some(isBroadcastData)) this.lastDataAt = Date.now();
+
     const { update, chat } = await this.gameService.onMessages(messages);
 
     if (update) emitUpdate(this.port, update);
@@ -110,6 +155,11 @@ export class Broadcast {
 
   get connection(): string {
     return `${this.host}:${this.port}`;
+  }
+
+  /** How long this broadcast has gone without real data — see `ccrl_broadcast_seconds_since_data`. */
+  get secondsSinceData(): number {
+    return (Date.now() - this.lastDataAt) / 1000;
   }
 
   /** Metrics/display label for the tournament, falling back before an event is announced. */

@@ -21,6 +21,7 @@ export enum Command {
   LOGON = 'LOGON',
   FEATURE = 'FEATURE',
   LEVEL = 'level',
+  MSG = 'MSG',
 }
 
 const KNOWN_COMMANDS = new Set<string>(Object.values(Command));

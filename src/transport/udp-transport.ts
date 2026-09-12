@@ -90,6 +90,17 @@ export class UdpTransport {
     this.onParsedMessage(messageText);
   }
 
+  /**
+   * Forgets the message-id high-water mark. Only safe around a re-login: TLCS
+   * restarts its counter for a fresh session, and without this every datagram of
+   * the new session whose id lands below the old `lastMessage` is dropped by
+   * `onMessage` as out-of-order — a re-login that appears to work and delivers
+   * nothing.
+   */
+  resetMessageIds(): void {
+    this.lastMessage = undefined;
+  }
+
   send(msg: string): void {
     if (this.closed) return;
 

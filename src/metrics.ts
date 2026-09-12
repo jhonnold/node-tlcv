@@ -70,6 +70,14 @@ export const gameMoveNumber = perBroadcastGauge(
   (b) => b.game.moveMeta.length,
 );
 
+// The alarm-worthy signal: UDP message rate can't distinguish a live broadcast
+// from one TLCS has logged out, because PONG keepalives keep flowing either way.
+export const broadcastSecondsSinceData = perBroadcastGauge(
+  'ccrl_broadcast_seconds_since_data',
+  'Seconds since the last real (non-keepalive) protocol message per broadcast',
+  (b) => b.secondsSinceData,
+);
+
 export const kibitzerTotal = new Gauge({
   name: 'ccrl_kibitzer_total',
   help: 'Total number of configured kibitzer transports',
@@ -174,5 +182,12 @@ export const messageBufferErrors = new Counter({
   name: 'ccrl_message_buffer_errors_total',
   help: 'Total errors during message buffer processing',
   labelNames: ['port'] as const,
+  registers: [register],
+});
+
+export const reloginAttempts = new Counter({
+  name: 'ccrl_relogin_attempts_total',
+  help: 'Total LOGON re-sends after a suspected or announced TLCS session loss',
+  labelNames: ['port', 'reason'] as const,
   registers: [register],
 });
