@@ -4,6 +4,12 @@ import { logger } from '../util/index.js';
 
 export type MessageCallback = (message: string) => void;
 
+// How far below the high-water mark an id may land before we read it as a counter
+// restart rather than a reordered datagram. Ids climb into the thousands over a
+// session, and reordering moves them by single digits, so anything in this range
+// is unambiguous.
+const ID_RESTART_WINDOW = 100;
+
 export class UdpTransport {
   private host: string;
   private port: number;
@@ -68,15 +74,22 @@ export class UdpTransport {
       this.send(`ACK: ${idString}`);
 
       const id = parseInt(idString);
-      if (id === 1) {
-        logger.info(`Mesasge ids restarting. Going to 1 from ${this.lastMessage}`, { port: this.port });
-      } else if (this.lastMessage && id < this.lastMessage) {
-        logger.warn(
-          `Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}, SKIPPING PROCESSING!`,
-          { port: this.port },
-        );
-        udpMessagesOutOfOrder.inc({ port: String(this.port) });
-        return;
+      if (this.lastMessage && id < this.lastMessage) {
+        // Two very different things look alike here. A jump back to the low end of
+        // the range is TLCS restarting its counter for a fresh session — ours after
+        // a re-login, or its own after a restart — and the new stream has to be
+        // followed or the broadcast stays dark forever. A small step backwards is
+        // just UDP reordering, and replaying it would corrupt game state.
+        if (id > ID_RESTART_WINDOW) {
+          logger.warn(
+            `Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}, SKIPPING PROCESSING!`,
+            { port: this.port },
+          );
+          udpMessagesOutOfOrder.inc({ port: String(this.port) });
+          return;
+        }
+
+        logger.info(`Message ids restarting. Going to ${id} from ${this.lastMessage}`, { port: this.port });
       }
 
       this.lastMessage = id;
