@@ -14,14 +14,24 @@ export type { SerializedBroadcast } from '../shared/types.js';
 export const username = 'tlcv.net';
 const PING_INTERVAL_MS = 10000;
 
+// Floor on how often a broadcast may re-send LOGON, applied to both triggers:
+// without it the watchdog retries on every ping once the timeout is exceeded, and
+// a server that repeats the logout notice gets a LOGON back for each one.
+const RELOGIN_MIN_INTERVAL_MS = 60000;
+
 /** Why a LOGON was re-sent — a metrics label, so keep the values stable. */
 export type ReloginReason = 'watchdog' | 'server-notice';
 
-// PONG is a keepalive TLCS keeps answering after it has logged us out, and MSG is
-// how it announces that logout. Neither is evidence of a live session, so neither
-// may refresh the data-liveness clock the watchdog reads.
-const KEEPALIVE_ONLY = ['PONG', 'MSG'];
-const isBroadcastData = (msg: string): boolean => !KEEPALIVE_ONLY.some((cmd) => msg.startsWith(cmd));
+// Messages that arrive whether or not the broadcast is actually alive: PONG is a
+// keepalive TLCS keeps answering after logging us out, MSG is how it announces
+// that logout, and LOGON/FEATURE/level are handshake replies our own re-login
+// provokes. Letting any of them touch the liveness clock would mask the outage
+// that clock exists to expose — a re-login that is acknowledged but restores no
+// data would look like recovery. Real game traffic (FEN, WPLAYER, SITE, moves,
+// times, PVs) accompanies every genuine game start, so nothing is lost by
+// ignoring the handshake.
+const NON_DATA_PREFIXES = ['PONG', 'MSG', 'LOGON', 'FEATURE', 'level'];
+const isBroadcastData = (msg: string): boolean => !NON_DATA_PREFIXES.some((cmd) => msg.startsWith(cmd));
 
 // Chat retention: how much scrollback is kept in memory, and how much of it a newly
 // joining browser is seeded with. Both halves of the policy live here, next to the
@@ -50,7 +60,10 @@ export class Broadcast {
   private gameService: GameService;
   private conn: Connection;
   private pings!: NodeJS.Timeout;
+  // Two distinct clocks: `lastDataAt` is the outage signal and must keep climbing
+  // through failed re-logins; `lastReloginAt` only rate-limits our own retries.
   private lastDataAt = Date.now();
+  private lastReloginAt = 0;
 
   constructor(host: string, ip: string, port: number, kibitzerManager?: KibitzerManager, ephemeral = false) {
     this.host = host;
@@ -81,23 +94,33 @@ export class Broadcast {
 
   private login(): void {
     // A fresh session restarts TLCS's message ids, so the old high-water mark has
-    // to go with it or the new stream is rejected as out-of-order.
+    // to go with it or the new stream is rejected as out-of-order. `onMessage`
+    // only special-cases a restart at exactly 1; any other value would strand the
+    // broadcast permanently. Safe to clear here because we only get this far after
+    // the old session is known dead — either minutes of silence or an explicit
+    // logout notice — so there is nothing left in flight to replay over it.
     this.conn.resetMessageIds();
     this.conn.send(`LOGONv15:${username}`);
   }
 
   /**
-   * Re-establishes the TLCS session after it was dropped. Bumping `lastDataAt` is
-   * also the backoff: the watchdog can't fire again until another full timeout of
-   * silence has passed, so a genuinely unreachable server sees one LOGON per
-   * window rather than one per ping.
+   * Re-establishes the TLCS session after it was dropped.
+   *
+   * Deliberately leaves `lastDataAt` alone. That clock backs
+   * `ccrl_broadcast_seconds_since_data`, the signal production alarms on, so it
+   * has to keep climbing across re-logins that don't fix anything — resetting it
+   * here would make a permanently dead broadcast sawtooth below any threshold at
+   * or above the timeout and never alert. Rate limiting rides its own timestamp.
    */
   relogin(reason: ReloginReason): void {
+    const now = Date.now();
+    if (now - this.lastReloginAt < RELOGIN_MIN_INTERVAL_MS) return;
+    this.lastReloginAt = now;
+
     logger.warn(`Re-sending LOGON (${reason}); ${Math.round(this.secondsSinceData)}s since last broadcast data`, {
       port: this.port,
     });
 
-    this.lastDataAt = Date.now();
     this.login();
     reloginAttempts.inc({ port: String(this.port), reason });
   }
