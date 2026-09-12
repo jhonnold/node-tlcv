@@ -22,17 +22,6 @@ const RELOGIN_MIN_INTERVAL_MS = 60000;
 /** Why a LOGON was re-sent — a metrics label, so keep the values stable. */
 export type ReloginReason = 'watchdog' | 'server-notice';
 
-// Messages that arrive whether or not the broadcast is actually alive: PONG is a
-// keepalive TLCS keeps answering after logging us out, MSG is how it announces
-// that logout, and LOGON/FEATURE/level are handshake replies our own re-login
-// provokes. Letting any of them touch the liveness clock would mask the outage
-// that clock exists to expose — a re-login that is acknowledged but restores no
-// data would look like recovery. Real game traffic (FEN, WPLAYER, SITE, moves,
-// times, PVs) accompanies every genuine game start, so nothing is lost by
-// ignoring the handshake.
-const NON_DATA_PREFIXES = ['PONG', 'MSG', 'LOGON', 'FEATURE', 'level'];
-const isBroadcastData = (msg: string): boolean => !NON_DATA_PREFIXES.some((cmd) => msg.startsWith(cmd));
-
 // Chat retention: how much scrollback is kept in memory, and how much of it a newly
 // joining browser is seeded with. Both halves of the policy live here, next to the
 // private buffer and the one method allowed to append to it.
@@ -60,8 +49,10 @@ export class Broadcast {
   private gameService: GameService;
   private conn: Connection;
   private pings!: NodeJS.Timeout;
-  // Two distinct clocks: `lastDataAt` is the outage signal and must keep climbing
-  // through failed re-logins; `lastReloginAt` only rate-limits our own retries.
+  // Two clocks, deliberately. `lastDataAt` backs `ccrl_broadcast_seconds_since_data`,
+  // the signal production alarms on, so it has to keep climbing across re-logins that
+  // fix nothing — reset it and a permanently dead broadcast just sawtooths below the
+  // threshold and never alerts. `lastReloginAt` carries the rate limit instead.
   private lastDataAt = Date.now();
   private lastReloginAt = 0;
 
@@ -93,25 +84,10 @@ export class Broadcast {
   }
 
   private login(): void {
-    // A fresh session restarts TLCS's message ids, so the old high-water mark has
-    // to go with it or the new stream is rejected as out-of-order. `onMessage`
-    // only special-cases a restart at exactly 1; any other value would strand the
-    // broadcast permanently. Safe to clear here because we only get this far after
-    // the old session is known dead — either minutes of silence or an explicit
-    // logout notice — so there is nothing left in flight to replay over it.
-    this.conn.resetMessageIds();
     this.conn.send(`LOGONv15:${username}`);
   }
 
-  /**
-   * Re-establishes the TLCS session after it was dropped.
-   *
-   * Deliberately leaves `lastDataAt` alone. That clock backs
-   * `ccrl_broadcast_seconds_since_data`, the signal production alarms on, so it
-   * has to keep climbing across re-logins that don't fix anything — resetting it
-   * here would make a permanently dead broadcast sawtooth below any threshold at
-   * or above the timeout and never alert. Rate limiting rides its own timestamp.
-   */
+  /** Re-establishes the TLCS session. Rate-limited, and never touches `lastDataAt`. */
   relogin(reason: ReloginReason): void {
     const now = Date.now();
     if (now - this.lastReloginAt < RELOGIN_MIN_INTERVAL_MS) return;
@@ -126,9 +102,8 @@ export class Broadcast {
   }
 
   private async processMessages(messages: string[]): Promise<void> {
-    if (messages.some(isBroadcastData)) this.lastDataAt = Date.now();
-
-    const { update, chat } = await this.gameService.onMessages(messages);
+    const { update, chat, sawLiveData } = await this.gameService.onMessages(messages);
+    if (sawLiveData) this.lastDataAt = Date.now();
 
     if (update) emitUpdate(this.port, update);
     if (chat.length) emitChat(this.port, chat);

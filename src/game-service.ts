@@ -7,7 +7,7 @@ import type { OpeningResult } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { saveGameMeta } from './services/game-meta.js';
 import { saveTournamentResults, loadTournamentResults, invalidateTournament } from './services/tournament-results.js';
-import { Command, splitOnCommand } from './protocol.js';
+import { Command, PROVES_LIVENESS, splitOnCommand } from './protocol.js';
 import { commandsProcessed, chatMessages } from './metrics.js';
 import { parseResults, parseGames, mergeGames, hasTotalGames } from './services/result-parser.js';
 import { replayUciFromFen } from './util/uci.js';
@@ -46,6 +46,8 @@ type PvUpdate = {
 export type GameServiceResult = {
   update: BroadcastDelta | null;
   chat: string[];
+  /** Whether the batch held anything proving the session still feeds us — see `PROVES_LIVENESS`. */
+  sawLiveData: boolean;
 };
 
 class GameService {
@@ -633,9 +635,11 @@ class GameService {
     this.moveCountBefore = this.game.moveMeta.length;
     this.patchedMoves.clear();
     const chatEmit: string[] = [];
+    let sawLiveData = false;
 
     for (const [cmd, rest] of this.categorizeMessages(messages)) {
       const commandConfig = this.commandConfig[cmd];
+      if (PROVES_LIVENESS[cmd]) sawLiveData = true;
 
       const chat = await commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
 
@@ -648,7 +652,7 @@ class GameService {
 
     logger.debug(`Successfully processed ${messages.length} message(s)`, { port: this.broadcast.port });
 
-    return { update, chat: chatEmit };
+    return { update, chat: chatEmit, sawLiveData };
   }
 }
 

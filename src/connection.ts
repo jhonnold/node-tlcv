@@ -15,10 +15,6 @@ class Connection {
     this.transport.send(msg);
   }
 
-  resetMessageIds(): void {
-    this.transport.resetMessageIds();
-  }
-
   close(): void {
     this.messageBuffer.close();
     this.transport.close();

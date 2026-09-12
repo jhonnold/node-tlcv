@@ -27,6 +27,47 @@ export enum Command {
 const KNOWN_COMMANDS = new Set<string>(Object.values(Command));
 
 /**
+ * Whether receiving a command proves the broadcast is still fed with live data.
+ *
+ * The false entries all arrive whether or not the session is alive: `PONG` is a
+ * keepalive TLCS keeps answering after it has logged us out, `MSG` is how it
+ * announces that logout, and `LOGON`/`FEATURE`/`level`/`MENU` are connection-time
+ * lines a re-login provokes on its own. Counting any of them would let a
+ * re-login that is acknowledged but restores nothing look like recovery, which is
+ * exactly what `ccrl_broadcast_seconds_since_data` exists to catch.
+ *
+ * Typed as a total map on purpose: adding a `Command` forces a decision here
+ * rather than silently defaulting to "this counts". Lines `splitOnCommand`
+ * can't parse are dropped before this is consulted and so never count — during a
+ * real game the known commands (`FEN`, moves, times, PVs) always accompany them.
+ */
+export const PROVES_LIVENESS: Record<Command, boolean> = {
+  [Command.FEN]: true,
+  [Command.WPLAYER]: true,
+  [Command.BPLAYER]: true,
+  [Command.WPV]: true,
+  [Command.BPV]: true,
+  [Command.WTIME]: true,
+  [Command.BTIME]: true,
+  [Command.WMOVE]: true,
+  [Command.BMOVE]: true,
+  [Command.SITE]: true,
+  [Command.CT]: true,
+  [Command.CTRESET]: true,
+  [Command.ADDUSER]: true,
+  [Command.DELUSER]: true,
+  [Command.CHAT]: true,
+  [Command.RESULT]: true,
+  [Command.FMR]: true,
+  [Command.PONG]: false,
+  [Command.MSG]: false,
+  [Command.LOGON]: false,
+  [Command.FEATURE]: false,
+  [Command.LEVEL]: false,
+  [Command.MENU]: false,
+};
+
+/**
  * Splits a protocol line into its command and argument. Returns null when the
  * leading token isn't a command we know — validating here means callers can trust
  * the `Command` in the result rather than re-checking a cast.
