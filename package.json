@@ -20,7 +20,7 @@
     "dompurify": "^3.4.13",
     "dotenv": "^10.0.0",
     "ejs": "^3.1.7",
-    "express": "^4.22.2",
+    "express": "^4.22.3",
     "express-basic-auth": "^1.2.0",
     "jquery": "^3.6.0",
     "markdown-it": "^14.2.0",
