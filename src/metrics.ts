@@ -74,7 +74,7 @@ export const gameMoveNumber = perBroadcastGauge(
 // from one TLCS has logged out, because PONG keepalives keep flowing either way.
 export const broadcastSecondsSinceData = perBroadcastGauge(
   'ccrl_broadcast_seconds_since_data',
-  'Seconds since the last real (non-keepalive) protocol message per broadcast',
+  'Seconds since the last protocol message proving the TLCS session is live, per broadcast',
   (b) => b.secondsSinceData,
 );
 

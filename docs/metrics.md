@@ -12,7 +12,7 @@ Recomputed at scrape time via `collect()`:
 | `ccrl_broadcast_spectators` | Total spectators |
 | `ccrl_broadcast_browser_connections` | Browser connections |
 | `ccrl_game_move_number` | Current move number |
-| `ccrl_broadcast_seconds_since_data` | Seconds since the last non-keepalive message. The signal to alarm on — `PONG` keeps flowing after TLCS logs the client out, so UDP message rate can't tell a live broadcast from a dead one. |
+| `ccrl_broadcast_seconds_since_data` | Seconds since the last message proving the session is fed (`PROVES_LIVENESS` in `protocol.ts` — excludes `PONG`, `MSG`, handshake lines and `ADDUSER`/`DELUSER`). Not reset by re-login attempts. The signal to alarm on — `PONG` keeps flowing after TLCS logs the client out, so UDP message rate can't tell a live broadcast from a dead one. |
 | `ccrl_kibitzer_total` | Total kibitzers configured |
 | `ccrl_kibitzer_ready` | Kibitzers in ready state |
 | `ccrl_kibitzer_target_port` | Labeled by `port`/`event` |
