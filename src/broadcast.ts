@@ -52,9 +52,12 @@ export class Broadcast {
   // Two clocks, deliberately. `lastDataAt` backs `ccrl_broadcast_seconds_since_data`,
   // the signal production alarms on, so it has to keep climbing across re-logins that
   // fix nothing — reset it and a permanently dead broadcast just sawtooths below the
-  // threshold and never alerts. `lastReloginAt` carries the rate limit instead.
-  private lastDataAt = Date.now();
-  private lastReloginAt = 0;
+  // threshold and never alerts. `lastReloginAt` carries the rate limit instead. Both
+  // read the monotonic clock: a wall-clock step (NTP) would otherwise fake an outage
+  // or hold the rate limit shut for the size of the step.
+  private lastDataAt = performance.now();
+  private lastReloginAt = -Infinity;
+  private closed = false;
 
   constructor(host: string, ip: string, port: number, kibitzerManager?: KibitzerManager, ephemeral = false) {
     this.host = host;
@@ -78,8 +81,11 @@ export class Broadcast {
       this.conn.send('PING');
 
       // A dead session still answers PING, so socket silence never happens — only
-      // the data channel goes quiet. That's what we watch.
-      if (Date.now() - this.lastDataAt > env.dataTimeoutMs) this.relogin('watchdog');
+      // the data channel goes quiet. That's what we watch. Measured from the later of
+      // the last data and the last attempt, so a broadcast that stays quiet (a paused
+      // tournament) is retried once per timeout, not once per RELOGIN_MIN_INTERVAL_MS.
+      const quietSince = Math.max(this.lastDataAt, this.lastReloginAt);
+      if (performance.now() - quietSince > env.dataTimeoutMs) this.relogin('watchdog');
     }, PING_INTERVAL_MS);
   }
 
@@ -89,8 +95,15 @@ export class Broadcast {
 
   /** Re-establishes the TLCS session. Rate-limited, and never touches `lastDataAt`. */
   relogin(reason: ReloginReason): void {
-    const now = Date.now();
-    if (now - this.lastReloginAt < RELOGIN_MIN_INTERVAL_MS) return;
+    // close() has sent LOGOFF; a notice drained after it must not log us back in.
+    if (this.closed) return;
+
+    // The floor only guards against hammering a session that hasn't come back. Once
+    // data has flowed since the last attempt, that attempt worked, and a fresh logout
+    // notice is a new outage to act on now rather than after the watchdog timeout.
+    const now = performance.now();
+    const recoveredSinceLastAttempt = this.lastDataAt > this.lastReloginAt;
+    if (!recoveredSinceLastAttempt && now - this.lastReloginAt < RELOGIN_MIN_INTERVAL_MS) return;
     this.lastReloginAt = now;
 
     logger.warn(`Re-sending LOGON (${reason}); ${Math.round(this.secondsSinceData)}s since last broadcast data`, {
@@ -102,8 +115,12 @@ export class Broadcast {
   }
 
   private async processMessages(messages: string[]): Promise<void> {
+    // Stamped before processing: a logout notice in this same batch re-logs-in
+    // mid-batch, and the data that preceded it must not read as arriving after that
+    // attempt (which would lift the rate limit for the notice's duplicates).
+    const receivedAt = performance.now();
     const { update, chat, sawLiveData } = await this.gameService.onMessages(messages);
-    if (sawLiveData) this.lastDataAt = Date.now();
+    if (sawLiveData) this.lastDataAt = receivedAt;
 
     if (update) emitUpdate(this.port, update);
     if (chat.length) emitChat(this.port, chat);
@@ -124,6 +141,7 @@ export class Broadcast {
   }
 
   close(): void {
+    this.closed = true;
     clearInterval(this.pings);
     this.conn.send('LOGOFF');
 
@@ -157,7 +175,7 @@ export class Broadcast {
 
   /** How long this broadcast has gone without real data — see `ccrl_broadcast_seconds_since_data`. */
   get secondsSinceData(): number {
-    return (Date.now() - this.lastDataAt) / 1000;
+    return (performance.now() - this.lastDataAt) / 1000;
   }
 
   /** Metrics/display label for the tournament, falling back before an event is announced. */

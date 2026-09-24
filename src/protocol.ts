@@ -32,7 +32,9 @@ const KNOWN_COMMANDS = new Set<string>(Object.values(Command));
  * The false entries all arrive whether or not the session is alive: `PONG` is a
  * keepalive TLCS keeps answering after it has logged us out, `MSG` is how it
  * announces that logout, and `LOGON`/`FEATURE`/`level`/`MENU` are connection-time
- * lines a re-login provokes on its own. Counting any of them would let a
+ * lines a re-login provokes on its own. So is `ADDUSER`: a login is answered with the
+ * spectator list, our own name included (see `onAddUser`), and join/leave traffic
+ * says nothing about the game feed anyway. Counting any of them would let a
  * re-login that is acknowledged but restores nothing look like recovery, which is
  * exactly what `ccrl_broadcast_seconds_since_data` exists to catch.
  *
@@ -54,8 +56,6 @@ export const PROVES_LIVENESS: Record<Command, boolean> = {
   [Command.SITE]: true,
   [Command.CT]: true,
   [Command.CTRESET]: true,
-  [Command.ADDUSER]: true,
-  [Command.DELUSER]: true,
   [Command.CHAT]: true,
   [Command.RESULT]: true,
   [Command.FMR]: true,
@@ -65,6 +65,8 @@ export const PROVES_LIVENESS: Record<Command, boolean> = {
   [Command.FEATURE]: false,
   [Command.LEVEL]: false,
   [Command.MENU]: false,
+  [Command.ADDUSER]: false,
+  [Command.DELUSER]: false,
 };
 
 /**

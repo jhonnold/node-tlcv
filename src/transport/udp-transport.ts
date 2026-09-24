@@ -4,11 +4,18 @@ import { logger } from '../util/index.js';
 
 export type MessageCallback = (message: string) => void;
 
-// How far below the high-water mark an id may land before we read it as a counter
-// restart rather than a reordered datagram. Ids climb into the thousands over a
-// session, and reordering moves them by single digits, so anything in this range
-// is unambiguous.
+// A counter restart lands at the bottom of the id range *and* far below the
+// high-water mark. Reordering, and retransmits after a lost ACK, land just below the
+// mark — which, early in any session, is itself inside the bottom of the range — so
+// the size of the step back has to be checked too, not just where it lands.
 const ID_RESTART_WINDOW = 100;
+
+function isIdRestart(id: number, lastMessage: number): boolean {
+  if (id >= lastMessage) return false;
+
+  // Exactly 1 is the counter's first value, so it is followed even after a short session.
+  return id === 1 || (id <= ID_RESTART_WINDOW && lastMessage - id > ID_RESTART_WINDOW);
+}
 
 export class UdpTransport {
   private host: string;
@@ -74,13 +81,14 @@ export class UdpTransport {
       this.send(`ACK: ${idString}`);
 
       const id = parseInt(idString);
-      if (this.lastMessage && id < this.lastMessage) {
+      if (this.lastMessage && id <= this.lastMessage) {
         // Two very different things look alike here. A jump back to the low end of
         // the range is TLCS restarting its counter for a fresh session — ours after
         // a re-login, or its own after a restart — and the new stream has to be
-        // followed or the broadcast stays dark forever. A small step backwards is
-        // just UDP reordering, and replaying it would corrupt game state.
-        if (id > ID_RESTART_WINDOW) {
+        // followed or the broadcast stays dark forever. A small step backwards (or a
+        // repeat of the last id) is UDP reordering or a retransmit, and replaying it
+        // would corrupt game state.
+        if (!isIdRestart(id, this.lastMessage)) {
           logger.warn(
             `Received an odd ordering of messages! Last: ${this.lastMessage}, Next: ${id}, SKIPPING PROCESSING!`,
             { port: this.port },
