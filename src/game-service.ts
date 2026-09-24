@@ -7,7 +7,7 @@ import type { OpeningResult } from './services/lichess.js';
 import { savePgn } from './services/pgn.js';
 import { saveGameMeta } from './services/game-meta.js';
 import { saveTournamentResults, loadTournamentResults, invalidateTournament } from './services/tournament-results.js';
-import { Command, splitOnCommand } from './protocol.js';
+import { Command, PROVES_LIVENESS, splitOnCommand } from './protocol.js';
 import { commandsProcessed, chatMessages } from './metrics.js';
 import { parseResults, parseGames, mergeGames, hasTotalGames } from './services/result-parser.js';
 import { replayUciFromFen } from './util/uci.js';
@@ -46,6 +46,8 @@ type PvUpdate = {
 export type GameServiceResult = {
   update: BroadcastDelta | null;
   chat: string[];
+  /** Whether the batch held anything proving the session still feeds us — see `PROVES_LIVENESS`. */
+  sawLiveData: boolean;
 };
 
 class GameService {
@@ -96,7 +98,20 @@ class GameService {
       [Command.LOGON]: { fn: () => {}, split: false },
       [Command.FEATURE]: { fn: () => {}, split: false },
       [Command.LEVEL]: { fn: () => {}, split: false },
+      [Command.MSG]: { fn: this.onServerMessage.bind(this), split: false },
     };
+  }
+
+  /**
+   * Out-of-band server notice. The one that matters is the logout announcement —
+   * TLCS keeps answering our PINGs afterwards, so without acting on this the
+   * broadcast silently sits dead until the process is restarted.
+   */
+  private onServerMessage(tokens: CommandTokens): void {
+    const [, text] = tokens;
+
+    logger.warn(`Server message: ${text}`, { port: this.broadcast.port });
+    if (/no longer connected/i.test(text)) this.broadcast.relogin('server-notice');
   }
 
   private onFmr(tokens: CommandTokens): void {
@@ -620,9 +635,11 @@ class GameService {
     this.moveCountBefore = this.game.moveMeta.length;
     this.patchedMoves.clear();
     const chatEmit: string[] = [];
+    let sawLiveData = false;
 
     for (const [cmd, rest] of this.categorizeMessages(messages)) {
       const commandConfig = this.commandConfig[cmd];
+      if (PROVES_LIVENESS[cmd]) sawLiveData = true;
 
       const chat = await commandConfig.fn(commandConfig.split ? [cmd, ...rest.trim().split(/\s+/)] : [cmd, rest]);
 
@@ -635,7 +652,7 @@ class GameService {
 
     logger.debug(`Successfully processed ${messages.length} message(s)`, { port: this.broadcast.port });
 
-    return { update, chat: chatEmit };
+    return { update, chat: chatEmit, sawLiveData };
   }
 }
 

@@ -20,4 +20,11 @@ export const env = Object.freeze({
   lichessToken: process.env.LICHESS_OAUTH_TOKEN,
   /** Winston console level. */
   logLevel: process.env.LOG_LEVEL || 'info',
+  /**
+   * How long a broadcast may go without any real protocol data before we assume
+   * TLCS has dropped our session and re-send LOGON. See `Broadcast.relogin()`.
+   * Clamped so a negative value falls back to the default rather than reading every
+   * broadcast as dead from the first ping.
+   */
+  dataTimeoutMs: Math.max(0, Number(process.env.TLCS_DATA_TIMEOUT_MS)) || 10 * 60 * 1000,
 });
