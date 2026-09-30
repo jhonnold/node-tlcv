@@ -37,8 +37,7 @@ export function formatNps(nodes: number, seconds: number | null): string {
  * stands in for moves recorded before that was kept (archived games).
  */
 export function npsSeconds(meta: MoveMetaData): number | null {
-  if (meta.usedTime != null && meta.usedTime > 0) return meta.usedTime / 1000;
-  return meta.time;
+  return meta.usedTime != null ? meta.usedTime / 1000 : meta.time;
 }
 
 export function msToString(ms: number): string {

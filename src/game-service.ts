@@ -186,23 +186,25 @@ class GameService {
     }
   }
 
-  // WPV/BPV payloads are positional: depth score time nodes pv...
+  // WPV/BPV payloads are positional: depth score time nodes pv... Null if any number is malformed.
   private parsePvTokens(rest: string[]): {
     depth: number;
     score: number;
     nodes: number;
     usedTime: number;
     pv: string[];
-  } {
+  } | null {
     const [depthStr, scoreStr, timeStr, nodesStr, ...pv] = rest;
-
-    return {
+    const parsed = {
       depth: parseInt(depthStr),
       score: parseInt(scoreStr) / 100,
       nodes: parseInt(nodesStr),
       usedTime: parseInt(timeStr) * 10,
       pv,
     };
+
+    const { depth, score, nodes, usedTime } = parsed;
+    return [depth, score, nodes, usedTime].every(Number.isFinite) ? parsed : null;
   }
 
   private applyPvToMeta(
@@ -229,9 +231,9 @@ class GameService {
     const lastMove = this.game.moveMeta[this.game.moveMeta.length - 1];
     if (!lastMove || lastMove.color !== colorCode || !this.fenBeforeLastMove) return;
 
-    const { depth, score, nodes, usedTime, pv } = this.parsePvTokens(rest);
-    if (!Number.isFinite(depth) || !Number.isFinite(score) || !Number.isFinite(nodes) || !Number.isFinite(usedTime))
-      return;
+    const parsed = this.parsePvTokens(rest);
+    if (!parsed) return;
+    const { depth, score, nodes, usedTime, pv } = parsed;
 
     // A shallower line is a stale iteration, not the final flush.
     if (depth < (lastMove.depth ?? 0)) return;
@@ -267,16 +269,11 @@ class GameService {
     }
 
     const parsed = this.parsePvTokens(rest);
-    const { liveData } = this.game;
+    if (!parsed) return;
 
-    // XPV lines carry no sequence id, so they can be lost or arrive out of order. Within
-    // one search the node count only grows, so a line that goes back on it is stale.
-    // Neither depth nor time is a usable guide: depth legitimately drops between
-    // iterations, and some engines report a time that steps backwards on real lines.
-    if (
-      ![parsed.depth, parsed.score, parsed.nodes, parsed.usedTime].every(Number.isFinite) ||
-      parsed.nodes < liveData.nodes
-    ) {
+    // Unsequenced XPV can arrive out of order; node count is the only reliable ordering
+    // signal within a search (see docs/protocol.md "XPV lines are unsequenced").
+    if (parsed.nodes < this.game.liveData.nodes) {
       logger.debug(
         `Skipping stale PV for game ${this.game.name} - Color: ${color}, Depth: ${parsed.depth}, Nodes: ${parsed.nodes}, UsedTime: ${parsed.usedTime}`,
         { port: this.broadcast.port },
