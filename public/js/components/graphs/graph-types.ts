@@ -1,5 +1,6 @@
 // public/js/components/graphs/graph-types.js
 import type { MoveMetaData } from '../../../../shared/types';
+import { npsSeconds } from '../../utils/format';
 
 export type GraphTypeConfig = {
   label: string;
@@ -121,7 +122,8 @@ const GRAPH_TYPES: Record<string, GraphTypeConfig> = {
   nps: {
     label: 'NPS',
     getValue(meta: MoveMetaData) {
-      return meta.time != null && meta.time > 0 && meta.nodes != null ? Math.round(meta.nodes / meta.time) : null;
+      const seconds = npsSeconds(meta);
+      return seconds && meta.nodes != null ? Math.round(meta.nodes / seconds) : null;
     },
     buildYAxis: positiveAxis({ callback: (v: number) => `${abbreviateNumber(v)}/s` }),
     formatTooltip(value: number, datasetIndex: number) {

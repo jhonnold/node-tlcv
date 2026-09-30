@@ -37,6 +37,7 @@ type PvUpdate = {
   depth: number;
   score: number;
   nodes: number;
+  usedTime: number;
   pvMoveNumber: number;
   san: string[];
   alg: string[];
@@ -204,10 +205,14 @@ class GameService {
     };
   }
 
-  private applyPvToMeta(meta: MoveMetaData, { depth, score, nodes, pvMoveNumber, san, alg, fen }: PvUpdate): void {
+  private applyPvToMeta(
+    meta: MoveMetaData,
+    { depth, score, nodes, usedTime, pvMoveNumber, san, alg, fen }: PvUpdate,
+  ): void {
     meta.depth = depth;
     meta.score = score;
     meta.nodes = nodes;
+    meta.usedTime = usedTime;
     meta.pv = san.length ? [...san] : null;
     meta.pvFen = fen;
     meta.pvMoveNumber = pvMoveNumber;
@@ -224,8 +229,9 @@ class GameService {
     const lastMove = this.game.moveMeta[this.game.moveMeta.length - 1];
     if (!lastMove || lastMove.color !== colorCode || !this.fenBeforeLastMove) return;
 
-    const { depth, score, nodes, pv } = this.parsePvTokens(rest);
-    if (!Number.isFinite(depth) || !Number.isFinite(score) || !Number.isFinite(nodes)) return;
+    const { depth, score, nodes, usedTime, pv } = this.parsePvTokens(rest);
+    if (!Number.isFinite(depth) || !Number.isFinite(score) || !Number.isFinite(nodes) || !Number.isFinite(usedTime))
+      return;
 
     // A shallower line is a stale iteration, not the final flush.
     if (depth < (lastMove.depth ?? 0)) return;
@@ -237,7 +243,7 @@ class GameService {
     // different position and must not overwrite this move's meta.
     if (!playout || playout.san[0] !== lastMove.move) return;
 
-    this.applyPvToMeta(lastMove, { depth, score, nodes, pvMoveNumber: lastMove.number, ...playout });
+    this.applyPvToMeta(lastMove, { depth, score, nodes, usedTime, pvMoveNumber: lastMove.number, ...playout });
 
     logger.info(
       `Updated game ${this.game.name} - Trailing PV for move ${lastMove.number}: Color: ${colorCode}, Depth: ${depth}, Score: ${score}, Nodes: ${nodes}`,
@@ -261,6 +267,23 @@ class GameService {
     }
 
     const parsed = this.parsePvTokens(rest);
+    const { liveData } = this.game;
+
+    // XPV lines carry no sequence id, so they can be lost or arrive out of order. Within
+    // one search the node count only grows, so a line that goes back on it is stale.
+    // Neither depth nor time is a usable guide: depth legitimately drops between
+    // iterations, and some engines report a time that steps backwards on real lines.
+    if (
+      ![parsed.depth, parsed.score, parsed.nodes, parsed.usedTime].every(Number.isFinite) ||
+      parsed.nodes < liveData.nodes
+    ) {
+      logger.debug(
+        `Skipping stale PV for game ${this.game.name} - Color: ${color}, Depth: ${parsed.depth}, Nodes: ${parsed.nodes}, UsedTime: ${parsed.usedTime}`,
+        { port: this.broadcast.port },
+      );
+      return;
+    }
+
     this.game.liveData.depth = parsed.depth;
     this.game.liveData.score = parsed.score;
     this.game.liveData.nodes = parsed.nodes;
@@ -332,6 +355,7 @@ class GameService {
         depth: null,
         score: null,
         nodes: null,
+        usedTime: null,
         time:
           this.game[color].startTime > 0
             ? Math.round((new Date().getTime() - this.game[color].startTime) / 1000)
@@ -351,6 +375,7 @@ class GameService {
           depth: this.game.liveData.depth,
           score: this.game.liveData.score,
           nodes: this.game.liveData.nodes,
+          usedTime: this.game.liveData.usedTime,
           pvMoveNumber: this.game.liveData.pvMoveNumber,
           san: this.game.liveData.pv,
           alg: this.game.liveData.pvAlg,
