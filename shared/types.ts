@@ -32,8 +32,9 @@ export type MoveMetaData = {
   nodes: number | null;
   // Server wall-clock seconds between moves (Time graph, PGN comment).
   time: number | null;
-  // Engine-reported search time in ms, from the same PV line as `nodes`.
-  usedTime: number | null;
+  // Engine-reported search time in ms, from the same PV line as `nodes`. Absent from
+  // moves archived before it was recorded.
+  usedTime?: number | null;
   pv: string[] | null;
   pvFen: string | null;
   pvMoveNumber: number | null;

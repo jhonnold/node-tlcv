@@ -235,8 +235,9 @@ class GameService {
     if (!parsed) return;
     const { depth, score, nodes, usedTime, pv } = parsed;
 
-    // A shallower line is a stale iteration, not the final flush.
-    if (depth < (lastMove.depth ?? 0)) return;
+    // A shallower line, or one with fewer nodes (unsequenced XPV reordered), is a stale
+    // iteration, not the final flush.
+    if (depth < (lastMove.depth ?? 0) || nodes < (lastMove.nodes ?? 0)) return;
 
     // The trailing PV describes the search that produced the move just played, so it
     // replays from the position that move was made from.
