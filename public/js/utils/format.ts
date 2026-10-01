@@ -2,6 +2,8 @@
 // Kept DOM-free so components can import them without pulling in each other's
 // rendering code.
 
+import type { MoveMetaData } from '../../../shared/types';
+
 export const MATE_SCORE_THRESHOLD = 100000;
 
 /** Engine score in pawns, from `color`'s point of view. Scores arrive white-relative. */
@@ -27,6 +29,15 @@ export function formatNodes(nodes: number): string {
 export function formatNps(nodes: number, seconds: number | null): string {
   if (!seconds) return '--';
   return `${(nodes / seconds / 1000000).toFixed(2)}M`;
+}
+
+/**
+ * Seconds to divide a move's nodes by for its NPS. Prefers the engine-reported time
+ * from the same PV line as the node count; the server's wall-clock move time only
+ * stands in for moves recorded before that was kept (archived games).
+ */
+export function npsSeconds(meta: MoveMetaData): number | null {
+  return meta.usedTime != null ? meta.usedTime / 1000 : meta.time;
 }
 
 export function msToString(ms: number): string {

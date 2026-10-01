@@ -10,7 +10,7 @@ import type {
 import { colorName } from '../../../../shared/colors';
 import { formatPv } from '../../utils/pv';
 import { updateFenDisplay } from '../../utils/fen';
-import { formatScore, formatSignedScore, formatNodes, formatNps } from '../../utils/format';
+import { formatScore, formatSignedScore, formatNodes, formatNps, npsSeconds } from '../../utils/format';
 
 function updateElText(el: JQuery, val: string) {
   const curr = el.text();
@@ -47,7 +47,7 @@ export function updateHistoricalInfo(color: string, meta: MoveMetaData | null) {
     updateElText($(`#${color}-score`), meta.score != null ? formatScore(meta.score, color) : '--');
     updateElText($(`#${color}-depth`), meta.depth != null ? String(meta.depth) : '--');
     updateElText($(`#${color}-nodes`), meta.nodes != null ? formatNodes(meta.nodes) : '--');
-    updateElText($(`#${color}-nps`), meta.nodes != null ? formatNps(meta.nodes, meta.time) : '--');
+    updateElText($(`#${color}-nps`), meta.nodes != null ? formatNps(meta.nodes, npsSeconds(meta)) : '--');
     updateElHtml($(`#${color}-pv`), formatPv(meta.pv, meta.pvMoveNumber ?? 1, color));
   }
 }
