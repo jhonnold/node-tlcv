@@ -47,6 +47,7 @@ These files load on demand — only read what your task needs:
 
 - [CONVENTIONS.md](./CONVENTIONS.md) — Full code style, tooling, Sass conventions
 - [docs/protocol.md](./docs/protocol.md) — TLCS message flow, commands, per-move cycle
+- [docs/official-client.md](./docs/official-client.md) — Reverse-engineered official TLCV client: wire protocol, ordering, differences from node-tlcv
 - [docs/kibitzer.md](./docs/kibitzer.md) — Engine analysis transports (local, SSH)
 - [docs/webhooks.md](./docs/webhooks.md) — Outbound Discord webhooks
 - [docs/metrics.md](./docs/metrics.md) — Prometheus instrumentation
