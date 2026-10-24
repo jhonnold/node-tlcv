@@ -4,6 +4,7 @@
   import { onDestroy } from 'svelte';
   import type { ViewerSource } from '$lib/url';
   import { apiBase } from '$lib/url';
+  import { DASH } from '$lib/format';
 
   type Props = { source: ViewerSource };
   const { source }: Props = $props();
@@ -14,15 +15,15 @@
     ['even', 'Event thread'], // onMenu splits on whitespace, so NAME="Event thread" becomes the key `even` (game-service.ts:514-535)
     ['event', 'Event'],
   ];
+  const KNOWN = new Set(MENU_ORDER.map(([k]) => k));
   const isUrl = (v: string | undefined): v is string => /^https?:\/\//i.test(v ?? '');
   const links = $derived.by(() => {
     const menu = game.live?.menu ?? {};
     const out: { label: string; href: string }[] = [{ label: 'PGN archive', href: '/pgns' }];
     if (source.kind === 'live') out.push({ label: 'Current game PGN', href: `${apiBase(source)}/pgn` });
     for (const [key, label] of MENU_ORDER) if (isUrl(menu[key])) out.push({ label, href: menu[key] });
-    const known = new Set(MENU_ORDER.map(([k]) => k));
     for (const key of Object.keys(menu).sort()) {
-      if (!known.has(key) && isUrl(menu[key]))
+      if (!KNOWN.has(key) && isUrl(menu[key]))
         out.push({ label: key.charAt(0).toUpperCase() + key.slice(1), href: menu[key] });
     }
     return out;
@@ -71,9 +72,9 @@
     <h3>Position</h3>
     <dl class="grid">
       <dt>Opening</dt>
-      <dd>{game.game?.opening || '—'}</dd>
+      <dd>{game.game?.opening || DASH}</dd>
       <dt>Tablebase</dt>
-      <dd class="muted">{game.game?.tablebase || '—'}</dd>
+      <dd class="muted">{game.game?.tablebase || DASH}</dd>
       <dt>FEN</dt>
       <dd class="fen-row">
         <code class="fen">{game.fen}</code>

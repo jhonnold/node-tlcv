@@ -35,14 +35,13 @@ function cell(c: H2HCell, inProgress: boolean): XCell {
 /** h2h[j] is the score against the engine in standings row j (CT column j+1 = rank j+1). */
 export function crosstable(results: ParsedResults, live: { white: string; black: string } | null): XRow[] {
   const rows = results.standings;
-  const isLive = (n: string | undefined) =>
-    !!live && n !== undefined && (sameEngine(n, live.white) || sameEngine(n, live.black));
+  const playing = rows.map((r) => !!live && (sameEngine(r.name, live.white) || sameEngine(r.name, live.black)));
   return rows.map((r, i) => ({
     rank: r.rank,
     name: r.name,
     games: r.games,
     points: half(r.points),
-    playing: isLive(r.name),
-    cells: r.h2h.map((c, j) => cell(c, j !== i && isLive(r.name) && isLive(rows[j]?.name))),
+    playing: playing[i],
+    cells: r.h2h.map((c, j) => cell(c, j !== i && playing[i] && !!playing[j])),
   }));
 }

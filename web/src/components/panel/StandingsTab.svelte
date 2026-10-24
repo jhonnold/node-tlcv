@@ -11,11 +11,14 @@
   const tournament = getTournament();
 
   onMount(() => void tournament.refresh());
+  // Strings, so the crosstable isn't rebuilt on every delta (game.live changes each time).
+  const liveWhite = $derived(game.live?.game.white.name ?? null);
+  const liveBlack = $derived(game.live?.game.black.name ?? null);
   const rows = $derived(
     tournament.results
       ? crosstable(
           tournament.results,
-          game.live ? { white: game.live.game.white.name, black: game.live.game.black.name } : null,
+          liveWhite != null && liveBlack != null ? { white: liveWhite, black: liveBlack } : null,
         )
       : [],
   );

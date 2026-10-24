@@ -6,7 +6,7 @@
   import { getTournament } from '$lib/tournament.svelte';
   import { apiBase } from '$lib/url';
   import type { ViewerSource } from '$lib/url';
-  import { colorName, otherColor } from '$shared/colors';
+  import { DASH } from '$lib/format';
 
   type Props = { source: ViewerSource; scroller: HTMLElement | undefined };
   const { source, scroller }: Props = $props();
@@ -14,13 +14,7 @@
   const tournament = getTournament();
 
   const rows = $derived(moveRows(game.moves));
-  const ghost = $derived.by(() => {
-    const g = game.game;
-    if (game.isReplay || !g) return null;
-    const last = game.moves[game.moves.length - 1];
-    const mover = last ? otherColor(last.color) : g.liveData.color;
-    return ghostCell(game.moves, g.liveData, game.clocks?.[colorName(mover)].thinkMs ?? null);
-  });
+  const ghost = $derived(game.isReplay || !game.game ? null : ghostCell(game.moves, game.game.liveData, game.clocks));
   // Known limitation: the ghost stays after a game ends. The result never reaches the store (src/game-service.ts:537-547).
   const view = $derived(placeGhost(rows, ghost));
   const op = $derived(splitOpening(game.game?.opening ?? ''));
@@ -78,7 +72,7 @@
 
 <div class="moves-head" bind:this={head}>
   <div class="head-text">
-    <div class="op-name">{op.name || '—'}</div>
+    <div class="op-name">{op.name || DASH}</div>
     <div class="head-sub">{sub}</div>
   </div>
   <button type="button" class="icon" aria-label="Copy FEN" title="Copy FEN" onclick={copy}>

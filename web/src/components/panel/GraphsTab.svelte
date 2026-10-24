@@ -14,11 +14,10 @@
   const font = getComputedStyle(document.documentElement).getPropertyValue('--fontMono').trim() || 'monospace';
 
   const series = $derived(buildSeries(game.moves, graph));
-  const names = $derived({
-    white: game.game?.white.name ?? 'White',
-    black: game.game?.black.name ?? 'Black',
-    kibitzer: game.game?.kibitzerLiveData?.name ?? 'Kibitzer',
-  });
+  // Strings, not one object: the game object changes on every delta and would re-run the chart effect.
+  const whiteName = $derived(game.game?.white.name ?? 'White');
+  const blackName = $derived(game.game?.black.name ?? 'Black');
+  const kibitzerName = $derived(game.game?.kibitzerLiveData?.name ?? 'Kibitzer');
   const whiteAvg = $derived(averages(game.moves, 'w'));
   const blackAvg = $derived(averages(game.moves, 'b'));
 
@@ -36,7 +35,7 @@
       graph,
       game.moves,
       series,
-      names,
+      { white: whiteName, black: blackName, kibitzer: kibitzerName },
       { w: c.engW, b: c.engB, k: c.engK, text: c.text, muted: c.muted, line: c.line, surface2: c.surface2, font },
       (ply) => game.goTo(ply), // bound: goTo is a method, not an arrow field
     );
@@ -71,10 +70,10 @@
     </div>
   </figure>
   <ul class="legend">
-    <li><span class="swatch solid" style:background="var(--engW)"></span>{names.white}</li>
-    <li><span class="swatch solid" style:background="var(--engB)"></span>{names.black}</li>
+    <li><span class="swatch" style:background="var(--engW)"></span>{whiteName}</li>
+    <li><span class="swatch" style:background="var(--engB)"></span>{blackName}</li>
     {#if graph === 'eval' && series.kibitzer.length}
-      <li><span class="swatch dashed"></span>{names.kibitzer} (kibitzer)</li>
+      <li><span class="swatch dashed"></span>{kibitzerName} (kibitzer)</li>
     {/if}
   </ul>
   <table class="averages">
@@ -88,13 +87,13 @@
     </thead>
     <tbody>
       <tr>
-        <th scope="row">{names.white}</th>
+        <th scope="row">{whiteName}</th>
         <td>{whiteAvg.depth}</td>
         <td>{whiteAvg.nps}</td>
         <td>{whiteAvg.clock}</td>
       </tr>
       <tr>
-        <th scope="row">{names.black}</th>
+        <th scope="row">{blackName}</th>
         <td>{blackAvg.depth}</td>
         <td>{blackAvg.nps}</td>
         <td>{blackAvg.clock}</td>

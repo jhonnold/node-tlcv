@@ -1,8 +1,9 @@
 import { Chart, LineController, LineElement, PointElement, LinearScale, Tooltip } from 'chart.js';
 import type { ChartConfiguration, Plugin } from 'chart.js';
 import type { ColorCode, MoveMetaData } from '$shared/types';
-import { DASH, formatCount, formatDuration, formatScore, npsSeconds, whiteScore } from './format';
+import { DASH, formatCount, formatDuration, formatNps, formatScore, moveScore, npsSeconds } from './format';
 import { isBook } from './moves';
+import { moveLabel } from './positions';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, Tooltip);
 
@@ -22,7 +23,7 @@ export const GRAPH_TYPES: Record<GraphId, GraphType> = {
   eval: {
     label: 'Eval',
     title: 'Evaluation (White’s view)',
-    value: (m) => (m.score == null ? null : clampEval(whiteScore(m.score, m.color))),
+    value: moveScore, // unclamped: buildSeries clamps the plotted point
     tick: (v) => (v === 0 ? '0' : v > 0 ? `+${v}` : String(v)),
     tip: (v) => formatScore(v),
   },
@@ -71,12 +72,12 @@ export function buildSeries(moves: MoveMetaData[], id: GraphId): Series {
   const t = GRAPH_TYPES[id];
   moves.forEach((m, i) => {
     const x = plyX(m);
-    const y = isBook(m) ? null : t.value(m);
-    if (y != null) {
+    const v = isBook(m) ? null : t.value(m);
+    if (v != null) {
       const d = m.color === 'w' ? 0 : 1;
-      (d === 0 ? s.white : s.black).push({ x, y });
+      (d === 0 ? s.white : s.black).push({ x, y: id === 'eval' ? clampEval(v) : v });
       s.plies[d].push(i + 1);
-      s.raw[d].push(id === 'eval' && m.score != null ? whiteScore(m.score, m.color) : y);
+      s.raw[d].push(v);
     }
     if (id === 'eval' && m.kibitzer?.score != null) {
       s.kibitzer.push({ x, y: clampEval(m.kibitzer.score) });
@@ -123,7 +124,7 @@ export function averages(moves: MoveMetaData[], color: ColorCode): Averages {
   }
   return {
     depth: dN ? (dSum / dN).toFixed(1) : DASH,
-    nps: secs ? formatCount(nodes / secs) : DASH,
+    nps: formatNps(nodes, secs),
     clock: clock ? formatDuration(clock * 1000) : DASH,
   };
 }
@@ -196,7 +197,7 @@ export function chartConfig(
   const axisFont = { family: c.font, size: 11 };
   const moveName = (ply: number) => {
     const m = moves[ply - 1];
-    return m ? `${m.number}${m.color === 'w' ? '.' : '…'} ${m.move}` : '';
+    return m ? moveLabel(m) : '';
   };
   return {
     type: 'line',

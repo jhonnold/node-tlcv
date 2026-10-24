@@ -1,9 +1,7 @@
 <script lang="ts">
   import EngineCard from '../EngineCard.svelte';
   import { getGameStore } from '$lib/game.svelte';
-  import { DASH } from '$lib/format';
-  import type { EngineView } from '$lib/engines';
-  import { EMPTY_PV } from '$lib/pv';
+  import { empty } from '$lib/engines';
 
   type Props = { flipped: boolean };
   const { flipped }: Props = $props();
@@ -13,19 +11,7 @@
   const bottom = $derived(flipped ? 'black' : 'white');
   const hasKibitzer = $derived(!!game.game?.kibitzerLiveData || game.moves.some((m) => m.kibitzer));
   // Stays mounted once shown (U2 §5): the kibitzer card is never swapped for a different component.
-  const emptyKibitzer = $derived<EngineView>({
-    role: 'kibitzer',
-    name: game.game?.kibitzerLiveData?.name ?? 'Kibitzer',
-    status: '',
-    scoreValue: null,
-    score: DASH,
-    depth: DASH,
-    nodes: DASH,
-    nps: DASH,
-    time: DASH,
-    pv: EMPTY_PV,
-    pvFen: null,
-  });
+  const emptyKibitzer = $derived(empty('kibitzer', game.game?.kibitzerLiveData?.name ?? 'Kibitzer'));
 </script>
 
 {#if game.engines}

@@ -39,9 +39,12 @@ export function lastMoveAt(p: Positions, index: number): LastMove | null {
   return index > 0 ? (p.lastMoves[index - 1] ?? null) : null;
 }
 
+/** `20. Qb6` / `20… Qb6`. */
+export const moveLabel = (m: MoveMetaData): string => `${m.number}${m.color === 'w' ? '.' : '…'} ${m.move}`;
+
 /** Move-list caption for the shown position, e.g. `Live · after 20… Qb6`. */
 export function positionLabel(moves: MoveMetaData[], index: number, following: boolean): string {
   const m = moves[index - 1];
   if (!m) return 'Start position';
-  return `${following ? 'Live · ' : ''}after ${m.number}${m.color === 'w' ? '.' : '…'} ${m.move}`;
+  return `${following ? 'Live · ' : ''}after ${moveLabel(m)}`;
 }

@@ -18,6 +18,9 @@ export function whiteScore(score: number, color: ColorCode): number {
   return color === 'b' ? -score : score;
 }
 
+/** A finished move's engine score in White's view, or null when it has none. */
+export const moveScore = (m: MoveMetaData): number | null => (m.score == null ? null : whiteScore(m.score, m.color));
+
 /** Engine score in pawns, white-relative and signed. Mate scores read as +M / -M. */
 export function formatScore(score: number | null | undefined): string {
   if (score == null) return DASH;

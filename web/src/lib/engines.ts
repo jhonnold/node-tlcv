@@ -1,6 +1,6 @@
 import type { ColorCode, KibitzerMeta, MoveMetaData, SerializedGame, SerializedKibitzerLiveData } from '$shared/types';
 import { colorName, otherColor } from '$shared/colors';
-import { DASH, formatDuration, formatNodes, formatNps, formatScore, npsSeconds, whiteScore } from './format';
+import { DASH, formatDuration, formatNodes, formatNps, formatScore, moveScore, npsSeconds, whiteScore } from './format';
 import { EMPTY_PV, pvParts } from './pv';
 import type { PvParts } from './pv';
 
@@ -20,7 +20,7 @@ export type EngineView = {
 };
 export type EngineViews = { white: EngineView; black: EngineView; kibitzer: EngineView | null };
 
-function empty(role: EngineRole, name: string, status = ''): EngineView {
+export function empty(role: EngineRole, name: string, status = ''): EngineView {
   return {
     role,
     name,
@@ -42,7 +42,7 @@ function fromMeta(game: SerializedGame, color: ColorCode, meta: MoveMetaData | u
   if (!meta || meta.color !== color || meta.depth == null) return empty(role, game[role].name);
   const secs = npsSeconds(meta);
   const pv = pvParts(meta.pv, meta.pvMoveNumber ?? meta.number, meta.color, skip);
-  const s = meta.score == null ? null : whiteScore(meta.score, meta.color);
+  const s = moveScore(meta);
   return {
     role,
     name: game[role].name,

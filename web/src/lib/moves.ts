@@ -1,6 +1,9 @@
 import type { ColorCode, MoveMetaData, SerializedLiveData } from '$shared/types';
-import { otherColor } from '$shared/colors';
-import { formatDuration, formatScore, whiteScore } from './format';
+import { colorName, otherColor } from '$shared/colors';
+import type { ColorName } from '$shared/colors';
+import type { ClockState } from './clocks';
+import { formatDuration, formatScore, moveScore, whiteScore } from './format';
+import { moveLabel } from './positions';
 
 /** Decision 2. */
 export const isBook = (m: MoveMetaData): boolean => m.depth == null || (m.depth === 0 && !m.nodes);
@@ -18,9 +21,9 @@ function moveCell(m: MoveMetaData, ply: number): MoveCell {
     kind: 'move',
     ply, // nav index: clicking calls game.goTo(ply)
     san: m.move,
-    score: book || m.score == null ? '' : formatScore(whiteScore(m.score, m.color)),
+    score: book || m.score == null ? '' : formatScore(moveScore(m)),
     sub: book ? 'book' : m.time != null ? `d${m.depth} · ${formatDuration(m.time * 1000)}` : `d${m.depth}`,
-    label: `Go to ${m.number}${m.color === 'w' ? '.' : '…'} ${m.move}`,
+    label: `Go to ${moveLabel(m)}`,
   };
 }
 
@@ -39,10 +42,15 @@ export function moveRows(moves: MoveMetaData[]): MoveRow[] {
 }
 
 /** The move being thought about (PD:73-81). null when nobody is searching. */
-export function ghostCell(moves: MoveMetaData[], ld: SerializedLiveData, thinkMs: number | null): GhostCell | null {
-  if (ld.depth <= 0 && thinkMs == null) return null;
+export function ghostCell(
+  moves: MoveMetaData[],
+  ld: SerializedLiveData,
+  clocks: Record<ColorName, ClockState> | null,
+): GhostCell | null {
   const last = moves[moves.length - 1];
   const color = last ? otherColor(last.color) : ld.color;
+  const thinkMs = clocks?.[colorName(color)].thinkMs ?? null;
+  if (ld.depth <= 0 && thinkMs == null) return null;
   const number = last ? (last.color === 'w' ? last.number : last.number + 1) : ld.pvMoveNumber;
   const searching = ld.depth > 0 && ld.color === color;
   return {

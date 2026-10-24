@@ -24,11 +24,14 @@ export class TournamentStore {
 
   /** Live: the last gameNumber + 1 (master plan §5). Archive: the latest game. During a replay, show game.replayNumber instead. */
   get currentGameNumber(): number | null {
+    return this.#currentGameNumber;
+  }
+  #currentGameNumber = $derived.by(() => {
     const g = this.games;
     if (!g) return null;
     const max = g.reduce((m, r) => Math.max(m, r.gameNumber), 0);
     return this.#source.kind === 'live' ? max + 1 : max || null;
-  }
+  });
   /** Games PLAYED so far: the results footer "Total games = N" (src/services/result-parser.ts:91-104). Not the scheduled total. Standings show "N games played"; the header shows "Game N" with no total (A2). */
   get totalGames(): number | null {
     return this.results?.totalGames ?? null;

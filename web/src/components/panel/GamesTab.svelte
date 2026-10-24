@@ -19,15 +19,14 @@
   let err = $state('');
 
   onMount(() => void tournament.refresh());
+  // Strings, so the rows aren't rebuilt on every delta (game.live changes each time).
+  const liveWhite = $derived(game.live?.game.white.name ?? null);
+  const liveBlack = $derived(game.live?.game.black.name ?? null);
   const rows = $derived(
     gameRows(
       tournament.games,
-      source.kind === 'live' && game.live
-        ? {
-            number: tournament.currentGameNumber,
-            white: game.live.game.white.name,
-            black: game.live.game.black.name,
-          }
+      source.kind === 'live' && liveWhite != null && liveBlack != null
+        ? { number: tournament.currentGameNumber, white: liveWhite, black: liveBlack }
         : null,
       query,
       decisive,
