@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Backend Server for viewing TLCV chess games.",
   "engines": {
-    "node": ">= 20"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "overrides": {
     "jake": "^12.10.1"

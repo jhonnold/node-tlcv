@@ -11,15 +11,18 @@
   let site = $state('');
 
   onMount(() => {
-    getJson<BroadcastSummary | ArchiveInfo>(apiBase(source))
+    const ac = new AbortController();
+    getJson<BroadcastSummary | ArchiveInfo>(apiBase(source), ac.signal)
       .then((info) => {
         site = info.site;
         document.title = info.site ? `${info.site} - CCRL Live` : 'CCRL Live';
       })
       .catch((e: unknown) => {
+        if ((e as Error).name === 'AbortError') return;
         // Client-side navigation skips the server's page guards, so a missing source goes home here.
         if (e instanceof HttpError && e.status === 404) navigate('/', { replace: true });
       });
+    return () => ac.abort();
   });
 </script>
 

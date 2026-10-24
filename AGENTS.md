@@ -23,7 +23,7 @@ Development requires two terminals: `dev-server` + `dev-public`. Build runs `pre
 - **ESM**: use `.js` extensions in backend imports (`import foo from './foo.js'`)
 - **TypeScript**: strict mode, ESNext target
 - **Formatting**: Prettier (120 width, single quotes, trailing commas)
-- **Node >= 18**, npm
+- **Node `^20.19.0 || >=22.12.0`**, npm
 - **Verification**: `npm run build`, `npm run check`, `npm run lint`
 
 ## Navigation

@@ -8,15 +8,21 @@ export class HttpError extends Error {
 }
 
 async function request(url: string, init: RequestInit = {}): Promise<Response> {
-  const res = await fetch(url, { credentials: 'same-origin', ...init });
+  const method = init.method ?? 'GET';
+  // Unknown paths hit the server catch-all, which redirects to `/`. Non-GET requests are not
+  // followed (manual), so the redirect surfaces as an opaqueredirect and is reported as a 404.
+  const res = await fetch(url, {
+    credentials: 'same-origin',
+    redirect: method === 'GET' ? 'follow' : 'manual',
+    ...init,
+  });
+  if (res.type === 'opaqueredirect' || res.redirected) throw new HttpError(404, url);
   if (!res.ok) throw new HttpError(res.status, url);
   return res;
 }
 
 export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await request(url, { headers: { Accept: 'application/json' }, signal });
-  // Unknown paths hit the server catch-all redirect to `/` and come back as the HTML shell.
-  if (!res.headers.get('content-type')?.includes('application/json')) throw new HttpError(404, url);
   return (await res.json()) as T;
 }
 
