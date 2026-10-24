@@ -9,13 +9,14 @@ Node TLCV provides a live chess viewer for Tom's Live Chess Server broadcasts. C
 ```bash
 npm install && npm run build   # Install + compile
 npm run dev-server              # Backend (nodemon, auto-restart on src/ & shared/ changes)
-npm run dev-public              # Frontend (webpack watch)
+npm run dev-public              # Frontend (vite build --watch → build/public)
 npm run start                   # Production build (port 8080)
+npm run check                   # svelte-check (web/)
 npm run lint                    # ESLint + fix
 npm run format                  # Prettier
 ```
 
-Development requires two terminals: `dev-server` + `dev-public`. Build runs `prebuild` (webpack prod) before TypeScript compile.
+Development requires two terminals: `dev-server` + `dev-public`. Build runs `prebuild` (`vite build`) before TypeScript compile.
 
 ## Key Conventions
 
@@ -23,7 +24,7 @@ Development requires two terminals: `dev-server` + `dev-public`. Build runs `pre
 - **TypeScript**: strict mode, ESNext target
 - **Formatting**: Prettier (120 width, single quotes, trailing commas)
 - **Node >= 18**, npm
-- **Verification**: `npm run build` (no test infrastructure)
+- **Verification**: `npm run build`, `npm run check`, `npm run lint`
 
 ## Navigation
 
