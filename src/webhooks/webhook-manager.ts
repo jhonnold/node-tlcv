@@ -1,19 +1,13 @@
 import { logger } from '../util/index.js';
 import { createSender } from './sender-factory.js';
-import type { WebhookConfig, WebhookEvent, WebhookEventKind, WebhookSender } from './types.js';
+import type { WebhookConfig, WebhookEvent, WebhookSender } from './types.js';
+import type { WebhookStatus } from '../../shared/types.js';
+
+export type { WebhookStatus };
 
 interface WebhookEntry {
   config: WebhookConfig;
   sender: WebhookSender;
-}
-
-export interface WebhookStatus {
-  id: string;
-  type: string;
-  name: string;
-  url: string;
-  ports: number[];
-  events: WebhookEventKind[];
 }
 
 /**

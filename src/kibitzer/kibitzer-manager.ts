@@ -7,6 +7,7 @@ import { createTransport } from './transport-factory.js';
 import { DEFAULT_ENGINE_PATH, DEFAULT_HASH, DEFAULT_THREADS } from './types.js';
 import type { KibitzerTransport, KibitzerConfig, AnalysisInfo } from './types.js';
 import type { KibitzerMeta, SerializedKibitzerLiveData } from '../../shared/types.js';
+import type { KibitzerStatus } from '../../shared/types.js';
 
 const POLL_INTERVAL_MS = 10_000;
 const EMIT_INTERVAL_MS = 1_000;
@@ -28,22 +29,7 @@ interface BroadcastSlot {
 // read accessors can report from.
 type ActiveSlot = BroadcastSlot & { currentInfo: AnalysisInfo; currentFen: string };
 
-export interface KibitzerStatus {
-  id: string;
-  type: string;
-  priority: number;
-  enginePath: string;
-  threads: number;
-  hash: number;
-  ready: boolean;
-  engineName: string;
-  targetPort: number | null;
-  targetName: string | null;
-  host?: string;
-  port?: number;
-  username?: string;
-  privateKeyPath?: string;
-}
+export type { KibitzerStatus };
 
 export class KibitzerManager {
   private transports: TransportEntry[] = [];

@@ -1,4 +1,6 @@
-export type WebhookEventKind = 'game-started' | 'game-finished';
+import type { WebhookEventKind } from '../../shared/types.js';
+
+export type { WebhookEventKind };
 
 export type DiscordWebhookConfig = {
   id: string; // 8-char uuid prefix, auto-assigned
