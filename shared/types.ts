@@ -184,7 +184,7 @@ export type AdminBroadcast = {
   viewerCount: number;
 };
 export type WebhookEventKind = 'game-started' | 'game-finished';
-/** `GET /admin/kibitzers` — moved verbatim from src/kibitzer/kibitzer-manager.ts:31-46 */
+/** `GET /admin/kibitzers` */
 export type KibitzerStatus = {
   id: string;
   type: string;
@@ -201,7 +201,7 @@ export type KibitzerStatus = {
   username?: string;
   privateKeyPath?: string;
 };
-/** `GET /admin/webhooks` — moved verbatim from src/webhooks/webhook-manager.ts:10-17 */
+/** `GET /admin/webhooks` */
 export type WebhookStatus = {
   id: string;
   type: string;

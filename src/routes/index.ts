@@ -113,7 +113,6 @@ function sendPgn(req: Request, res: Response): void {
     .send(broadcast.game.instance.pgn({ maxWidth: 80 }));
 }
 
-// Body = the .map/.sort from the old `GET /` route, typed.
 function lobbyBroadcasts(): LobbyBroadcast[] {
   return Array.from(broadcasts.values())
     .map((b): LobbyBroadcast => ({

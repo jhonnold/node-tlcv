@@ -2,7 +2,7 @@
 // key, so any set can be combined with any color palette.
 //
 // Sets live in web/public/img/pieces/<id>/<piece>.svg, where <piece> is the chessboardjs
-// token (`wK`…`bP`). DEFAULT_PIECE_SET must stay in sync with the pre-JS fallback in index.html.
+// token (`wK`…`bP`).
 
 export type PieceSetId = 'classic' | 'livius' | 'meridian' | 'meridian_shaded';
 

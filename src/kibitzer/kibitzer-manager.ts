@@ -6,8 +6,7 @@ import { replayUciFromFen, sideToMove } from '../util/uci.js';
 import { createTransport } from './transport-factory.js';
 import { DEFAULT_ENGINE_PATH, DEFAULT_HASH, DEFAULT_THREADS } from './types.js';
 import type { KibitzerTransport, KibitzerConfig, AnalysisInfo } from './types.js';
-import type { KibitzerMeta, SerializedKibitzerLiveData } from '../../shared/types.js';
-import type { KibitzerStatus } from '../../shared/types.js';
+import type { KibitzerMeta, KibitzerStatus, SerializedKibitzerLiveData } from '../../shared/types.js';
 
 const POLL_INTERVAL_MS = 10_000;
 const EMIT_INTERVAL_MS = 1_000;
