@@ -191,7 +191,6 @@
   /* Allowed :global exception: while the modal is open the page behind must not scroll (dialog doesn't lock it). */
   :global(html:has(dialog[open])) {
     overflow: hidden;
-    scrollbar-gutter: stable;
   }
   dialog {
     margin: 0 0 0 auto;
