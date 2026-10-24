@@ -48,10 +48,11 @@
   }
 
   // The dialog box is fully covered by .sheet, so a target of the dialog itself means ::backdrop.
-  // Both press and release must be on the scrim: a drag from inside the sheet onto the scrim also fires a click on the dialog.
-  let downOnScrim = false; // press must also start on ::backdrop
+  // The click lands on the dialog whenever press and release share it as ancestor, so both pointer ends must be on the scrim.
+  let downOnScrim = false;
+  let upOnScrim = false;
   function handleClick(e: MouseEvent): void {
-    if (downOnScrim && e.target === dialog) onclose();
+    if (downOnScrim && upOnScrim && e.target === dialog) onclose();
   }
 
   function pickPiece(e: Event & { currentTarget: HTMLSelectElement }): void {
@@ -84,6 +85,7 @@
   onclose={handleClose}
   onclick={handleClick}
   onpointerdown={(e) => (downOnScrim = e.target === dialog)}
+  onpointerup={(e) => (upOnScrim = e.target === dialog)}
   onkeydown={(e) => e.stopPropagation()}
 >
   <div class="sheet">

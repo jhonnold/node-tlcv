@@ -14,7 +14,7 @@ export const PRESET_ITEMS: { id: ThemeName; label: string }[] = [
 ];
 export const PALETTE_IDS = Object.keys(BOARD_PALETTES) as BoardPaletteId[];
 
-// Token mapping: see PLAN-u5 §1.3 (Accent = invBg, Secondary accent = link).
+// Accent is invBg (the one emphasis fill); Secondary accent is link (links and focus rings).
 export const BOARD_ROWS: ColorRow[] = [
   { key: 'boardLight', label: 'Light squares' },
   { key: 'boardDark', label: 'Dark squares' },
@@ -40,7 +40,7 @@ export const ADV_ROWS: ColorRow[] = [
   { key: 'evalB', label: 'Eval bar — black' },
 ];
 
-// Artboard sample (Board.dc.html, ply 40).
+// Mid-game position for the preview board, so the highlight and arrows have something to mark.
 export const SAMPLE_FEN = '2rr2k1/1p3ppp/1qp1pb2/p7/PnQP4/2N1PNP1/1P3PKP/2RR4 w - - 5 21';
 export const SAMPLE_LAST_MOVE: LastMove = { from: 'c7', to: 'b6' };
 export function sampleArrows(c: ThemeColors): Arrow[] {
@@ -84,8 +84,8 @@ function contrastRatio(a: string, b: string): number | null {
 }
 
 /**
- * setColor plus the derived tokens (PLAN-u5 §1.4): the hover/border shades promised by the helper text,
- * and readable ink on the accent.
+ * setColor plus the derived tokens: hover and border shades follow the surface and text, and the ink on
+ * the accent is chosen for contrast.
  */
 export function editColor(key: TokenKey, value: string): void {
   setColor(key, value);
