@@ -9,6 +9,7 @@
   import type { ViewerSource } from '$lib/url';
   import ChatTab from './ChatTab.svelte';
   import EnginesTab from './EnginesTab.svelte';
+  import GraphsTab from './GraphsTab.svelte';
   import InfoTab from './InfoTab.svelte';
   import MovesTab from './MovesTab.svelte';
   import ReplayBanner from './ReplayBanner.svelte';
@@ -97,6 +98,7 @@
     {#if active === 'engines'}<EnginesTab {flipped} />
     {:else if active === 'moves'}<MovesTab {source} scroller={body} />
     {:else if active === 'chat'}<ChatTab scroller={body} />
+    {:else if active === 'graphs'}<GraphsTab />
     {:else if active === 'info'}<InfoTab {source} />{/if}
   </div>
 </section>
