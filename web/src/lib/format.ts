@@ -2,16 +2,27 @@
 // Kept DOM-free so components can import them without pulling in each other's
 // rendering code.
 
-import type { MoveMetaData } from '$shared/types';
+import type { ColorCode, MoveMetaData } from '$shared/types';
 
-export const MATE_SCORE_THRESHOLD = 100000;
 export const DASH = '—';
+
+// Pawns. Kibitzer mate is ±1e6 cp = ±10000 (uci-parser.ts:9); no real eval reaches 1000. TLCS's mate encoding is unverified.
+export const MATE_SCORE_THRESHOLD = 1000;
+
+/**
+ * TLCS engine scores (WPV/BPV → MoveMetaData.score, liveData.score) are from the side to move's view
+ * (src/game-service.ts:197-207). This is the one place that turns them into White's view. Kibitzer
+ * scores are already White's (src/kibitzer/uci-parser.ts:57): never pass them through here.
+ */
+export function whiteScore(score: number, color: ColorCode): number {
+  return color === 'b' ? -score : score;
+}
 
 /** Engine score in pawns, white-relative and signed. Mate scores read as +M / -M. */
 export function formatScore(score: number | null | undefined): string {
   if (score == null) return DASH;
-  if (score > MATE_SCORE_THRESHOLD) return '+M';
-  if (score < -MATE_SCORE_THRESHOLD) return '-M';
+  if (score >= MATE_SCORE_THRESHOLD) return '+M';
+  if (score <= -MATE_SCORE_THRESHOLD) return '-M';
   return `${score >= 0 ? '+' : ''}${score.toFixed(2)}`;
 }
 
