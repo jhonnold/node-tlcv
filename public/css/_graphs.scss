@@ -31,7 +31,10 @@
   @include pill-toggle(0.75rem);
   border: 1px solid var(--surfaceColorHover);
   padding: 5px 10px;
-  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    border-color 0.15s;
   white-space: nowrap;
 
   &.active {

@@ -17,7 +17,9 @@
   color: var(--textColor);
   font-size: 0.85rem;
   font-weight: 500;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   border-bottom: 1px solid var(--surfaceColorHover);
 
   &:last-child {

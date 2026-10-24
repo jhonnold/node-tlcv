@@ -17,7 +17,9 @@
   text-align: center;
   border: none;
   padding: 1px 6px;
-  transition: opacity 0.15s, background 0.15s;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
 
   &:hover {
     opacity: 1;

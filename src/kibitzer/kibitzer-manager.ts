@@ -141,7 +141,7 @@ export class KibitzerManager {
         ready: transport.ready,
         engineName: transport.name(),
         targetPort,
-        targetName: targetPort !== null ? broadcasts.get(targetPort)?.game.site ?? null : null,
+        targetName: targetPort !== null ? (broadcasts.get(targetPort)?.game.site ?? null) : null,
       };
     });
   }
