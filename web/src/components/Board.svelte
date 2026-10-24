@@ -85,10 +85,7 @@
     void theme.pieceSet;
     untrack(() => board?.position(fen, false));
   });
-  $effect(() => {
-    void lastMove;
-    untrack(paintHighlight);
-  });
+  $effect(paintHighlight); // tracks lastMove only
 </script>
 
 <div

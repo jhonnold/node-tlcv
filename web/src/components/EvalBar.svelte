@@ -16,9 +16,8 @@
 </script>
 
 {#if orientation === 'vertical'}
-  <div class="bar vertical" class:bordered role="img" aria-label={aria} style:width="{thickness}px">
-    <div class={flipped ? 'w' : 'b'} style:height="{flipped ? whitePct : 100 - whitePct}%"></div>
-    <div class="{flipped ? 'b' : 'w'} fill"></div>
+  <div class="bar vertical" class:flipped class:bordered role="img" aria-label={aria} style:width="{thickness}px">
+    <div class="w" style:height="{whitePct}%"></div>
   </div>
 {:else}
   <div class="bar horizontal" class:bordered role="img" aria-label={aria} style:height="{thickness}px">
@@ -36,26 +35,21 @@
   .bordered {
     border: 1px solid var(--line);
   }
+  /* White fills from its own side: the bottom, or the top when flipped. */
   .vertical {
-    flex-direction: column;
+    flex-direction: column-reverse;
     align-self: stretch;
+  }
+  .vertical.flipped {
+    flex-direction: column;
   }
   .horizontal {
     width: 100%;
   }
   .w {
     background: var(--evalW);
-  }
-  .b {
-    background: var(--evalB);
-  }
-  .w,
-  .b {
     transition:
       height 0.3s,
       width 0.3s;
-  }
-  .fill {
-    flex: 1;
   }
 </style>

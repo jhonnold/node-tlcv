@@ -1,7 +1,7 @@
 import { createContext } from 'svelte';
 import { io, type Socket } from 'socket.io-client';
 import type { BroadcastDelta, ColorCode, SerializedBroadcast, StoredGameMeta } from '$shared/types';
-import type { ColorName } from '$shared/colors';
+import { colorName, otherColor } from '$shared/colors';
 import { theme } from './theme/theme.svelte';
 import { KEYS, readString } from './storage';
 import { START_FEN } from './fen';
@@ -30,20 +30,27 @@ const EDITABLE = ['INPUT', 'TEXTAREA', 'SELECT']; // array, not Set (lint)
 
 export class GameStore {
   #live = $state.raw<GameData | null>(null);
-  #replay = $state.raw<StoredGameMeta | null>(null);
+  #replay = $state.raw<{ meta: StoredGameMeta; number: number } | null>(null);
   #socket: Socket | null = null;
 
   chat = $state.raw<string[]>([]);
   connected = $state(false);
   cursor = $state<number | null>(null); // null follows the latest position
   now = $state(Date.now());
-  // Changes only through loadReplay() and exitReplay().
-  replayNumber = $state<number | null>(null);
 
-  live = $derived(this.#live); // the live broadcast even during a replay (spectators, menu)
+  /** The live broadcast even during a replay (spectators, menu). */
+  get live(): GameData | null {
+    return this.#live;
+  }
+  get replayMeta(): StoredGameMeta | null {
+    return this.#replay?.meta ?? null;
+  }
+  get replayNumber(): number | null {
+    return this.#replay?.number ?? null;
+  }
+
   isReplay = $derived(this.#replay !== null);
-  replayMeta = $derived(this.#replay);
-  data = $derived(this.#replay ? metaToGameData(this.#replay) : this.#live);
+  data = $derived(this.#replay ? metaToGameData(this.#replay.meta) : this.#live);
   game = $derived(this.data?.game ?? null);
   moves = $derived(this.game?.moves ?? []);
   length = $derived(this.moves.length);
@@ -58,7 +65,11 @@ export class GameStore {
   sideToMove = $derived<ColorCode>(this.fen.split(' ')[1] === 'b' ? 'b' : 'w');
   label = $derived(positionLabel(this.moves, this.index, this.following));
   clocks = $derived(this.game ? liveClocks(this.game, this.now) : null);
-  #thinkMs = $derived(this.following && this.clocks ? (this.clocks.white.thinkMs ?? this.clocks.black.thinkMs) : null);
+  // Whole seconds (all the engine cards show), so the 250 ms tick doesn't rebuild them three times in four.
+  #thinkMs = $derived.by(() => {
+    const ms = this.following && this.clocks ? (this.clocks.white.thinkMs ?? this.clocks.black.thinkMs) : null;
+    return ms == null ? null : Math.floor(ms / 1000) * 1000;
+  });
   engines = $derived(
     this.game ? engineViews(this.game, this.index, this.following, this.sideToMove, this.#thinkMs) : null,
   );
@@ -74,15 +85,13 @@ export class GameStore {
   evalScore = $derived.by(() => {
     const e = this.engines;
     if (!e) return null;
-    const mine = this.sideToMove === 'w' ? e.white : e.black;
-    const theirs = this.sideToMove === 'w' ? e.black : e.white;
-    return mine.scoreValue ?? theirs.scoreValue;
+    return e[colorName(this.sideToMove)].scoreValue ?? e[colorName(otherColor(this.sideToMove))].scoreValue;
   });
   players = $derived.by(() => {
     const { game, engines, clocks, moves, index, sideToMove, following } = this;
     if (!game || !engines) return null;
     const view = (c: ColorCode): PlayerView => {
-      const side: ColorName = c === 'w' ? 'white' : 'black';
+      const side = colorName(c);
       const live = following ? (clocks?.[side] ?? null) : null;
       const e = engines[side];
       return {
@@ -110,26 +119,19 @@ export class GameStore {
   next = (): void => this.goTo(this.index + 1);
   latest = (): void => this.goTo(this.length);
 
+  #keys: Record<string, () => void> = {
+    ArrowLeft: this.prev,
+    ArrowRight: this.next,
+    ArrowUp: this.first,
+    ArrowDown: this.latest,
+  };
+
   // Alt, Ctrl and Meta chords are ignored (one check covers all four arrow keys).
   onKeydown = (e: KeyboardEvent): void => {
     const el = document.activeElement;
     if (el && (EDITABLE.includes(el.tagName) || (el instanceof HTMLElement && el.isContentEditable))) return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
-    let action: (() => void) | null = null;
-    switch (e.key) {
-      case 'ArrowLeft':
-        action = this.prev;
-        break;
-      case 'ArrowRight':
-        action = this.next;
-        break;
-      case 'ArrowUp':
-        action = this.first;
-        break;
-      case 'ArrowDown':
-        action = this.latest;
-        break;
-    }
+    const action = this.#keys[e.key];
     if (!action) return;
     e.preventDefault();
     action();
@@ -188,14 +190,12 @@ export class GameStore {
   // ---- replay ---------------------------------------------------------------
 
   loadReplay(meta: StoredGameMeta, gameNumber: number): void {
-    this.#replay = meta;
-    this.replayNumber = gameNumber;
+    this.#replay = { meta, number: gameNumber };
     this.cursor = 0;
   }
 
   exitReplay(): void {
     this.#replay = null;
-    this.replayNumber = null;
     this.cursor = null;
   }
 }

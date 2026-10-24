@@ -1,5 +1,5 @@
 import type { ColorCode, KibitzerMeta, MoveMetaData, SerializedGame, SerializedKibitzerLiveData } from '$shared/types';
-import { otherColor } from '$shared/colors';
+import { colorName, otherColor } from '$shared/colors';
 import { DASH, formatDuration, formatNodes, formatNps, formatScore, npsSeconds } from './format';
 import { EMPTY_PV, pvParts } from './pv';
 import type { PvParts } from './pv';
@@ -20,8 +20,6 @@ export type EngineView = {
 };
 export type EngineViews = { white: EngineView; black: EngineView; kibitzer: EngineView | null };
 
-const roleOf = (c: ColorCode): 'white' | 'black' => (c === 'w' ? 'white' : 'black');
-
 function empty(role: EngineRole, name: string, status = ''): EngineView {
   return {
     role,
@@ -40,7 +38,7 @@ function empty(role: EngineRole, name: string, status = ''): EngineView {
 
 /** A finished search (player-info.ts:39-53). Book moves have no depth and render as empty. */
 function fromMeta(game: SerializedGame, color: ColorCode, meta: MoveMetaData | undefined, skip: 0 | 1): EngineView {
-  const role = roleOf(color);
+  const role = colorName(color);
   if (!meta || meta.color !== color || meta.depth == null) return empty(role, game[role].name);
   const secs = npsSeconds(meta);
   const pv = pvParts(meta.pv, meta.pvMoveNumber ?? meta.number, meta.color, skip);
@@ -62,7 +60,7 @@ function fromMeta(game: SerializedGame, color: ColorCode, meta: MoveMetaData | u
 /** The search in progress (player-info.ts:27-37). */
 function fromLive(game: SerializedGame, thinkMs: number | null): EngineView {
   const ld = game.liveData;
-  const role = roleOf(ld.color);
+  const role = colorName(ld.color);
   const name = game[role].name;
   if (ld.depth <= 0) return empty(role, name, 'Thinking…');
   return {

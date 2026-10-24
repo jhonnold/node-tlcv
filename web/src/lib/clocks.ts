@@ -1,4 +1,5 @@
 import type { ColorCode, MoveMetaData, SerializedGame } from '$shared/types';
+import { colorName, otherColor } from '$shared/colors';
 import type { ColorName } from '$shared/colors';
 
 export type ClockState = { remainingMs: number; thinkMs: number | null };
@@ -6,8 +7,8 @@ export type ClockState = { remainingMs: number; thinkMs: number | null };
 // The server stamps clocks as they tick (src/game-service.ts:314-324, :397): the side to move's
 // startTime is set when the opponent moves, and the waiting side has already used up its whole last think.
 export function liveClocks(game: SerializedGame, now: number): Record<ColorName, ClockState> {
-  const stm: ColorName = game.stm === 'w' ? 'white' : 'black';
-  const other: ColorName = stm === 'white' ? 'black' : 'white';
+  const stm = colorName(game.stm);
+  const other = colorName(otherColor(game.stm));
   const mover = game[stm];
   const waiter = game[other];
   const thinkMs = mover.startTime > 0 ? Math.max(0, now - mover.startTime) : null;
