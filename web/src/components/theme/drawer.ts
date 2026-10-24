@@ -57,7 +57,7 @@ export function toInputHex(v: string): string {
   return c ? rgbaToString({ ...c, a: '' }) : '#000000';
 }
 
-export function mixHex(a: string, b: string, w: number): string | null {
+function mixHex(a: string, b: string, w: number): string | null {
   const x = parseColor(a);
   const y = parseColor(b);
   if (!x || !y) return null;
@@ -76,7 +76,7 @@ function luminance(hex: string): number | null {
 }
 
 /** WCAG 2 contrast ratio (1–21), or null if either colour is not hex. */
-export function contrastRatio(a: string, b: string): number | null {
+function contrastRatio(a: string, b: string): number | null {
   const x = luminance(a);
   const y = luminance(b);
   if (x === null || y === null) return null;

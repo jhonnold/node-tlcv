@@ -144,15 +144,15 @@
               <span id="squares-label">Squares</span>
               <div class="swatches" role="radiogroup" aria-labelledby="squares-label">
                 {#each PALETTE_IDS as id, i (id)}
-                  {@const c = BOARD_PALETTES[id].colors}
+                  {@const p = BOARD_PALETTES[id]}
                   <button
                     type="button"
                     role="radio"
                     aria-checked={theme.palette === id}
                     tabindex={theme.palette === id ? 0 : -1}
-                    aria-label="{BOARD_PALETTES[id].label} squares"
-                    title="{BOARD_PALETTES[id].label} squares"
-                    style:background="linear-gradient(135deg, {c.boardLight} 50%, {c.boardDark} 50%)"
+                    aria-label="{p.label} squares"
+                    title="{p.label} squares"
+                    style:background="linear-gradient(135deg, {p.colors.boardLight} 50%, {p.colors.boardDark} 50%)"
                     onclick={() => setBoardPalette(id)}
                     onkeydown={(e) => rovingKeydown(e, i, PALETTE_IDS.length, (j) => setBoardPalette(PALETTE_IDS[j]))}
                   ></button>
@@ -205,8 +205,6 @@
     background: var(--surface);
     color: var(--text);
     font-family: var(--fontUi);
-  }
-  dialog {
     transform: translateX(100%);
     transition:
       transform 200ms ease-out,
@@ -430,12 +428,8 @@
   @media (max-width: 767px) {
     dialog {
       width: 100%;
-      max-width: 100%;
       border-left: 0;
       transform: translateY(100%);
-    }
-    dialog[open] {
-      transform: none;
     }
     @starting-style {
       dialog[open] {
