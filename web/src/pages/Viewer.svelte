@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { getJson, HttpError } from '$lib/http';
   import { navigate } from '$lib/router.svelte';
   import { apiBase } from '$lib/url';
   import type { ViewerSource } from '$lib/url';
   import { GameStore, setGameStore } from '$lib/game.svelte';
   import { loadLatestReplay } from '$lib/replay';
+  import { setPreset, theme } from '$lib/theme/theme.svelte';
+  import { TournamentStore, setTournament } from '$lib/tournament.svelte';
   import { sound, toggleSound } from '$lib/sounds.svelte';
   import type { ArchiveInfo, BroadcastSummary } from '$shared/types';
   import StubHeader from '../components/StubHeader.svelte';
@@ -13,12 +15,21 @@
   import EngineCard from '../components/EngineCard.svelte';
   import EvalBar from '../components/EvalBar.svelte';
   import PlayerBar from '../components/PlayerBar.svelte';
+  import Panel, { type PanelTabs, type TabId } from '../components/panel/Panel.svelte';
 
   const { source }: { source: ViewerSource } = $props();
   let site = $state('');
 
   const game = new GameStore();
   setGameStore(game);
+  const tournament = new TournamentStore(untrack(() => source));
+  setTournament(tournament);
+  // Harness-only: ?tabs=all|noMoves|movesOnly|mobile  &tab=<TabId>  &h=<css height>
+  const q = new URLSearchParams(location.search);
+  const PANEL_SETS: PanelTabs[] = ['all', 'noMoves', 'movesOnly', 'mobile'];
+  const panelTabs: PanelTabs = PANEL_SETS.find((t) => t === q.get('tabs')) ?? 'all';
+  const panelTab = (q.get('tab') ?? undefined) as TabId | undefined;
+  const panelHeight = q.get('h') ?? (panelTabs === 'mobile' ? 'auto' : '760px');
 
   let flipped = $state(false);
   let colWidth = $state(0);
@@ -66,6 +77,7 @@
     return () => {
       ac.abort();
       disconnect();
+      tournament.dispose();
     };
   });
 </script>
@@ -77,6 +89,17 @@
   <p class="meta">
     {site} · {game.isReplay ? 'replay' : game.connected ? 'connected' : 'offline'} · ply {game.index}/{game.length}
   </p>
+  <button type="button" onclick={() => setPreset(theme.base === 'dark' ? 'light' : 'dark')}>Toggle theme</button>
+  <section class="panel-col">
+    <Panel
+      {source}
+      tabs={panelTabs}
+      initialTab={panelTab}
+      height={panelHeight}
+      {flipped}
+      bordered={panelTabs !== 'mobile'}
+    />
+  </section>
   {#if game.engines && game.players}
     <section class="engines">
       <EngineCard engine={game.engines[top]} thumb={80} {flipped} />
@@ -147,6 +170,10 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+  .panel-col {
+    width: 440px;
+    max-width: 100%;
   }
   .board-col {
     flex: 1;
