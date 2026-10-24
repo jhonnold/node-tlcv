@@ -7,6 +7,7 @@
   import { getGameStore } from '$lib/game.svelte';
   import { getTournament } from '$lib/tournament.svelte';
   import type { ViewerSource } from '$lib/url';
+  import ChatTab from './ChatTab.svelte';
   import EnginesTab from './EnginesTab.svelte';
   import InfoTab from './InfoTab.svelte';
   import MovesTab from './MovesTab.svelte';
@@ -95,6 +96,7 @@
   >
     {#if active === 'engines'}<EnginesTab {flipped} />
     {:else if active === 'moves'}<MovesTab {source} scroller={body} />
+    {:else if active === 'chat'}<ChatTab scroller={body} />
     {:else if active === 'info'}<InfoTab {source} />{/if}
   </div>
 </section>
