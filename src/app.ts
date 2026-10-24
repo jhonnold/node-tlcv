@@ -10,10 +10,6 @@ import { logging, httpMetrics } from './util/index.js';
 
 export const app = express();
 
-// embedded js view engine (hardly used)
-app.set('view engine', 'ejs');
-app.set('views', 'build/views');
-
 app.use(logging);
 app.use(httpMetrics);
 app.use(cors());
@@ -22,20 +18,20 @@ app.use(compression());
 
 // TODO: Run static assets through a script for
 // production readiness
-app.use(express.static('build/public'));
+// index.html is only served via sendApp, so the page guards always run.
+app.use(express.static('build/public', { index: false }));
 
 // Serve a folder of PGNs
 app.use('/pgns', express.static(PGNS_ROOT), serveIndex(PGNS_ROOT, { icons: true }));
 
-// GET /
-// GET /:port
-// GET /:port/pgn
-// GET /:port/result-table
+// SPA shell: GET /, GET /:port, GET /archive/:slug
+// JSON API: GET /broadcasts[/…], GET /archives[/…]
+// Legacy text: GET /:port/pgn, GET /:port/result-table
 app.use(routes);
 
-// GET /admin
-// POST /admin/new
-// POST /admin/close
+// SPA shell: GET /admin
+// JSON API: GET|POST|DELETE /admin/broadcasts, /admin/kibitzers, /admin/webhooks,
+//           GET /admin/connection-history, GET /admin/metrics
 app.use('/admin', adminRoutes);
 
 // Just forward to the base route on 404

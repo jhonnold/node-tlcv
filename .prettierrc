@@ -3,12 +3,9 @@
   "trailingComma": "all",
   "semi": true,
   "printWidth": 120,
+  "plugins": ["prettier-plugin-svelte"],
   "overrides": [
-    {
-      "files": "*.ts",
-      "options": {
-        "parser": "typescript"
-      }
-    }
+    { "files": "*.ts", "options": { "parser": "typescript" } },
+    { "files": "*.svelte", "options": { "parser": "svelte" } }
   ]
 }

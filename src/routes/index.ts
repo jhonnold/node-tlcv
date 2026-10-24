@@ -5,7 +5,15 @@ import { getFiles } from '../services/pgn-cache.js';
 import { getMetaFile, getMetaFiles } from '../services/game-meta.js';
 import { pgnUrl } from '../services/pgn-storage.js';
 import { listArchivedTournaments, loadOrReconstructArchive } from '../services/tournament-results.js';
-import type { GameRecord, ParsedResults, StoredTournamentResults } from '../../shared/types.js';
+import type {
+  ArchiveInfo,
+  BroadcastSummary,
+  GameRecord,
+  LobbyBroadcast,
+  ParsedResults,
+  StoredTournamentResults,
+} from '../../shared/types.js';
+import { sendApp } from './spa.js';
 
 interface RequestWithBroadcast extends Request {
   broadcast: Broadcast;
@@ -18,8 +26,13 @@ interface RequestWithArchive extends Request {
 
 const router = Router();
 
+// Slugs are produced by `siteSlug` (slugify with `_`), so a safe slug is lowercase
+// alphanumerics + underscores. Reject anything else to keep the value out of the
+// `pgns/{slug}/...` path (defense against traversal).
+const SAFE_SLUG = /^[a-z0-9_]+$/i;
+
 // Enriches stored game records with on-disk PGN/meta URLs. Shared by the live
-// (`/:port/games/json`) and archive (`/archive/:slug/games/json`) routes. Both
+// (`/broadcasts/:port/games`) and archive (`/archives/:slug/games`) routes. Both
 // filename maps are fetched once up front — a tournament runs to hundreds of games.
 async function enrichGames(slug: string, parsedGames: GameRecord[]): Promise<GameRecord[]> {
   const [pgnFiles, metaFiles] = await Promise.all([getFiles(slug), getMetaFiles(slug)]);
@@ -57,9 +70,52 @@ function sendParsedResults(parsedResults: ParsedResults | null, res: Response): 
   res.status(200).json(parsedResults);
 }
 
-router.get('/', async (_: Request, res: Response): Promise<void> => {
-  const broadcastList = Array.from(broadcasts.values())
-    .map((b) => ({
+type OnMissing = (res: Response) => void;
+const redirectHome: OnMissing = (res) => res.redirect('/');
+const notFound =
+  (what: string): OnMissing =>
+  (res) => {
+    res.status(404).json({ error: `${what} not found` });
+  };
+
+// Page routes redirect home on a miss (unchanged behaviour); API routes answer 404 JSON.
+function withBroadcast(onMissing: OnMissing) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const broadcast = broadcasts.get(parseInt(req.params.port, 10));
+    if (!broadcast) {
+      onMissing(res);
+      return;
+    }
+    (req as RequestWithBroadcast).broadcast = broadcast;
+    next();
+  };
+}
+
+function withArchive(onMissing: OnMissing) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { slug } = req.params;
+    const archive = SAFE_SLUG.test(slug) ? await loadOrReconstructArchive(slug) : null;
+    if (!archive) {
+      onMissing(res);
+      return;
+    }
+    (req as RequestWithArchive).archive = archive;
+    (req as RequestWithArchive).archiveSlug = slug;
+    next();
+  };
+}
+
+function sendPgn(req: Request, res: Response): void {
+  const { broadcast } = req as RequestWithBroadcast;
+  res
+    .status(200)
+    .contentType('text/plain')
+    .send(broadcast.game.instance.pgn({ maxWidth: 80 }));
+}
+
+function lobbyBroadcasts(): LobbyBroadcast[] {
+  return Array.from(broadcasts.values())
+    .map((b): LobbyBroadcast => ({
       port: b.port,
       white: b.game.white.name,
       black: b.game.black.name,
@@ -74,68 +130,27 @@ router.get('/', async (_: Request, res: Response): Promise<void> => {
       viewerCount: b.browserCount,
     }))
     .sort((a, b) => b.viewerCount - a.viewerCount);
+}
 
-  // "Previous Broadcasts": archived tournaments excluding currently-live ones (those
-  // already appear above). listArchivedTournaments() is cached — the disk scan only
-  // re-runs on a live->archived transition (see tournament-results.ts), so this route
-  // does no per-request disk I/O when warm. The liveSlugs filter stays per-request
-  // because the live set changes independently of the cached scan; it's a cheap
-  // in-memory Set lookup over the broadcasts map.
-  const liveSlugs = new Set(Array.from(broadcasts.values()).map((b) => siteSlug(b.game.site)));
-  const archived = (await listArchivedTournaments()).filter((t) => !liveSlugs.has(t.slug));
-
-  res.render('pages/broadcasts', { broadcasts: broadcastList, archived });
-});
+router.get('/', sendApp);
 
 router.get('/broadcasts', (_: Request, res: Response): void => {
-  const broadcastIds = Array.from(broadcasts.keys());
-
-  res.status(200).contentType('application/json').send(JSON.stringify(broadcastIds));
+  res.json(lobbyBroadcasts());
 });
 
-router.use('/:port([0-9]+)', (req: Request, res: Response, next: NextFunction): void => {
-  const port: number = parseInt(req.params.port);
-  const broadcast: Broadcast | undefined = broadcasts.get(port);
+router.use('/broadcasts/:port([0-9]+)', withBroadcast(notFound('Broadcast')));
 
-  if (!broadcast) {
-    res.redirect('/');
-    return;
-  }
-
-  (req as RequestWithBroadcast).broadcast = broadcast;
-  next();
+router.get('/broadcasts/:port([0-9]+)', (req: Request, res: Response): void => {
+  const { port, game } = (req as RequestWithBroadcast).broadcast;
+  res.json({ port, site: game.site, white: game.white.name, black: game.black.name } satisfies BroadcastSummary);
 });
 
-router.get('/:port([0-9]+)', (req: Request, res: Response): void => {
+router.get('/broadcasts/:port([0-9]+)/results', (req: Request, res: Response): void => {
   const { broadcast } = req as RequestWithBroadcast;
-  res.render('pages/index', {
-    game: broadcast.game,
-    port: broadcast.port,
-    archive: false,
-    slug: null,
-    site: broadcast.game.site,
-  });
+  sendParsedResults(broadcast.parsedResults, res);
 });
 
-router.get('/:port([0-9]+)/pgn', (req: Request, res: Response): void => {
-  const { broadcast } = req as RequestWithBroadcast;
-  res
-    .status(200)
-    .contentType('text/plain')
-    .send(broadcast.game.instance.pgn({ maxWidth: 80 }));
-});
-
-router.get('/:port([0-9]+)/result-table', (req: Request, res: Response): void => {
-  const { broadcast } = req as RequestWithBroadcast;
-
-  res.status(200).contentType('text/plain').send(broadcast.results);
-});
-
-router.get('/:port([0-9]+)/result-table/json', (req: Request, res: Response): void => {
-  sendParsedResults((req as RequestWithBroadcast).broadcast.parsedResults, res);
-});
-
-router.get('/:port([0-9]+)/games/json', async (req: Request, res: Response): Promise<void> => {
+router.get('/broadcasts/:port([0-9]+)/games', async (req: Request, res: Response): Promise<void> => {
   const { broadcast } = req as RequestWithBroadcast;
 
   if (!broadcast.parsedGames) {
@@ -149,54 +164,65 @@ router.get('/:port([0-9]+)/games/json', async (req: Request, res: Response): Pro
   res.status(200).json(games);
 });
 
-router.get('/:port([0-9]+)/games/:gameNumber([0-9]+)/meta', async (req: Request, res: Response): Promise<void> => {
-  const { broadcast } = req as RequestWithBroadcast;
-  await sendGameMeta(siteSlug(broadcast.game.site), parseInt(req.params.gameNumber, 10), res);
+router.get(
+  '/broadcasts/:port([0-9]+)/games/:gameNumber([0-9]+)',
+  async (req: Request, res: Response): Promise<void> => {
+    const { broadcast } = req as RequestWithBroadcast;
+    await sendGameMeta(siteSlug(broadcast.game.site), parseInt(req.params.gameNumber, 10), res);
+  },
+);
+
+router.get('/broadcasts/:port([0-9]+)/pgn', sendPgn);
+
+router.get('/archives', async (_: Request, res: Response): Promise<void> => {
+  // "Previous Broadcasts": archived tournaments excluding currently-live ones (those
+  // already appear in the lobby). listArchivedTournaments() is cached — the disk scan only
+  // re-runs on a live->archived transition (see tournament-results.ts), so this route
+  // does no per-request disk I/O when warm. The liveSlugs filter stays per-request
+  // because the live set changes independently of the cached scan; it's a cheap
+  // in-memory Set lookup over the broadcasts map.
+  const liveSlugs = new Set(Array.from(broadcasts.values()).map((b) => siteSlug(b.game.site)));
+  const archived = (await listArchivedTournaments()).filter((t) => !liveSlugs.has(t.slug));
+
+  res.json(archived);
 });
 
-// --- Archive (previous broadcasts) ---
-// Slugs are produced by `siteSlug` (slugify with `_`), so a safe slug is lowercase
-// alphanumerics + underscores. Reject anything else to keep the value out of the
-// `pgns/{slug}/...` path (defense against traversal).
-const SAFE_SLUG = /^[a-z0-9_]+$/i;
+router.use('/archives/:slug', withArchive(notFound('Archive')));
 
-router.use('/archive/:slug', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const { slug } = req.params;
-
-  if (!SAFE_SLUG.test(slug)) {
-    res.redirect('/');
-    return;
-  }
-
-  const archive = await loadOrReconstructArchive(slug);
-  if (!archive) {
-    res.redirect('/');
-    return;
-  }
-
-  (req as RequestWithArchive).archive = archive;
-  (req as RequestWithArchive).archiveSlug = slug;
-  next();
-});
-
-router.get('/archive/:slug', (req: Request, res: Response): void => {
+router.get('/archives/:slug', (req: Request, res: Response): void => {
   const { archive, archiveSlug } = req as RequestWithArchive;
-  res.render('pages/index', { archive: true, slug: archiveSlug, site: archive.site, port: null, game: null });
+  res.json({ site: archive.site, slug: archiveSlug } satisfies ArchiveInfo);
 });
 
-router.get('/archive/:slug/games/json', async (req: Request, res: Response): Promise<void> => {
+router.get('/archives/:slug/results', (req: Request, res: Response): void => {
+  sendParsedResults((req as RequestWithArchive).archive.parsedResults, res);
+});
+
+router.get('/archives/:slug/games', async (req: Request, res: Response): Promise<void> => {
   const { archive, archiveSlug } = req as RequestWithArchive;
   const games = await enrichGames(archiveSlug, archive.parsedGames);
   res.status(200).json(games);
 });
 
-router.get('/archive/:slug/games/:gameNumber([0-9]+)/meta', async (req: Request, res: Response): Promise<void> => {
+router.get('/archives/:slug/games/:gameNumber([0-9]+)', async (req: Request, res: Response): Promise<void> => {
   const { archiveSlug } = req as RequestWithArchive;
   await sendGameMeta(archiveSlug, parseInt(req.params.gameNumber, 10), res);
 });
 
-router.get('/archive/:slug/result-table/json', (req: Request, res: Response): void => {
-  sendParsedResults((req as RequestWithArchive).archive.parsedResults, res);
+router.use('/:port([0-9]+)', withBroadcast(redirectHome));
+
+router.get('/:port([0-9]+)', sendApp);
+
+router.get('/:port([0-9]+)/pgn', sendPgn);
+
+router.get('/:port([0-9]+)/result-table', (req: Request, res: Response): void => {
+  const { broadcast } = req as RequestWithBroadcast;
+
+  res.status(200).contentType('text/plain').send(broadcast.results);
 });
+
+router.use('/archive/:slug', withArchive(redirectHome));
+
+router.get('/archive/:slug', sendApp);
 
 export default router;
