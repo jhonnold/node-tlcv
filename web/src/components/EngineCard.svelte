@@ -3,6 +3,7 @@
   import type { EngineView } from '$lib/engines';
   import { copyFen, EMPTY_FEN } from '$lib/fen';
   import { DASH } from '$lib/format';
+  import { onDestroy } from 'svelte';
 
   type Props = {
     engine: EngineView;
@@ -20,14 +21,22 @@
     { k: 'Time', v: engine.time },
   ]);
   const inline = $derived(
-    [`d${engine.depth}`, engine.nodes, engine.nps === DASH ? DASH : `${engine.nps}/s`, engine.time].join(' · '),
+    [
+      engine.depth === DASH ? DASH : `d${engine.depth}`,
+      engine.nodes,
+      engine.nps === DASH ? DASH : `${engine.nps}/s`,
+      engine.time,
+    ].join(' · '),
   );
 
   let copied = $state(false);
+  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+  onDestroy(() => clearTimeout(copiedTimer));
   async function copy(): Promise<void> {
     if (!engine.pvFen || !(await copyFen(engine.pvFen))) return;
     copied = true;
-    setTimeout(() => (copied = false), 1200);
+    clearTimeout(copiedTimer);
+    copiedTimer = setTimeout(() => (copied = false), 1200);
   }
 </script>
 

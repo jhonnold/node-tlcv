@@ -1,6 +1,6 @@
 import { createContext } from 'svelte';
 import { io, type Socket } from 'socket.io-client';
-import type { BroadcastDelta, ColorCode, SerializedBroadcast, StoredGameMeta } from '$shared/types';
+import type { BroadcastDelta, ColorCode, SerializedBroadcast, SerializedGame, StoredGameMeta } from '$shared/types';
 import { colorName, otherColor } from '$shared/colors';
 import { theme } from './theme/theme.svelte';
 import { KEYS, readString } from './storage';
@@ -11,6 +11,7 @@ import type { GameData } from './delta';
 import { metaToGameData } from './replay';
 import { buildPositions, fenAt, lastMoveAt, positionLabel } from './positions';
 import { liveClocks, lastMoveMs } from './clocks';
+import type { TurnEnd } from './clocks';
 import { arrowSources, buildArrows } from './arrows';
 import type { Arrow } from './arrows';
 import { engineViews } from './engines';
@@ -32,6 +33,8 @@ export class GameStore {
   #live = $state.raw<GameData | null>(null);
   #replay = $state.raw<{ meta: StoredGameMeta; number: number } | null>(null);
   #socket: Socket | null = null;
+  // Keyed by side, set when that side's turn ends. Plain, not state: it always changes together with #live.
+  #turnEnd: Partial<Record<ColorCode, TurnEnd>> = {};
 
   chat = $state.raw<string[]>([]);
   connected = $state(false);
@@ -56,7 +59,9 @@ export class GameStore {
   length = $derived(this.moves.length);
   // Joined string: a retroactive PV patch (new array, same SANs) must not replay the game in chess.js.
   #sans = $derived(this.moves.map((m) => m.move).join(' '));
-  positions = $derived(buildPositions(this.game?.startFen ?? null, this.#sans ? this.#sans.split(' ') : []));
+  // A string, so positions don't rebuild on every delta (the game object changes each time).
+  #startFen = $derived(this.game?.startFen ?? null);
+  positions = $derived(buildPositions(this.#startFen, this.#sans ? this.#sans.split(' ') : []));
   index = $derived(this.cursor === null ? this.length : Math.min(this.cursor, this.length));
   following = $derived(!this.isReplay && this.index === this.length);
   fen = $derived(fenAt(this.positions, this.index, this.game?.fen ?? START_FEN));
@@ -64,7 +69,7 @@ export class GameStore {
   moveMeta = $derived(this.index > 0 ? (this.moves[this.index - 1] ?? null) : null);
   sideToMove = $derived<ColorCode>(this.fen.split(' ')[1] === 'b' ? 'b' : 'w');
   label = $derived(positionLabel(this.moves, this.index, this.following));
-  clocks = $derived(this.game ? liveClocks(this.game, this.now) : null);
+  clocks = $derived(this.game ? liveClocks(this.game, this.now, this.#turnEnd) : null);
   // Whole seconds (all the engine cards show), so the 250 ms tick doesn't rebuild them three times in four.
   #thinkMs = $derived.by(() => {
     const ms = this.following && this.clocks ? (this.clocks.white.thinkMs ?? this.clocks.black.thinkMs) : null;
@@ -152,6 +157,7 @@ export class GameStore {
     });
     socket.on('state', (data: SerializedBroadcast) => {
       const { chat, ...rest } = data;
+      this.#turnEnd = {};
       this.#live = rest;
       this.chat = chat;
       if (!this.#replay) this.cursor = null; // full sync re-follows live, but never disturbs a replay
@@ -160,6 +166,8 @@ export class GameStore {
       const prev = this.#live;
       if (!prev) return;
       const next = applyDelta(prev, delta);
+      if (delta.game?.resetMoves) this.#turnEnd = {};
+      else if (next.game.stm !== prev.game.stm) this.#recordTurnEnd(prev.game, next.game);
       this.#live = next;
       if (this.#replay) return; // merged in the background; no cursor change or sound during a replay
       // A new game arrives as a delta with resetMoves (src/game-service.ts:577,602), not as `state`: re-follow live.
@@ -180,6 +188,15 @@ export class GameStore {
       socket.disconnect();
       this.#socket = null;
       this.connected = false;
+    };
+  }
+
+  /** The side that just finished its turn keeps the clock it had, so the new mover's stale clock can be bounded. */
+  #recordTurnEnd(before: SerializedGame, after: SerializedGame): void {
+    const side = colorName(before.stm);
+    this.#turnEnd[before.stm] = {
+      clockTime: before[side].clockTime,
+      remainingMs: liveClocks(after, 0)[side].remainingMs,
     };
   }
 

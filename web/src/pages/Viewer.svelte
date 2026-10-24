@@ -50,7 +50,12 @@
         if (source.kind === 'live') {
           disconnect = game.connect(source.port);
         } else {
-          return loadLatestReplay(source, ac.signal).then((r) => r && game.loadReplay(r.meta, r.gameNumber));
+          // Its own catch: a failed game fetch leaves the page up, and only the summary 404 goes home.
+          loadLatestReplay(source, ac.signal)
+            .then((r) => r && game.loadReplay(r.meta, r.gameNumber))
+            .catch(() => {
+              // Load failure or abort: the page stays as it is.
+            });
         }
       })
       .catch((e: unknown) => {
