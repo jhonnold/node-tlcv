@@ -5,7 +5,6 @@
 
 <script lang="ts">
   import { getGameStore } from '$lib/game.svelte';
-  import { getTournament } from '$lib/tournament.svelte';
   import { loadReplayGame } from '$lib/replay';
   import type { ViewerSource } from '$lib/url';
   import ChatTab from './ChatTab.svelte';
@@ -28,7 +27,6 @@
   const { source, tabs, initialTab, height = '100%', bordered = true, flipped = false }: Props = $props();
 
   const game = getGameStore();
-  const tournament = getTournament();
   const SETS: Record<PanelTabs, TabId[]> = {
     mobile: ['engines', 'moves', 'chat', 'graphs', 'standings', 'games', 'info'],
     noMoves: ['chat', 'graphs', 'standings', 'games', 'info'],
@@ -93,18 +91,6 @@
   // An exitReplay from outside Panel bumps the store's generation: a Replay pending here then ends at once.
   $effect(() => {
     if (busy !== null && game.replayGen !== mine) busy = null;
-  });
-
-  // A new live game: refresh standings and games once the CT dump has landed.
-  let prevPair = '';
-  let prevLen = -1;
-  $effect(() => {
-    const g = game.live?.game;
-    if (!g) return;
-    const pair = `${g.white.name}|${g.black.name}`;
-    if (prevLen >= 0 && (pair !== prevPair || g.moves.length < prevLen)) tournament.refreshSoon();
-    prevPair = pair;
-    prevLen = g.moves.length;
   });
 </script>
 
