@@ -79,7 +79,7 @@
         if (hadFocus && document.activeElement === document.body) document.getElementById(`${uid}-tab-moves`)?.focus();
       }
     } catch {
-      if (mine === gen) err = `Couldn't load game ${n}.`;
+      if (mine === gen && game.replayGen === gen) err = `Couldn't load game ${n}.`;
     } finally {
       if (mine === gen) busy = null;
     }

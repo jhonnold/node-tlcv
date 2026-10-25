@@ -1,4 +1,4 @@
-import { createContext } from 'svelte';
+import { createContext, untrack } from 'svelte';
 import { io, type Socket } from 'socket.io-client';
 import type { BroadcastDelta, ColorCode, SerializedBroadcast, SerializedGame, StoredGameMeta } from '$shared/types';
 import { colorName, otherColor } from '$shared/colors';
@@ -218,7 +218,7 @@ export class GameStore {
 
   /** Starts a replay generation. Call it before fetching, and pass the result to loadReplay. */
   beginReplay(): number {
-    return ++this.#gen;
+    return untrack(() => ++this.#gen);
   }
 
   /** Applies a replay unless `gen` is given and is no longer the latest. Returns whether it applied. */
@@ -230,7 +230,7 @@ export class GameStore {
   }
 
   exitReplay(): void {
-    this.#gen++;
+    untrack(() => this.#gen++);
     this.#replay = null;
     this.cursor = null;
   }
