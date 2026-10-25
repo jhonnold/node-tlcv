@@ -4,7 +4,7 @@
   import Icon from './Icon.svelte';
   import OpeningLine from './OpeningLine.svelte';
 
-  type Props = { variant: 'desktop' | 'large' | 'tablet' | 'mobile' };
+  type Props = { variant: 'desktop' | 'tablet' | 'mobile' };
   const { variant }: Props = $props();
 
   const game = getGameStore();
@@ -57,10 +57,7 @@
         <button type="button" class="back" onclick={game.latest}>Back to live</button>
       {/if}
     {/if}
-    {#if variant === 'large'}
-      <span class="spacer"></span>
-      <OpeningLine variant="inline" />
-    {:else if variant === 'tablet'}
+    {#if variant === 'tablet'}
       <OpeningLine variant="short" />
     {/if}
   {/if}
@@ -72,8 +69,7 @@
     align-items: center;
     min-width: 0;
   }
-  .nav.desktop,
-  .nav.large {
+  .nav.desktop {
     gap: 12px;
     margin-top: 6px;
   }
@@ -99,10 +95,6 @@
   .desktop .btns button {
     width: 40px;
     height: 36px;
-  }
-  .large .btns button {
-    width: 44px;
-    height: 38px;
   }
   .tablet .btns,
   .mobile .btns {
@@ -160,9 +152,6 @@
     height: 44px;
     padding: 0 16px;
     font-size: 13px;
-  }
-  .spacer {
-    flex: 1;
   }
   .mid {
     flex: 1;

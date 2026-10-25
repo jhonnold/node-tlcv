@@ -2,7 +2,6 @@
   import BrandMark from '../BrandMark.svelte';
   import Icon from './Icon.svelte';
   import ModeLine from './ModeLine.svelte';
-  import { plural } from '../lobby/lobby';
   import { getView, gameText } from '$lib/view.svelte';
   import type { Breakpoint, HeaderInfo } from '$lib/view.svelte';
   import { sound, toggleSound } from '$lib/sounds.svelte';
@@ -17,7 +16,7 @@
 
 <header class="hdr {bp}">
   <a class="brand" href="/">
-    <BrandMark size={bp === 'large' ? 26 : 24} />
+    <BrandMark size={24} />
     <span>CCRL Live</span>
   </a>
   <span class="divider" aria-hidden="true"></span>
@@ -37,9 +36,6 @@
       <span class="watching"><Icon name="eye" size={16} />{info.watching} watching</span>
     {/if}
     <span class="spacer"></span>
-    {#if bp === 'large' && info.others > 0}
-      <a class="others" href="/">{plural(info.others, 'other broadcast')}</a>
-    {/if}
   {/if}
   <nav aria-label="View options">
     <button type="button" class="icon" aria-label="Focus mode" title="Focus mode" onclick={() => (view.focus = true)}>
@@ -81,11 +77,6 @@
     gap: 16px;
     padding: 0 20px;
   }
-  .hdr.large {
-    height: 64px;
-    gap: 18px;
-    padding: 0 24px;
-  }
   .hdr.tablet {
     gap: 12px;
     padding: 0 8px 0 16px;
@@ -103,9 +94,6 @@
   .desktop .brand {
     letter-spacing: -0.01em;
   }
-  .large .brand {
-    font-size: 17px;
-  }
   .tablet .brand {
     gap: 8px;
     font-size: 15px;
@@ -115,9 +103,6 @@
     height: 24px;
     background: var(--line);
     flex-shrink: 0;
-  }
-  .large .divider {
-    height: 28px;
   }
   .titles {
     display: flex;
@@ -134,9 +119,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .large .site {
-    font-size: 15px;
   }
   .sub {
     font-size: 12px;
@@ -161,9 +143,6 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .large .badge {
-    height: 26px;
-  }
   .badge.live {
     background: var(--liveBg);
     /* Theme-invariant: text on the LIVE badge. */
@@ -183,18 +162,6 @@
   }
   .spacer {
     flex: 1;
-  }
-  .others {
-    display: inline-flex;
-    align-items: center;
-    height: 36px;
-    padding: 0 14px;
-    border: 1px solid var(--line);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    text-decoration: none;
-    white-space: nowrap;
   }
   nav {
     display: flex;

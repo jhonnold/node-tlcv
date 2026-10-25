@@ -5,7 +5,7 @@ import type { EngineView } from './engines';
 import type { GameStore } from './game.svelte';
 import { KEYS, readNumber, writeNumber } from './storage';
 
-export type Breakpoint = 'mobile' | 'tablet' | 'desktop' | 'large';
+export type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 export type Side = 'white' | 'black';
 /** Everything the headers show, built once in Viewer. */
 export type HeaderInfo = {
@@ -13,7 +13,6 @@ export type HeaderInfo = {
   game: number | null;
   archive: boolean; // archive page or a replay: ARCHIVE badge, no LIVE / watching
   watching: number;
-  others: number; // other live broadcasts (large desktop link)
 };
 
 export const MIN_BOARD = 320;
@@ -26,16 +25,14 @@ export function clampBoard(px: number, max: number): number {
 export class ViewState {
   #tablet = new MediaQuery('min-width: 768px');
   #desktop = new MediaQuery('min-width: 1280px');
-  #large = new MediaQuery('min-width: 1800px');
 
   flipped = $state(false);
   focus = $state(false);
   themeOpen = $state(false);
-  /** Board px chosen with the resize handle (desktop/large only); null = fit automatically. */
+  /** Board px chosen with the resize handle (desktop only); null = fit automatically. */
   boardPref = $state<number | null>(readNumber(KEYS.boardWidth));
 
   get bp(): Breakpoint {
-    if (this.#large.current) return 'large';
     if (this.#desktop.current) return 'desktop';
     return this.#tablet.current ? 'tablet' : 'mobile';
   }

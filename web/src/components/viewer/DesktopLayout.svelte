@@ -13,54 +13,37 @@
   import OpeningLine from './OpeningLine.svelte';
   import ResizeHandle from './ResizeHandle.svelte';
 
-  type Props = { source: ViewerSource; large: boolean };
-  const { source, large }: Props = $props();
+  type Props = { source: ViewerSource };
+  const { source }: Props = $props();
 
   const game = getGameStore();
   const view = getView();
   const archive = $derived(source.kind === 'archive');
   const kib = $derived(kibitzerView(game));
 
-  // Main.dc.html (desktop) and LargeDesktop.dc.html (large). `below` = board-column height besides the board:
-  // player bars 2×56 + gaps 4×8 + nav row (6 + 36 | 38) + desktop's opening row (18).
-  const G = $derived(
-    large
-      ? {
-          header: 64,
-          pad: 24,
-          gap: 24,
-          engines: 400,
-          moves: 272,
-          eval: 14,
-          below: 180,
-          panelAuto: 346,
-          panelMin: 280,
-          thumb: 112,
-        }
-      : {
-          header: 56,
-          pad: 20,
-          gap: 20,
-          engines: 340,
-          moves: 0,
-          eval: 12,
-          below: 204,
-          panelAuto: 440,
-          panelMin: 320,
-          thumb: 80,
-        },
-  );
+  // Main.dc.html. `below` = board-column height besides the board:
+  // player bars 2×56 + gaps 4×8 + nav row (6 + 36) + opening row (18).
+  const G = {
+    header: 56,
+    pad: 20,
+    gap: 20,
+    engines: 340,
+    eval: 12,
+    below: 204,
+    panelAuto: 440,
+    panelMin: 320,
+    thumb: 80,
+  };
   let mainW = $state(0); // bind:clientWidth on <main> (ResizeObserver), includes padding
-  const free = $derived(mainW - 2 * G.pad - G.engines - G.moves - G.eval - 8 - G.gap * (large ? 3 : 2));
+  const free = $derived(mainW - 2 * G.pad - G.engines - G.eval - 8 - 2 * G.gap);
   const fitH = $derived((innerHeight.current ?? 0) - G.header - 2 * G.pad - G.below);
   const max = $derived(Math.max(MIN_BOARD, floor8(Math.min(fitH, free - G.panelMin))));
   const size = $derived(clampBoard(view.boardPref ?? Math.min(fitH, free - G.panelAuto), max));
-  const cols = $derived(`${G.engines}px ${size + G.eval + 8}px ${large ? `${G.moves}px ` : ''}minmax(0, 1fr)`);
+  const cols = $derived(`${G.engines}px ${size + G.eval + 8}px minmax(0, 1fr)`);
 </script>
 
 <main
   class="desk"
-  class:large
   bind:clientWidth={mainW}
   style:padding="{G.pad}px"
   style:gap="{G.gap}px"
@@ -79,12 +62,7 @@
         {#if game.engines}<EngineCard engine={game.engines[view.bottom]} thumb={G.thumb} flipped={view.flipped} />{/if}
       </div>
     </div>
-    <ArrowLegend
-      white={game.game?.white.name ?? ''}
-      black={game.game?.black.name ?? ''}
-      kibitzer={kib?.name ?? null}
-      {large}
-    />
+    <ArrowLegend white={game.game?.white.name ?? ''} black={game.game?.black.name ?? ''} kibitzer={kib?.name ?? null} />
   </section>
 
   <section class="board-col" aria-label="Board">
@@ -103,8 +81,8 @@
       {/if}
     </div>
     {#if game.players}<PlayerBar side={view.bottom} {...game.players[view.bottom]} />{/if}
-    <NavControls variant={large ? 'large' : 'desktop'} />
-    {#if !large}<OpeningLine variant="row" />{/if}
+    <NavControls variant="desktop" />
+    <OpeningLine variant="row" />
     <div class="handle-slot">
       <ResizeHandle
         {size}
@@ -116,18 +94,9 @@
     </div>
   </section>
 
-  {#if large}
-    <section class="panel" aria-label="Moves">
-      <Panel {source} tabs="movesOnly" flipped={view.flipped} />
-    </section>
-    <section class="panel" aria-label="Chat and tournament">
-      <Panel {source} tabs="noMoves" initialTab={archive ? 'games' : 'chat'} flipped={view.flipped} />
-    </section>
-  {:else}
-    <div class="panel">
-      <Panel {source} tabs="all" initialTab={archive ? 'games' : 'moves'} flipped={view.flipped} />
-    </div>
-  {/if}
+  <div class="panel">
+    <Panel {source} tabs="all" initialTab={archive ? 'games' : 'moves'} flipped={view.flipped} />
+  </div>
 </main>
 
 <style>
@@ -154,9 +123,6 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
     row-gap: 12px;
-  }
-  .desk.large .cards {
-    row-gap: 16px;
   }
   .top {
     grid-row: 1;
@@ -186,8 +152,5 @@
     bottom: 0;
     width: 8px;
     right: -14px;
-  }
-  .desk.large .handle-slot {
-    right: -16px;
   }
 </style>

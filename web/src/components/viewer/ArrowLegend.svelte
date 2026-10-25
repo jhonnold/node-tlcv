@@ -1,9 +1,9 @@
 <script lang="ts">
-  type Props = { white: string; black: string; kibitzer: string | null; large?: boolean };
-  const { white, black, kibitzer, large = false }: Props = $props();
+  type Props = { white: string; black: string; kibitzer: string | null };
+  const { white, black, kibitzer }: Props = $props();
 </script>
 
-<div class="legend" class:large>
+<div class="legend">
   <span>Arrows</span>
   <span class="item"><span class="sw white"></span>{white}</span>
   <span class="item"><span class="sw black"></span>{black}</span>
@@ -22,10 +22,6 @@
     gap: 6px 14px;
     font-size: 12px;
     color: var(--muted);
-  }
-  .legend.large {
-    height: 38px;
-    gap: 6px 16px;
   }
   .item {
     display: inline-flex;
