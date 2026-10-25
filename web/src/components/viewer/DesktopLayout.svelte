@@ -4,7 +4,7 @@
   import { clampBoard, floor8, getView, kibitzerView, MIN_BOARD } from '$lib/view.svelte';
   import type { ViewerSource } from '$lib/url';
   import Board from '../Board.svelte';
-  import EngineCard from '../EngineCard.svelte';
+  import EngineCard, { PV_LINE, PV_LINES } from '../EngineCard.svelte';
   import EvalBar from '../EvalBar.svelte';
   import PlayerBar from '../PlayerBar.svelte';
   import Panel from '../panel/Panel.svelte';
@@ -26,12 +26,16 @@
     header: 56,
     pad: 20,
     gap: 20,
-    engines: 340,
+    engines: 400,
     eval: 12,
     below: 204,
-    panelAuto: 440,
-    panelMin: 320,
-    thumb: 80,
+    panelAuto: 380,
+    panelMin: 368,
+    thumb: 136,
+    bare: 122, // EngineCard height without PV board or PV lines
+    caption: 18, // "PV end" label under the PV board
+    bars: 128, // .cards height besides the board: player bars 2×56 + gaps 2×8
+    rowGap: 12, // between .cards rows
   };
   let mainW = $state(0); // bind:clientWidth on <main> (ResizeObserver), includes padding
   const free = $derived(mainW - 2 * G.pad - G.engines - G.eval - 8 - 2 * G.gap);
@@ -39,6 +43,15 @@
   const max = $derived(Math.max(MIN_BOARD, floor8(Math.min(fitH, free - G.panelMin))));
   const size = $derived(clampBoard(view.boardPref ?? Math.min(fitH, free - G.panelAuto), max));
   const cols = $derived(`${G.engines}px ${size + G.eval + 8}px minmax(0, 1fr)`);
+  // The cards share the board column's height (board + bars, less the .cards grid's 2 row gaps). Shrink
+  // their PV boards so two cards, or three with a kibitzer, end level with the bottom player bar; below
+  // 64 px drop them, then show 2 PV lines, then 1. Depends only on `size` (no DOM measurement), so
+  // dragging the board cannot feed back.
+  const n = $derived(kib ? 3 : 2);
+  const each = $derived((size + G.bars - 2 * G.rowGap) / n);
+  const fit = $derived(floor8(each - G.bare - G.caption));
+  const thumb = $derived(fit < 64 ? 0 : Math.min(G.thumb, fit));
+  const lines = $derived(thumb ? undefined : Math.max(1, Math.min(PV_LINES, Math.floor((each - G.bare) / PV_LINE))));
 </script>
 
 <main
@@ -47,18 +60,17 @@
   style:padding="{G.pad}px"
   style:gap="{G.gap}px"
   style:grid-template-columns={cols}
-  style:--board="{size}px"
 >
   <section class="engines" aria-label="Engine analysis">
-    <div class="cards">
+    <div class="cards" style:min-height="{size + G.bars}px" style:row-gap="{G.rowGap}px">
       <div class="top">
-        {#if game.engines}<EngineCard engine={game.engines[view.top]} thumb={G.thumb} flipped={view.flipped} />{/if}
+        {#if game.engines}<EngineCard engine={game.engines[view.top]} {thumb} {lines} flipped={view.flipped} />{/if}
       </div>
       {#if kib}
-        <div class="mid"><EngineCard engine={kib} thumb={G.thumb} flipped={view.flipped} /></div>
+        <div class="mid"><EngineCard engine={kib} {thumb} {lines} flipped={view.flipped} /></div>
       {/if}
       <div class="bottom">
-        {#if game.engines}<EngineCard engine={game.engines[view.bottom]} thumb={G.thumb} flipped={view.flipped} />{/if}
+        {#if game.engines}<EngineCard engine={game.engines[view.bottom]} {thumb} {lines} flipped={view.flipped} />{/if}
       </div>
     </div>
     <ArrowLegend white={game.game?.white.name ?? ''} black={game.game?.black.name ?? ''} kibitzer={kib?.name ?? null} />
@@ -117,11 +129,10 @@
     gap: 14px;
   }
   .cards {
-    min-height: calc(var(--board) + 128px);
+    flex-shrink: 0; /* too short a window scrolls the page instead of overlapping the cards */
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-    row-gap: 12px;
   }
   .top {
     grid-row: 1;

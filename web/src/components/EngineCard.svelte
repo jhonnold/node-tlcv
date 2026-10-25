@@ -1,3 +1,8 @@
+<script module lang="ts">
+  export const PV_LINE = 20; // px per PV line
+  export const PV_LINES = 3; // default PV lines
+</script>
+
 <script lang="ts">
   import Board from './Board.svelte';
   import type { EngineView } from '$lib/engines';
@@ -10,10 +15,15 @@
     compact?: boolean;
     thumb?: number;
     flipped?: boolean;
+    lines?: number;
   };
-  const { engine, compact = false, thumb = 0, flipped = false }: Props = $props();
+  const { engine, compact = false, thumb = 0, flipped = false, lines }: Props = $props();
 
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
+  // PV lines: `lines`, else PV_LINES, or as many as fit beside the PV-end board. The PV box keeps this
+  // height, so the card never grows or shrinks with the PV.
+  const pvLines = $derived(lines ?? Math.max(PV_LINES, Math.floor(thumb / PV_LINE)));
+  const pvText = $derived([engine.pv.pre, engine.pv.first, engine.pv.rest].filter(Boolean).join(' '));
   const stats = $derived([
     { k: 'Depth', v: engine.depth },
     { k: 'Nodes', v: engine.nodes },
@@ -43,6 +53,7 @@
 <article
   class="card {engine.role}"
   class:compact
+  class:noboard={!thumb}
   aria-label="{ROLE[engine.role]} engine {engine.name}, score {engine.score}"
 >
   <div class="head">
@@ -68,7 +79,7 @@
     {/if}
   </div>
   <div class="pvrow">
-    <p class="pv">
+    <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={pvLines} title={pvText}>
       {#if engine.pv.pre}<span class="pre">{engine.pv.pre}</span>{/if}
       <strong>{engine.pv.first}</strong>
       <span class="rest">{engine.pv.rest}</span>
@@ -119,6 +130,7 @@
   .card.compact {
     gap: 8px;
     padding: 12px;
+    container-type: inline-size;
   }
   .head {
     display: flex;
@@ -176,6 +188,12 @@
     font-size: 12px;
     color: var(--muted);
   }
+  /* Narrow compact cards (tablet) always put the stats under the score, so "—" → data never re-wraps. */
+  @container (width < 320px) {
+    .inline {
+      flex-basis: 100%;
+    }
+  }
   dl {
     flex: 1;
     display: grid;
@@ -216,8 +234,23 @@
     margin: 0;
     font-family: var(--fontMono);
     font-size: 12.5px;
-    line-height: 1.6;
     color: var(--muted);
+    line-height: var(--pv-line);
+    height: calc(var(--pv-lines) * var(--pv-line));
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--pv-lines);
+    line-clamp: var(--pv-lines);
+  }
+  /* Narrow cards with no PV board (tablet side cards, < 320 px content) reserve 2 PV lines, so the column
+     stays no taller than its board. Cards beside a PV board keep their lines. */
+  @container (width < 320px) {
+    .noboard .pv {
+      height: calc(2 * var(--pv-line));
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
   }
   .pre {
     color: var(--faint);
