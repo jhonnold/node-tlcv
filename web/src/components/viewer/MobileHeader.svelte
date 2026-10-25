@@ -135,7 +135,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 4px 0 14px;
+    padding: 0 4px 0 12px;
     border-bottom: 1px solid var(--line);
     background: var(--surface);
   }

@@ -79,7 +79,6 @@
   }
   .hdr.tablet {
     gap: 12px;
-    padding: 0 8px 0 16px;
   }
   .brand {
     display: flex;
@@ -90,13 +89,6 @@
     flex-shrink: 0;
     font-size: 16px;
     font-weight: 700;
-  }
-  .desktop .brand {
-    letter-spacing: -0.01em;
-  }
-  .tablet .brand {
-    gap: 8px;
-    font-size: 15px;
   }
   .divider {
     width: 1px;
