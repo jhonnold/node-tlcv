@@ -6,6 +6,8 @@ synthesis: done
 migrated_from: library/imports/plans/2026-05-24-node-tlcv-mobile-card-overflow-fix.md
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # node-tlcv — stop home cards overflowing the viewport on mobile
 
 > Internal plan, authored and executed on 2026-05-24.

@@ -5,6 +5,8 @@ author: Claude Agent (direction + approval by Jay Honnold)
 synthesis: done
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # node-tlcv — clean accessible names for broadcast cards, hide decorative boards
 
 > Internal plan, authored and executed on 2026-05-24.

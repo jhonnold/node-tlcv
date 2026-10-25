@@ -5,6 +5,8 @@ source_type: plan
 synthesis: done
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # node-tlcv: Focus View Engine Info (PR #174)
 
 Plan and implementation record for adding engine names, evaluations, and clocks to
