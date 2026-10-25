@@ -1,8 +1,18 @@
-import { HttpError } from '$lib/http';
+import { DASH } from '$lib/format';
+import { del, HttpError, postJson } from '$lib/http';
 import type { KibitzerStatus, WebhookStatus } from '$shared/types';
 
-/** Runs one mutation, then refetches every list (replaces admin.ts:4-11 submitAndReload). Resolves to success. */
+/** Runs one mutation, then refetches every list. Resolves to success. */
 export type Mutate = (label: string, action: () => Promise<void>) => Promise<boolean>;
+
+/** Adds an entry, or replaces entry `id`: the API has no PUT, so an edit is delete-then-add. */
+export const saveEntry = (mutate: Mutate, base: string, noun: string, id: string | null, body: unknown) =>
+  mutate(id ? `Saving the ${noun}` : `Adding the ${noun}`, async () => {
+    if (id) await del(`${base}/${encodeURIComponent(id)}`);
+    await postJson(base, body);
+  });
+export const removeEntry = (mutate: Mutate, base: string, noun: string, id: string) =>
+  mutate(`Removing the ${noun}`, () => del(`${base}/${encodeURIComponent(id)}`));
 
 export function describeError(label: string, e: unknown): string {
   if (!(e instanceof HttpError)) return `${label} failed: network error.`;
@@ -33,9 +43,8 @@ export const blankKibitzer = (): KibitzerForm => ({
   port: 22,
   username: '',
   privateKeyPath: '',
-}); // admin.ts:30-45
+});
 export const kibitzerFromStatus = (k: KibitzerStatus): KibitzerForm => ({
-  // admin.ts:150-165
   type: k.type === 'ssh' ? 'ssh' : 'local',
   enginePath: k.enginePath ?? '',
   priority: k.priority,
@@ -47,7 +56,6 @@ export const kibitzerFromStatus = (k: KibitzerStatus): KibitzerForm => ({
   privateKeyPath: k.privateKeyPath ?? '',
 });
 export function kibitzerBody(f: KibitzerForm): Record<string, unknown> {
-  // admin.ts:46-66
   const body: Record<string, unknown> = { type: f.type, priority: f.priority, threads: f.threads, hash: f.hash };
   const enginePath = f.enginePath.trim();
   if (enginePath) body.enginePath = enginePath;
@@ -75,9 +83,8 @@ export const blankWebhook = (): WebhookForm => ({
   ports: '',
   started: true,
   finished: true,
-}); // admin.ts:70-81
+});
 export const webhookFromStatus = (w: WebhookStatus): WebhookForm => ({
-  // admin.ts:174-186
   type: 'discord',
   name: w.name,
   url: w.url,
@@ -86,14 +93,13 @@ export const webhookFromStatus = (w: WebhookStatus): WebhookForm => ({
   finished: w.events.includes('game-finished'),
 });
 export function webhookBody(f: WebhookForm): Record<string, unknown> {
-  // admin.ts:83-97
   const events: string[] = [];
   if (f.started) events.push('game-started');
   if (f.finished) events.push('game-finished');
   return { type: f.type, name: f.name.trim(), url: f.url.trim(), ports: f.ports.trim(), events };
 }
 
-export const maskUrl = (url: string): string => `••••${url.slice(-8)}`; // admin.ejs: '••••' + w.url.slice(-8)
+export const maskUrl = (url: string): string => `••••${url.slice(-8)}`;
 export const typeLabel = (t: string): string => (t === 'discord' ? 'Discord' : t);
 export const targetLabel = (k: KibitzerStatus): string =>
-  k.targetPort == null ? '—' : k.targetName ? `${k.targetName} (${k.targetPort})` : `Port ${k.targetPort}`;
+  k.targetPort == null ? DASH : k.targetName ? `${k.targetName} (${k.targetPort})` : `Port ${k.targetPort}`;

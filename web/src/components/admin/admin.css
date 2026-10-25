@@ -1,4 +1,4 @@
-/* Admin page (Admin.dc.html). Global stylesheet: every rule is under .admin-page. SiteHeader/ThemeDrawer live outside it. */
+/* Admin page. Global stylesheet: every rule is under .admin-page. SiteHeader/ThemeDrawer live outside it. */
 .admin-page .layout {
   width: 100%;
   max-width: 1440px;
@@ -6,7 +6,6 @@
   display: flex;
   gap: 32px;
   padding: 32px 24px 48px;
-  box-sizing: border-box;
 }
 .admin-page nav {
   width: 200px;

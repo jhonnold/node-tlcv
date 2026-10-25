@@ -1,23 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { MediaQuery } from 'svelte/reactivity';
   import { getJson } from '$lib/http';
   import type { ArchiveSummary, LobbyBroadcast } from '$shared/types';
   import SiteHeader from '../components/SiteHeader.svelte';
   import FeaturedCard from '../components/lobby/FeaturedCard.svelte';
   import LiveCard from '../components/lobby/LiveCard.svelte';
   import SiteFooter from '../components/lobby/SiteFooter.svelte';
-  import { formatArchiveDate, matchesQuery, MOBILE_MAX, plural, POLL_MS } from '../components/lobby/lobby';
+  import { formatArchiveDate, matchesQuery, plural, POLL_MS } from '../components/lobby/lobby';
 
   let live = $state<LobbyBroadcast[] | null>(null); // null until the first response: no empty-state flash
   let archives = $state<ArchiveSummary[]>([]);
   let query = $state('');
-  let innerWidth = $state(window.innerWidth); // same measure as CSS @media (includes a classic scrollbar)
-  let pageWidth = $state(document.documentElement.clientWidth); // usable width (excludes it)
-  const mobile = $derived(innerWidth <= MOBILE_MAX);
+  const narrow = new MediaQuery('(max-width: 767px)');
+  const mobile = $derived(narrow.current);
+  let pageWidth = $state(document.documentElement.clientWidth); // usable width (excludes a classic scrollbar)
   const featured = $derived(live?.[0] ?? null); // server sorts by viewerCount desc
   const rest = $derived(live?.slice(1) ?? []);
   const featuredSize = $derived(mobile ? Math.min(380, pageWidth - 66) : 380); // 16 main + 1 border + 16 card padding, per side
-  const shown = $derived(archives.filter((a) => matchesQuery(a.site, a.slug, query)));
+  const q = $derived(query.trim().toLowerCase());
+  const shown = $derived(archives.filter((a) => matchesQuery(a.site, a.slug, q)));
 
   onMount(() => {
     document.title = 'Live Broadcasts - CCRL Live';
@@ -36,15 +38,13 @@
       ]).finally(() => (inflight = false));
     };
     load();
-    const timer = setInterval(load, POLL_MS); // replaces broadcasts.ejs <meta refresh 30>
+    const timer = setInterval(load, POLL_MS);
     return () => {
       clearInterval(timer);
       ctrl.abort();
     };
   });
 </script>
-
-<svelte:window bind:innerWidth />
 
 <div class="page" class:mobile bind:clientWidth={pageWidth}>
   <SiteHeader />
@@ -114,7 +114,6 @@
     max-width: 1344px;
     margin: 0 auto;
     padding: 32px 32px 48px;
-    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -180,7 +179,6 @@
     background: var(--surface);
     color: var(--text);
     font-size: 14px;
-    box-sizing: border-box;
   }
   .archive-grid {
     list-style: none;
@@ -192,7 +190,6 @@
   }
   .archive-card {
     height: 100%;
-    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 10px;

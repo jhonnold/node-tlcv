@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { del, postJson } from '$lib/http';
+  import { DASH } from '$lib/format';
   import type { WebhookStatus } from '$shared/types';
   import {
     blankWebhook,
     maskUrl,
     type Mutate,
+    removeEntry,
+    saveEntry,
     typeLabel,
     webhookBody,
     webhookFromStatus,
@@ -28,20 +30,14 @@
   }
   async function submit(e: SubmitEvent) {
     e.preventDefault();
-    const id = editingId;
-    const body = webhookBody(form);
-    // The API has no PUT, so an edit is delete-then-add, as in admin.ts:102-123.
-    const ok = await mutate(id ? 'Saving the webhook' : 'Adding the webhook', async () => {
-      if (id) await del(`/admin/webhooks/${encodeURIComponent(id)}`);
-      await postJson('/admin/webhooks', body);
-    });
+    const ok = await saveEntry(mutate, '/admin/webhooks', 'webhook', editingId, webhookBody(form));
     if (ok) reset();
     // The delete may have succeeded before the add failed. Then the form stays filled in as a plain add.
     else if (editingId && !items.some((w) => w.id === editingId)) editingId = null;
   }
   function remove(w: WebhookStatus) {
     if (editingId === w.id) reset();
-    void mutate('Removing the webhook', () => del(`/admin/webhooks/${encodeURIComponent(w.id)}`));
+    void removeEntry(mutate, '/admin/webhooks', 'webhook', w.id);
   }
 </script>
 
@@ -63,7 +59,7 @@
         <tbody>
           {#each items as w (w.id)}
             <tr>
-              <td data-label="Name">{w.name || '—'}</td>
+              <td data-label="Name">{w.name || DASH}</td>
               <td class="dim" data-label="Type">{typeLabel(w.type)}</td>
               <td class="mono dim" data-label="URL">{maskUrl(w.url)}</td>
               <td class="dim" data-label="Ports">{w.ports.length ? w.ports.join(', ') : 'all'}</td>

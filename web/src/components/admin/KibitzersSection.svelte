@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { del, postJson } from '$lib/http';
   import type { KibitzerStatus } from '$shared/types';
   import {
     blankKibitzer,
@@ -7,6 +6,8 @@
     kibitzerFromStatus,
     type KibitzerForm,
     type Mutate,
+    removeEntry,
+    saveEntry,
     targetLabel,
   } from './forms';
 
@@ -28,20 +29,14 @@
   }
   async function submit(e: SubmitEvent) {
     e.preventDefault();
-    const id = editingId;
-    const body = kibitzerBody(form);
-    // The API has no PUT, so an edit is delete-then-add, as in admin.ts:102-123.
-    const ok = await mutate(id ? 'Saving the kibitzer' : 'Adding the kibitzer', async () => {
-      if (id) await del(`/admin/kibitzers/${encodeURIComponent(id)}`);
-      await postJson('/admin/kibitzers', body);
-    });
+    const ok = await saveEntry(mutate, '/admin/kibitzers', 'kibitzer', editingId, kibitzerBody(form));
     if (ok) reset();
     // The delete may have succeeded before the add failed. Then the form stays filled in as a plain add.
     else if (editingId && !items.some((k) => k.id === editingId)) editingId = null;
   }
   function remove(k: KibitzerStatus) {
     if (editingId === k.id) reset();
-    void mutate('Removing the kibitzer', () => del(`/admin/kibitzers/${encodeURIComponent(k.id)}`));
+    void removeEntry(mutate, '/admin/kibitzers', 'kibitzer', k.id);
   }
 </script>
 
@@ -90,8 +85,8 @@
     <div class="form-head">
       <h3>{editingId ? 'Edit kibitzer' : 'Add kibitzer'}</h3>
       <div class="segmented" role="group" aria-label="Transport">
-        <button type="button" aria-pressed={form.type === 'local'} onclick={() => (form.type = 'local')}>Local</button>
-        <button type="button" aria-pressed={form.type === 'ssh'} onclick={() => (form.type = 'ssh')}>SSH</button>
+        <button type="button" aria-pressed={!ssh} onclick={() => (form.type = 'local')}>Local</button>
+        <button type="button" aria-pressed={ssh} onclick={() => (form.type = 'ssh')}>SSH</button>
       </div>
     </div>
     <div class="grid kib">

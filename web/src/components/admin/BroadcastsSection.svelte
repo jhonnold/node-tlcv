@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { DASH } from '$lib/format';
   import { del, postJson } from '$lib/http';
   import type { AdminBroadcast } from '$shared/types';
   import type { Mutate } from './forms';
@@ -42,10 +43,10 @@
         <tbody>
           {#each items as b (b.connection)}
             <tr>
-              <td data-label="Site">{b.site || '—'}</td>
+              <td data-label="Site">{b.site || DASH}</td>
               <td class="mono dim" data-label="Host">{b.host}</td>
               <td class="mono" data-label="Port">{b.port}</td>
-              <td class="dim" data-label="Ephemeral">{b.ephemeral ? 'Yes' : '—'}</td>
+              <td class="dim" data-label="Ephemeral">{b.ephemeral ? 'Yes' : DASH}</td>
               <td class="num mono" data-label="Viewers">{b.viewerCount}</td>
               <td class="actions" data-label="Actions">
                 <button
