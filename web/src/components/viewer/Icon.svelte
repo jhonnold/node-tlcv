@@ -10,6 +10,7 @@
     | 'grid'
     | 'eye'
     | 'more'
+    | 'menu'
     | 'first'
     | 'prev'
     | 'next'
@@ -76,6 +77,10 @@
     <circle cx="12" cy="5" r="1"></circle>
     <circle cx="12" cy="12" r="1"></circle>
     <circle cx="12" cy="19" r="1"></circle>
+  {:else if name === 'menu'}
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
   {:else if name === 'first'}
     <polyline points="11 17 6 12 11 7"></polyline>
     <polyline points="18 17 13 12 18 7"></polyline>

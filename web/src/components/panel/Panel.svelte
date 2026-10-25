@@ -162,6 +162,7 @@
     --pSegH: 30px;
     --pCtlH: 36px;
     --pIconBtn: 32px;
+    --pBtnH: 28px;
     --pRowH: 40px;
     --pChartH: 220px;
     --pTabPad: 8px;
@@ -175,9 +176,10 @@
   }
   .panel.touch {
     --pTabH: 44px;
-    --pSegH: 40px;
+    --pSegH: 44px;
     --pCtlH: 44px;
     --pIconBtn: 44px;
+    --pBtnH: 44px;
     --pRowH: 44px;
     --pChartH: 180px;
     --pTabPad: 12px;

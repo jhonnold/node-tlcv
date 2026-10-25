@@ -165,7 +165,7 @@
     word-break: break-all;
   }
   .copy {
-    height: 28px;
+    height: var(--pBtnH);
     padding: 0 10px;
     border: 1px solid var(--line);
     background: transparent;
