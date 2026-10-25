@@ -123,6 +123,7 @@
     --pIconBtn: 32px;
     --pRowH: 40px;
     --pChartH: 220px;
+    --pTabPad: 8px;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -138,6 +139,7 @@
     --pIconBtn: 44px;
     --pRowH: 44px;
     --pChartH: 180px;
+    --pTabPad: 12px;
   }
   .panel.bordered {
     border: 1px solid var(--line);
@@ -153,7 +155,7 @@
   .tabbar button {
     flex-shrink: 0;
     height: var(--pTabH);
-    padding: 0 12px;
+    padding: 0 var(--pTabPad);
     border: 0;
     background: transparent;
     color: var(--muted);
