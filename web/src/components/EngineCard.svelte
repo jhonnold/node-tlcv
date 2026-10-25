@@ -62,7 +62,7 @@
 {/snippet}
 
 <!-- The PV-end board; clicking it copies the FEN. The short card shows "Copied" over the board, with no caption. -->
-{#snippet thumbButton(overlay: boolean)}
+{#snippet thumbButton()}
   <button
     type="button"
     class="thumb"
@@ -79,8 +79,11 @@
       {flipped}
       label="PV end position"
     />
-    {#if !overlay}<span>{copied ? 'Copied' : 'PV end'}</span>
-    {:else if copied}<span class="copied">Copied</span>{/if}
+    {#if short}
+      {#if copied}<span class="copied" role="status">Copied</span>{/if}
+    {:else}
+      <span>{copied ? 'Copied' : 'PV end'}</span>
+    {/if}
   </button>
 {/snippet}
 
@@ -97,7 +100,7 @@
       <span class="sstats">{shortStats}</span>
       <p class="pv" style:--pv-line="{SHORT_PV_LINE}px" style:--pv-lines={2} title={pvText}>{@render pvSpans()}</p>
     </div>
-    {#if thumb > 0}{@render thumbButton(true)}{/if}
+    {#if thumb > 0}{@render thumbButton()}{/if}
   </article>
 {:else}
   <article class="card {engine.role}" class:compact class:noboard={!thumb} aria-label={label}>
@@ -127,7 +130,7 @@
       <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={pvLines} title={pvText}>
         {@render pvSpans()}
       </p>
-      {#if thumb > 0}{@render thumbButton(false)}{/if}
+      {#if thumb > 0}{@render thumbButton()}{/if}
     </div>
   </article>
 {/if}

@@ -109,7 +109,14 @@
   });
 </script>
 
-<section class="panel" class:touch={touch || tabs === 'mobile'} class:bordered aria-label="Game panels" style:height>
+<section
+  class="panel"
+  class:touch={touch || tabs === 'mobile'}
+  class:bordered
+  aria-label={solo ? undefined : 'Game panels'}
+  aria-labelledby={solo ? `${uid}-solo` : undefined}
+  style:height
+>
   {#if solo}
     <div class="solo"><h2 id="{uid}-solo">Chat</h2></div>
   {:else}
@@ -181,7 +188,6 @@
   .solo {
     flex-shrink: 0;
     height: 46px;
-    box-sizing: border-box;
     display: flex;
     align-items: center;
     padding: 0 14px;
