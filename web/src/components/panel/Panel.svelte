@@ -1,6 +1,6 @@
 <script module lang="ts">
   export type TabId = 'engines' | 'moves' | 'chat' | 'graphs' | 'standings' | 'games' | 'info';
-  export type PanelTabs = 'all' | 'noMoves' | 'movesOnly' | 'mobile';
+  export type PanelTabs = 'all' | 'mobile';
 </script>
 
 <script lang="ts">
@@ -27,12 +27,8 @@
   const { source, tabs, initialTab, height = '100%', bordered = true, flipped = false }: Props = $props();
 
   const game = getGameStore();
-  const SETS: Record<PanelTabs, TabId[]> = {
-    mobile: ['engines', 'moves', 'chat', 'graphs', 'standings', 'games', 'info'],
-    noMoves: ['chat', 'graphs', 'standings', 'games', 'info'],
-    movesOnly: ['moves'],
-    all: ['moves', 'chat', 'graphs', 'standings', 'games', 'info'],
-  };
+  const ALL: TabId[] = ['moves', 'chat', 'graphs', 'standings', 'games', 'info'];
+  const SETS: Record<PanelTabs, TabId[]> = { all: ALL, mobile: ['engines', ...ALL] };
   const LABEL: Record<TabId, string> = {
     engines: 'Engines',
     moves: 'Moves',
@@ -72,7 +68,7 @@
       const meta = await loadReplayGame(source, n);
       if (!game.loadReplay(meta, n, gen)) return; // superseded: busy and err belong to the newer request
       // Only from Games, and focus stays on the moved-to tab.
-      if (active === 'games' && SETS[tabs].includes('moves')) {
+      if (active === 'games') {
         pick('moves');
         if (hadFocus && document.activeElement === document.body) document.getElementById(`${uid}-tab-moves`)?.focus();
       }
@@ -95,31 +91,20 @@
 </script>
 
 <section class="panel" class:mobile={tabs === 'mobile'} class:bordered aria-label="Game panels" style:height>
-  {#if tabs === 'movesOnly'}
-    <div class="title"><h2>Moves</h2></div>
-  {:else}
-    <div class="tabbar" role="tablist" aria-label="Panel tabs">
-      {#each ids as id (id)}
-        <button
-          type="button"
-          role="tab"
-          id="{uid}-tab-{id}"
-          aria-selected={id === active}
-          aria-controls="{uid}-body"
-          onclick={() => pick(id)}>{LABEL[id]}</button
-        >
-      {/each}
-    </div>
-    <ReplayBanner {source} onBack={backToLive} />
-  {/if}
-  <div
-    class="body"
-    id="{uid}-body"
-    role="tabpanel"
-    aria-label={tabs === 'movesOnly' ? 'Moves' : undefined}
-    aria-labelledby={tabs === 'movesOnly' ? undefined : `${uid}-tab-${active}`}
-    bind:this={body}
-  >
+  <div class="tabbar" role="tablist" aria-label="Panel tabs">
+    {#each ids as id (id)}
+      <button
+        type="button"
+        role="tab"
+        id="{uid}-tab-{id}"
+        aria-selected={id === active}
+        aria-controls="{uid}-body"
+        onclick={() => pick(id)}>{LABEL[id]}</button
+      >
+    {/each}
+  </div>
+  <ReplayBanner {source} onBack={backToLive} />
+  <div class="body" id="{uid}-body" role="tabpanel" aria-labelledby="{uid}-tab-{active}" bind:this={body}>
     {#if active === 'engines'}<EnginesTab {flipped} />
     {:else if active === 'moves'}<MovesTab {source} scroller={body} />
     {:else if active === 'chat'}<ChatTab scroller={body} />
@@ -156,23 +141,6 @@
   }
   .panel.bordered {
     border: 1px solid var(--line);
-  }
-  .title {
-    flex-shrink: 0;
-    height: 46px;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    padding: 0 14px;
-    border-bottom: 1px solid var(--line);
-  }
-  .title h2 {
-    margin: 0;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
   }
   .tabbar {
     flex-shrink: 0;

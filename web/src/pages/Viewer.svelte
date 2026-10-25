@@ -9,7 +9,7 @@
   import { TournamentStore, setTournament } from '$lib/tournament.svelte';
   import { ViewState, setView } from '$lib/view.svelte';
   import type { HeaderInfo } from '$lib/view.svelte';
-  import type { ArchiveInfo, BroadcastSummary, LobbyBroadcast } from '$shared/types';
+  import type { ArchiveInfo, BroadcastSummary } from '$shared/types';
   import ThemeDrawer from '../components/ThemeDrawer.svelte';
   import Header from '../components/viewer/Header.svelte';
   import MobileHeader from '../components/viewer/MobileHeader.svelte';
@@ -29,7 +29,6 @@
   const tournament = new TournamentStore(untrack(() => source));
   setTournament(tournament);
   let site = $state('');
-  let others = $state(0);
   const bp = $derived(view.bp);
   const siteName = $derived(game.live?.game.site || site);
   const info = $derived<HeaderInfo>({
@@ -37,7 +36,6 @@
     game: game.isReplay ? game.replayNumber : tournament.currentGameNumber,
     archive: source.kind === 'archive' || game.isReplay,
     watching: game.live?.spectators.length ?? 0,
-    others,
   });
   $effect(() => {
     document.title = siteName ? `${siteName} - CCRL Live` : 'CCRL Live';
@@ -85,9 +83,6 @@
         // Client-side navigation skips the server's page guards, so a missing source goes home here.
         if (e instanceof HttpError && e.status === 404) navigate('/', { replace: true });
       });
-    getJson<LobbyBroadcast[]>('/broadcasts', ac.signal)
-      .then((list) => (others = list.filter((b) => source.kind !== 'live' || b.port !== source.port).length))
-      .catch(() => {});
     return () => {
       ac.abort();
       disconnect();
@@ -100,7 +95,7 @@
 {#if view.focus}
   <FocusView {info} onexit={() => void exitFocus()} />
 {:else}
-  <div class="viewer" class:fixed={bp === 'desktop' || bp === 'large'}>
+  <div class="viewer" class:fixed={bp === 'desktop'}>
     {#if bp === 'mobile'}
       <MobileHeader {info} />
       <MobileLayout {source} />
@@ -109,7 +104,7 @@
       {#if bp === 'tablet'}
         <TabletLayout {source} />
       {:else}
-        <DesktopLayout {source} large={bp === 'large'} />
+        <DesktopLayout {source} />
       {/if}
     {/if}
   </div>

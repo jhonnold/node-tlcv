@@ -65,7 +65,7 @@
 
 <header>
   <a href="/" aria-label="CCRL Live — all broadcasts" class="brand">
-    <BrandMark size={24} />
+    <BrandMark />
   </a>
   <div class="titles">
     <span class="site">{info.site}</span>
@@ -135,7 +135,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 4px 0 14px;
+    padding: 0 4px 0 12px; /* 12 + (32 - 24) / 2 centring in .brand = SiteHeader's 16px to the mark */
     border-bottom: 1px solid var(--line);
     background: var(--surface);
   }
