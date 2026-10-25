@@ -6,6 +6,8 @@ author: Claude Agent (drafted) + Jay Honnold (direction + approval)
 synthesis: done
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # node-tlcv: Basic Markdown Formatting in Chat
 
 Plan + as-built outcome for adding **basic inline markdown** to the

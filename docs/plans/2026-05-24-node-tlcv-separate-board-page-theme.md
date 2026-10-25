@@ -7,6 +7,8 @@ synthesis: done
 migrated_from: library/imports/plans/2026-05-24-node-tlcv-separate-board-page-theme.md
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # node-tlcv — separate board theme from page theme
 
 > Internal plan, authored and executed on 2026-05-24.

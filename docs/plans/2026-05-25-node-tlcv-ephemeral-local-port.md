@@ -5,6 +5,8 @@ author: claude_code (drafted) + jhonnold (direction + approval)
 synthesis: done
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # node-tlcv — opt-in ephemeral local UDP port per connection
 
 Plan authored and executed 2026-05-25. Shipped as **PR #168** (squash commit

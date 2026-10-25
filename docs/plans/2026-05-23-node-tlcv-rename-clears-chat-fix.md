@@ -6,6 +6,8 @@ author: Claude Agent (direction + approval by Jay Honnold)
 synthesis: done
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # node-tlcv — stop wiping own chat when a user renames themselves
 
 > Internal debugging + fix session, conducted interactively on 2026-05-23.
