@@ -23,7 +23,7 @@
   // Lichess2.dc.html: one fluid layout, sampled at 1440×900 ("desktop") and 1920×1080 ("large").
   // Grid areas: meta | board | table over chat | board | table.
   const HEADER = 56;
-  const BARS = 112; // board column besides the board: 2 compact player bars (48) + 2 gaps (8)
+  const BARS = 112; // board column besides the board: 2 player bars (48) + 2 gaps (8)
   const NAV = 66; // NavControls desktop block: buttons 40 + gap 6 + status row 20
   const ROW = 8; // gap between table-column rows
   const PANEL_MIN = 240; // the tabs panel never gets shorter; a shorter window scrolls

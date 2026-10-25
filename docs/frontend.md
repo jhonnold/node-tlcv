@@ -29,7 +29,7 @@ The frontend is a Svelte 5 single-page app (runes mode) in `web/`, bundled by Vi
 - Links to `/admin` are never intercepted: the browser always does a full load, so the basic-auth challenge runs.
 - `App.svelte` keys `Viewer` by `pagePath(source)`, so switching broadcast or archive remounts the page.
 - Client-side navigation skips the server guards, so `Viewer` fetches its summary (`/broadcasts/:port` or `/archives/:slug`) and navigates home on a 404.
-- `lib/http.ts` (`getJson`, `getText`, `postJson`, `del`) throws `HttpError` with the status. A redirected GET (the catch-all) counts as a 404.
+- `lib/http.ts` (`getJson`, `postJson`, `del`) throws `HttpError` with the status. A redirected GET (the catch-all) counts as a 404.
 
 ## State
 

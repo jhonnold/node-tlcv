@@ -11,21 +11,24 @@
     flipped?: boolean;
   };
   const { engine, thumb = 0, flipped = false }: Props = $props();
-  const PV_LINE = 18; // px per PV line (12px × 1.5); 2 lines, so the card height never changes
 
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
   const label = $derived(`${ROLE[engine.role]} engine ${engine.name}, score ${engine.score}`);
   const pvText = $derived([engine.pv.pre, engine.pv.first, engine.pv.rest].filter(Boolean).join(' '));
-  const inline = $derived(
+  // Row 2: depth · nodes · nps · time, then the status when there is one.
+  const stats = $derived(
     [
-      engine.depth === DASH ? DASH : `d${engine.depth}`,
-      engine.nodes,
-      engine.nps === DASH ? DASH : `${engine.nps}/s`,
-      engine.time,
-    ].join(' · '),
+      [
+        engine.depth === DASH ? DASH : `d${engine.depth}`,
+        engine.nodes,
+        engine.nps === DASH ? DASH : `${engine.nps}/s`,
+        engine.time,
+      ].join(' · '),
+      engine.status,
+    ]
+      .filter(Boolean)
+      .join(' · '),
   );
-  // Row 2: the inline stats, then the status when there is one.
-  const shortStats = $derived([inline, engine.status].filter(Boolean).join(' · '));
 
   let copied = $state(false);
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
@@ -38,39 +41,6 @@
   }
 </script>
 
-{#snippet pvSpans()}
-  {#if engine.pv.pre}<span class="pre">{engine.pv.pre}</span>{/if}
-  <strong>{engine.pv.first}</strong>
-  <span class="rest">{engine.pv.rest}</span>
-{/snippet}
-
-<!-- The PV-end board; clicking it copies the FEN. The short card shows "Copied" over the board, with no caption. -->
-{#snippet thumbButton()}
-  <button
-    type="button"
-    class="thumb"
-    aria-label="Copy FEN of PV end position"
-    title="PV end position — click to copy FEN"
-    disabled={!engine.pvFen}
-    onclick={copy}
-  >
-    <Board
-      fen={engine.pvFen ?? EMPTY_FEN}
-      size={thumb}
-      coords={false}
-      animate={false}
-      {flipped}
-      label="PV end position"
-    />
-    {#if copied}<span class="copied" aria-hidden="true">Copied</span>{/if}
-  </button>
-{/snippet}
-
-<!-- Announces the copy outside the button, where a live region is read; the visual strip is aria-hidden. -->
-{#snippet copyStatus()}
-  <span class="sr-only" role="status">{copied ? 'FEN copied' : ''}</span>
-{/snippet}
-
 <article class="card {engine.role}" aria-label={label}>
   <div class="main">
     <div class="head">
@@ -80,11 +50,36 @@
       <span class="spacer"></span>
       <span class="score">{engine.score}</span>
     </div>
-    <span class="sstats">{shortStats}</span>
-    <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={2} title={pvText}>{@render pvSpans()}</p>
+    <span class="sstats">{stats}</span>
+    <p class="pv" title={pvText}>
+      {#if engine.pv.pre}<span class="pre">{engine.pv.pre}</span>{/if}
+      <strong>{engine.pv.first}</strong>
+      <span class="rest">{engine.pv.rest}</span>
+    </p>
   </div>
-  {#if thumb > 0}{@render thumbButton()}{/if}
-  {@render copyStatus()}
+  {#if thumb > 0}
+    <!-- The PV-end board; clicking it copies the FEN and shows "Copied" over the board. -->
+    <button
+      type="button"
+      class="thumb"
+      aria-label="Copy FEN of PV end position"
+      title="PV end position — click to copy FEN"
+      disabled={!engine.pvFen}
+      onclick={copy}
+    >
+      <Board
+        fen={engine.pvFen ?? EMPTY_FEN}
+        size={thumb}
+        coords={false}
+        animate={false}
+        {flipped}
+        label="PV end position"
+      />
+      {#if copied}<span class="copied" aria-hidden="true">Copied</span>{/if}
+    </button>
+  {/if}
+  <!-- Announces the copy outside the button, where a live region is read; the visual strip is aria-hidden. -->
+  <span class="sr-only" role="status">{copied ? 'FEN copied' : ''}</span>
 </article>
 
 <style>
@@ -168,13 +163,13 @@
     font-family: var(--fontMono);
     font-size: 12px;
     color: var(--muted);
-    line-height: var(--pv-line);
-    height: calc(var(--pv-lines) * var(--pv-line));
+    line-height: 18px; /* 12px × 1.5 */
+    height: 36px; /* always 2 lines, so the card height never changes */
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: var(--pv-lines);
-    line-clamp: var(--pv-lines);
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
   .pre {
     color: var(--faint);
@@ -190,9 +185,6 @@
     position: relative;
     flex-shrink: 0;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
     padding: 0;
     border: 0;
     background: transparent;

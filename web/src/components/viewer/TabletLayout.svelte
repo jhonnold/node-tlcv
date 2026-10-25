@@ -24,7 +24,7 @@
   const PAD = 16; // page padding and grid gap
   const EV = 10;
   const EV_GAP = 6;
-  const BARS = 112; // 2 compact player bars (48) + 2 gaps (8)
+  const BARS = 112; // 2 player bars (48) + 2 gaps (8)
   const THUMB = 56;
   const TABLE_MIN = 270;
   const TABLE_MAX = 360;

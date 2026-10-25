@@ -12,7 +12,7 @@
   const sub = $derived([gameText(info), info.archive ? '' : `${info.watching} watching`].filter(Boolean).join(' · '));
 </script>
 
-<!-- Lichess2Mobile.dc.html header. The ⋮ menu lives in MobileNavBar. -->
+<!-- Lichess2Mobile.dc.html header. The ≡ More options menu lives in MobileNavBar. -->
 <header>
   <a href="/" aria-label="CCRL Live — all broadcasts" class="brand"><BrandMark /></a>
   <div class="titles">

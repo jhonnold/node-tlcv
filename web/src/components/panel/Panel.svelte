@@ -47,7 +47,7 @@
   const solo = $derived(tabs === 'chatOnly');
   let picked = $state<TabId | null>(null);
   const active = $derived.by(() => {
-    const order: (TabId | null | undefined)[] = [picked, source.kind === 'archive' ? 'games' : null];
+    const order: (TabId | null)[] = [picked, source.kind === 'archive' ? 'games' : null];
     for (const t of order) if (t && ids.includes(t)) return t;
     return ids[0];
   });
