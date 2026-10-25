@@ -1,24 +1,34 @@
 <script lang="ts">
   import BrandMark from '../BrandMark.svelte';
+  import EventLine from './EventLine.svelte';
   import Icon from './Icon.svelte';
   import { getView } from '$lib/view.svelte';
-  import type { Breakpoint } from '$lib/view.svelte';
+  import type { Breakpoint, HeaderInfo } from '$lib/view.svelte';
   import { sound, toggleSound } from '$lib/sounds.svelte';
 
-  type Props = { bp: Breakpoint };
-  const { bp }: Props = $props();
+  type Props = { bp: Breakpoint; info: HeaderInfo };
+  const { bp, info }: Props = $props();
 
   const view = getView();
   const iconSize = $derived(bp === 'tablet' ? 20 : 18);
 </script>
 
-<!-- Lichess2.dc.html header: brand and view buttons only; site, game and LIVE/ARCHIVE are in the EventCard. -->
+<!-- Lichess2.dc.html header. Desktop: brand and view buttons; site, game and LIVE/ARCHIVE are in the EventCard.
+     Tablet (headerMeta): brand mark only, then the site over EventLine; there is no EventCard. -->
 <header class="hdr {bp}">
-  <a class="brand" href="/">
-    <BrandMark />
-    <span>CCRL Live</span>
-  </a>
-  <span class="spacer"></span>
+  {#if bp === 'tablet'}
+    <a class="brand" href="/" aria-label="CCRL Live — all broadcasts"><BrandMark /></a>
+    <div class="titles">
+      {#if info.site}<h1>{info.site}</h1>{/if}
+      <EventLine {info} tablet />
+    </div>
+  {:else}
+    <a class="brand" href="/">
+      <BrandMark />
+      <span>CCRL Live</span>
+    </a>
+    <span class="spacer"></span>
+  {/if}
   <nav aria-label="View options">
     <button type="button" class="icon" aria-label="Focus mode" title="Focus mode" onclick={() => (view.focus = true)}>
       <Icon name="focus" size={iconSize} />
@@ -69,8 +79,31 @@
     font-size: 16px;
     font-weight: 700;
   }
+  /* A 44 px touch target; the negative margins keep the 24 px mark at the 20 px padding and 16 px from the titles. */
+  .tablet .brand {
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: 0 -10px;
+  }
   .spacer {
     flex: 1;
+  }
+  .titles {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  h1 {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   nav {
     display: flex;

@@ -2,25 +2,24 @@
   import { innerHeight } from 'svelte/reactivity/window';
   import { getGameStore } from '$lib/game.svelte';
   import { clamp, floor8, getView, kibitzerView } from '$lib/view.svelte';
-  import type { HeaderInfo } from '$lib/view.svelte';
   import type { ViewerSource } from '$lib/url';
   import Board from '../Board.svelte';
   import EngineCard from '../EngineCard.svelte';
   import EvalBar from '../EvalBar.svelte';
   import PlayerBar from '../PlayerBar.svelte';
   import Panel from '../panel/Panel.svelte';
-  import EventCard from './EventCard.svelte';
   import NavControls from './NavControls.svelte';
 
-  type Props = { source: ViewerSource; info: HeaderInfo };
-  const { source, info }: Props = $props();
+  type Props = { source: ViewerSource };
+  const { source }: Props = $props();
 
   const game = getGameStore();
   const view = getView();
   const kib = $derived(kibitzerView(game));
 
-  // Lichess2.dc.html size=tablet (834): meta / board | table / tabs. The board leaves the table at least
-  // TABLE_MIN and its column fits the window height; the table takes the rest up to TABLE_MAX, then the grid centres.
+  // Lichess2.dc.html size=tablet headerMeta (834): board | table / tabs; the event info is in the Header. The board
+  // leaves the table at least TABLE_MIN and its column fits the window height; the table takes the rest up to
+  // TABLE_MAX, then the grid centres.
   const PAD = 16; // page padding and grid gap
   const EV = 10;
   const EV_GAP = 6;
@@ -30,10 +29,9 @@
   const TABLE_MAX = 360;
 
   let w = $state(0); // <main> clientWidth
-  let metaH = $state(0); // EventCard row above the board (its height is content-dependent)
   const fitW = $derived(w - 3 * PAD - TABLE_MIN - EV - EV_GAP);
-  // Header, page padding top and bottom, the meta row and the gap under it, then the board column's bars.
-  const fitH = $derived((innerHeight.current ?? 0) - 56 - 3 * PAD - metaH - BARS);
+  // Header, page padding top and bottom, then the board column's bars.
+  const fitH = $derived((innerHeight.current ?? 0) - 56 - 2 * PAD - BARS);
   const size = $derived(Math.max(240, floor8(Math.min(fitW, fitH))));
   const boardW = $derived(size + EV + EV_GAP);
   const tableW = $derived(Math.floor(clamp(w - 3 * PAD - boardW, TABLE_MIN, TABLE_MAX)));
@@ -41,8 +39,6 @@
 
 <main class="tab" bind:clientWidth={w}>
   <div class="grid" style:grid-template-columns="{boardW}px {tableW}px">
-    <div class="meta" bind:offsetHeight={metaH}><EventCard {info} /></div>
-
     <section class="board-col" aria-label="Board" style:--ev-off="{EV + EV_GAP}px">
       {#if game.players}
         <div class="bar"><PlayerBar side={view.top} {...game.players[view.top]} /></div>
@@ -93,13 +89,8 @@
     gap: 16px;
     justify-content: center;
     grid-template-areas:
-      'meta meta'
       'board table'
       'tabs tabs';
-  }
-  .meta {
-    grid-area: meta;
-    min-width: 0;
   }
   .board-col {
     grid-area: board;
