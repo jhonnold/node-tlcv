@@ -115,8 +115,13 @@
 </form>
 
 <style>
+  /* Sticky so the spectator list stays reachable from anywhere in a long chat. */
   .spec {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     padding: 10px 14px;
+    background: var(--surface);
     border-bottom: 1px solid var(--line);
   }
   .spec-toggle {
@@ -144,6 +149,8 @@
   }
   .spectators {
     list-style: none;
+    max-height: 96px;
+    overflow-y: auto;
     margin: 8px 0 2px;
     padding: 0;
     display: flex;

@@ -42,7 +42,7 @@
   };
   // Chat is hidden on archives and during any replay.
   const ids = $derived(SETS[tabs].filter((id) => id !== 'chat' || (source.kind === 'live' && !game.isReplay)));
-  // chatOnly: a "Chat" header instead of a tab bar, no ReplayBanner (the noChat Panel beside it shows one),
+  // chatOnly: no tab bar (the spectator row heads the chat), no ReplayBanner (the noChat Panel beside it shows one),
   // and an empty state while chat is hidden (`ids` is empty, so `active` is undefined).
   const solo = $derived(tabs === 'chatOnly');
   let picked = $state<TabId | null>(null);
@@ -95,17 +95,8 @@
   });
 </script>
 
-<section
-  class="panel"
-  class:touch
-  class:bordered
-  aria-label={solo ? undefined : 'Game panels'}
-  aria-labelledby={solo ? `${uid}-solo` : undefined}
-  style:height
->
-  {#if solo}
-    <div class="solo"><h2 id="{uid}-solo">Chat</h2></div>
-  {:else}
+<section class="panel" class:touch class:bordered aria-label={solo ? 'Chat' : 'Game panels'} style:height>
+  {#if !solo}
     <div class="tabbar" role="tablist" aria-label="Panel tabs">
       {#each ids as id (id)}
         <button
@@ -173,22 +164,6 @@
   }
   .panel.bordered {
     border: 1px solid var(--line);
-  }
-  .solo {
-    flex-shrink: 0;
-    height: 46px;
-    display: flex;
-    align-items: center;
-    padding: 0 14px;
-    border-bottom: 1px solid var(--line);
-  }
-  .solo h2 {
-    margin: 0;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
   }
   .tabbar {
     flex-shrink: 0;
