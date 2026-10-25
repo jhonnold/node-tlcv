@@ -118,7 +118,7 @@ outages but cannot *recover*.
   the kibitzer/engine scores already on the cards (bare numbers today).
   *Medium / high. status: shipped — `web/src/components/EvalBar.svelte`,
   beside the board on desktop and tablet, under it on mobile, in focus mode
-  and on lobby cards; fed by the broadcast engines' scores in the viewer
+  and on lobby cards (not in the mobile lobby layout); fed by the broadcast engines' scores in the viewer
   (`GameStore.evalScore` in `web/src/lib/game.svelte.ts`) and by the
   kibitzer score on lobby cards (`score` from `GET /broadcasts`).*
 - **B3 — Richer move list.** Surface per-move **think-time** (already in
@@ -137,8 +137,8 @@ outages but cannot *recover*.
 ### C. Sharing & navigation
 
 - **C1 — Deep-link to a move/position.** Encode move index in the URL (e.g.
-  `?m=42`). Today the URL never changes, so an exact position can't be
-  shared. *Low–medium / high for sharing. status: idea (the Svelte routes in
+  `?m=42`). Today the URL never encodes the move, so an exact position
+  can't be shared. *Low–medium / high for sharing. status: idea (the Svelte routes in
   `web/src/lib/url.ts` still carry no position).*
 - **C2 — Embeddable board widget.** Minimal iframe view for the CCRL
   discussion board / TalkChess. Pairs with C1. *Medium / medium.
@@ -193,7 +193,7 @@ the **viewer** did not (as of 2026-05-25; see D1–D3 for the Svelte app).
 - **F1 — Annotated PGN export.** Augment exported PGN with per-move comments:
   eval, clock/think-time, kibitzer best line. Raises the value of an endpoint
   people already use (Games + Info tabs, the Moves tab's Download PGN).
-  *Medium / high. status: idea (saved PGNs already carry one engine comment
+  *Medium / high. status: partly shipped (saved PGNs already carry one engine comment
   per move, `(PV) score/depth time`, from `applyPvToMeta()` in
   `src/game-service.ts`; the clock and kibitzer line are not in them).*
 - **F2 — Cross-tournament / per-engine stats.** Aggregate the persisted

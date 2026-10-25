@@ -21,7 +21,7 @@ frontend, which the Svelte 5 + Vite app in `web/` has since replaced:
 - the `POST /admin/new` and `POST /admin/close` admin actions, now
   `POST /admin/broadcasts` and `DELETE /admin/broadcasts/:connection`
 
-Files that refer to that stack start with a **Historical (pre-Svelte
+The other files that refer to that stack start with a **Historical (pre-Svelte
 frontend)** note, placed after the YAML front matter where there is one.
 
 For the current architecture, read [AGENTS.md](../../AGENTS.md) and
