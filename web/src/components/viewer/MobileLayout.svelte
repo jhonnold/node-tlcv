@@ -26,11 +26,11 @@
 <main class="mob" bind:clientWidth={w}>
   {#if game.engines}
     <div class="eng first">
-      <EngineCard short thumb={THUMB} engine={game.engines[view.top]} flipped={view.flipped} />
+      <EngineCard thumb={THUMB} engine={game.engines[view.top]} flipped={view.flipped} />
     </div>
   {/if}
   {#if game.players}
-    <div class="pbar"><PlayerBar compact side={view.top} {...game.players[view.top]} /></div>
+    <div class="pbar"><PlayerBar side={view.top} {...game.players[view.top]} /></div>
   {/if}
   <div class="board-wrap">
     {#if w > 0}
@@ -46,15 +46,15 @@
   </div>
   <EvalBar orientation="horizontal" thickness={6} bordered={false} score={game.evalScore} />
   {#if game.players}
-    <div class="pbar"><PlayerBar compact side={view.bottom} {...game.players[view.bottom]} /></div>
+    <div class="pbar"><PlayerBar side={view.bottom} {...game.players[view.bottom]} /></div>
   {/if}
   {#if game.engines}
     <div class="eng">
-      <EngineCard short thumb={THUMB} engine={game.engines[view.bottom]} flipped={view.flipped} />
+      <EngineCard thumb={THUMB} engine={game.engines[view.bottom]} flipped={view.flipped} />
     </div>
   {/if}
   {#if kib}
-    <div class="eng"><EngineCard short thumb={THUMB} engine={kib} flipped={view.flipped} /></div>
+    <div class="eng"><EngineCard thumb={THUMB} engine={kib} flipped={view.flipped} /></div>
   {/if}
   <div class="panel">
     <!-- Fills the screen above the nav bar once scrolled to the end. -->

@@ -8,35 +8,18 @@
     active: boolean;
     thinkMs?: number | null;
     lastMs?: number | null;
-    score?: string | null;
-    showScore?: boolean;
-    compact?: boolean;
   };
-  const {
-    side,
-    name,
-    clock,
-    active,
-    thinkMs = null,
-    lastMs = null,
-    score = null,
-    showScore = false,
-    compact = false,
-  }: Props = $props();
+  const { side, name, clock, active, thinkMs = null, lastMs = null }: Props = $props();
 
   const label = $derived(side === 'white' ? 'White' : 'Black');
   const sub = $derived.by(() => {
-    if (thinkMs != null) {
-      return compact ? `Thinking ${formatDuration(thinkMs)}` : `${label} · thinking ${formatDuration(thinkMs)}`;
-    }
-    if (lastMs != null) {
-      return compact ? `Last ${formatDuration(lastMs)}` : `${label} · last move ${formatDuration(lastMs)}`;
-    }
+    if (thinkMs != null) return `Thinking ${formatDuration(thinkMs)}`;
+    if (lastMs != null) return `Last ${formatDuration(lastMs)}`;
     return label;
   });
 </script>
 
-<div class="player {side}" class:compact class:active>
+<div class="player {side}" class:active>
   <!-- Disc colours are theme-invariant (Player.dc.html:43-44). -->
   <span class="disc" aria-hidden="true"></span>
   <div class="who">
@@ -45,7 +28,6 @@
       >{#if active}<span class="dot"></span>{/if}<span>{sub}</span></span
     >
   </div>
-  {#if showScore && score}<span class="score">{score}</span>{/if}
   <span class="clock" role="timer" aria-label="{side} clock {clock}">{clock}</span>
 </div>
 
@@ -53,12 +35,12 @@
   .player {
     --c: var(--engW);
     width: 100%;
-    height: 56px;
+    height: 48px;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 8px 0 12px;
+    padding: 0 6px 0 12px;
     border: 1px solid var(--line);
     background: var(--surface);
     color: var(--text);
@@ -66,10 +48,6 @@
   }
   .player.black {
     --c: var(--engB);
-  }
-  .player.compact {
-    height: 48px;
-    padding-right: 6px;
   }
   .disc {
     width: 14px;
@@ -90,14 +68,11 @@
     flex: 1;
   }
   .name {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .compact .name {
-    font-size: 14px;
   }
   .sub {
     display: flex;
@@ -112,15 +87,9 @@
     height: 6px;
     background: var(--c);
   }
-  .score {
-    font-family: var(--fontMono);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--c);
-  }
   .clock {
-    min-width: 92px;
-    height: 38px;
+    min-width: 76px;
+    height: 34px;
     box-sizing: border-box;
     padding: 0 10px;
     display: inline-flex;
@@ -129,15 +98,10 @@
     background: var(--surface2);
     color: var(--text);
     font-family: var(--fontMono);
-    font-size: 20px;
+    font-size: 17px;
     font-weight: 600;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
-  }
-  .compact .clock {
-    min-width: 76px;
-    height: 34px;
-    font-size: 17px;
   }
   .active .clock {
     background: var(--invBg);

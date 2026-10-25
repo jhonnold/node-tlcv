@@ -1,9 +1,3 @@
-<script module lang="ts">
-  export const PV_LINE = 20; // px per PV line
-  export const PV_LINES = 3; // default PV lines
-  export const SHORT_PV_LINE = 18; // px per PV line in the short card (12px × 1.5)
-</script>
-
 <script lang="ts">
   import Board from './Board.svelte';
   import type { EngineView } from '$lib/engines';
@@ -13,26 +7,15 @@
 
   type Props = {
     engine: EngineView;
-    compact?: boolean;
     thumb?: number;
     flipped?: boolean;
-    lines?: number;
-    short?: boolean;
   };
-  const { engine, compact = false, thumb = 0, flipped = false, lines, short = false }: Props = $props();
+  const { engine, thumb = 0, flipped = false }: Props = $props();
+  const PV_LINE = 18; // px per PV line (12px × 1.5); 2 lines, so the card height never changes
 
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
   const label = $derived(`${ROLE[engine.role]} engine ${engine.name}, score ${engine.score}`);
-  // PV lines: `lines`, else PV_LINES, or as many as fit beside the PV-end board. The PV box keeps this
-  // height, so the card never grows or shrinks with the PV.
-  const pvLines = $derived(lines ?? Math.max(PV_LINES, Math.floor(thumb / PV_LINE)));
   const pvText = $derived([engine.pv.pre, engine.pv.first, engine.pv.rest].filter(Boolean).join(' '));
-  const stats = $derived([
-    { k: 'Depth', v: engine.depth },
-    { k: 'Nodes', v: engine.nodes },
-    { k: 'NPS', v: engine.nps },
-    { k: 'Time', v: engine.time },
-  ]);
   const inline = $derived(
     [
       engine.depth === DASH ? DASH : `d${engine.depth}`,
@@ -41,7 +24,7 @@
       engine.time,
     ].join(' · '),
   );
-  // Short card, row 2: the inline stats, then the status when there is one.
+  // Row 2: the inline stats, then the status when there is one.
   const shortStats = $derived([inline, engine.status].filter(Boolean).join(' · '));
 
   let copied = $state(false);
@@ -79,11 +62,7 @@
       {flipped}
       label="PV end position"
     />
-    {#if short}
-      {#if copied}<span class="copied" aria-hidden="true">Copied</span>{/if}
-    {:else}
-      <span>{copied ? 'Copied' : 'PV end'}</span>
-    {/if}
+    {#if copied}<span class="copied" aria-hidden="true">Copied</span>{/if}
   </button>
 {/snippet}
 
@@ -92,65 +71,32 @@
   <span class="sr-only" role="status">{copied ? 'FEN copied' : ''}</span>
 {/snippet}
 
-{#if short}
-  <article class="card short {engine.role}" aria-label={label}>
-    <div class="main">
-      <div class="head">
-        <span class="swatch" aria-hidden="true"></span>
-        <span class="name">{engine.name}</span>
-        <span class="role">{ROLE[engine.role]}</span>
-        <span class="spacer"></span>
-        <span class="score">{engine.score}</span>
-      </div>
-      <span class="sstats">{shortStats}</span>
-      <p class="pv" style:--pv-line="{SHORT_PV_LINE}px" style:--pv-lines={2} title={pvText}>{@render pvSpans()}</p>
-    </div>
-    {#if thumb > 0}{@render thumbButton()}{/if}
-    {@render copyStatus()}
-  </article>
-{:else}
-  <article class="card {engine.role}" class:compact class:noboard={!thumb} aria-label={label}>
+<article class="card {engine.role}" aria-label={label}>
+  <div class="main">
     <div class="head">
       <span class="swatch" aria-hidden="true"></span>
       <span class="name">{engine.name}</span>
       <span class="role">{ROLE[engine.role]}</span>
       <span class="spacer"></span>
-      <span class="status">{engine.status}</span>
-    </div>
-    <div class="numbers">
       <span class="score">{engine.score}</span>
-      {#if compact}
-        <span class="inline">{inline}</span>
-      {:else}
-        <dl>
-          {#each stats as s (s.k)}
-            <div>
-              <dt>{s.k}</dt>
-              <dd>{s.v}</dd>
-            </div>
-          {/each}
-        </dl>
-      {/if}
     </div>
-    <div class="pvrow">
-      <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={pvLines} title={pvText}>
-        {@render pvSpans()}
-      </p>
-      {#if thumb > 0}{@render thumbButton()}{/if}
-    </div>
-    {@render copyStatus()}
-  </article>
-{/if}
+    <span class="sstats">{shortStats}</span>
+    <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={2} title={pvText}>{@render pvSpans()}</p>
+  </div>
+  {#if thumb > 0}{@render thumbButton()}{/if}
+  {@render copyStatus()}
+</article>
 
 <style>
+  /* Engine.dc.html `short`: one row, PV board at the right. Height = max(82, thumb) + 22. */
   .card {
     --c: var(--engW);
     width: 100%;
     box-sizing: border-box;
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
-    padding: 14px;
+    padding: 10px 12px;
     border: 1px solid var(--line);
     background: var(--surface);
     color: var(--text);
@@ -161,11 +107,6 @@
   }
   .card.kibitzer {
     --c: var(--engK);
-  }
-  .card.compact {
-    gap: 8px;
-    padding: 12px;
-    container-type: inline-size;
   }
   .head {
     display: flex;
@@ -181,7 +122,7 @@
   }
   .name {
     min-width: 0;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
@@ -197,78 +138,35 @@
   .spacer {
     flex: 1;
   }
-  .status {
-    font-size: 12px;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  .numbers {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 14px;
-  }
   .score {
     font-family: var(--fontMono);
-    font-size: 28px;
+    font-size: 17px;
     font-weight: 600;
-    letter-spacing: -0.03em;
-    line-height: 1;
+    letter-spacing: -0.02em;
+    line-height: 22px;
   }
-  .compact .score {
-    font-size: 22px;
-  }
-  .inline {
-    font-family: var(--fontMono);
-    font-size: 12px;
-    color: var(--muted);
-  }
-  /* Narrow compact cards (tablet) always put the stats under the score, so "—" → data never re-wraps. */
-  @container (width < 320px) {
-    .inline {
-      flex-basis: 100%;
-    }
-  }
-  dl {
+  .main {
     flex: 1;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-    margin: 0;
-  }
-  dl div {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    min-width: 0;
+    gap: 4px;
   }
-  dt {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  dd {
-    margin: 0;
+  .sstats {
     font-family: var(--fontMono);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 11.5px;
+    line-height: 16px;
+    color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .pvrow {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-  }
   .pv {
-    flex: 1;
+    flex: none;
     min-width: 0;
     margin: 0;
     font-family: var(--fontMono);
-    font-size: 12.5px;
+    font-size: 12px;
     color: var(--muted);
     line-height: var(--pv-line);
     height: calc(var(--pv-lines) * var(--pv-line));
@@ -277,15 +175,6 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--pv-lines);
     line-clamp: var(--pv-lines);
-  }
-  /* Narrow cards with no PV board (tablet side cards, < 320 px content) reserve 2 PV lines, so the column
-     stays no taller than its board. Cards beside a PV board keep their lines. */
-  @container (width < 320px) {
-    .noboard .pv {
-      height: calc(2 * var(--pv-line));
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-    }
   }
   .pre {
     color: var(--faint);
@@ -298,6 +187,8 @@
     color: var(--text);
   }
   .thumb {
+    position: relative;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -311,45 +202,6 @@
   }
   .thumb:disabled {
     cursor: default;
-  }
-  /* Short card (Engine.dc.html `short`): one row, PV board at the right. Height = max(82, thumb) + 22. */
-  .card.short {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 10px 12px;
-  }
-  .main {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .short .name {
-    font-size: 13px;
-  }
-  .short .score {
-    font-size: 17px;
-    letter-spacing: -0.02em;
-    line-height: 22px;
-  }
-  .sstats {
-    font-family: var(--fontMono);
-    font-size: 11.5px;
-    line-height: 16px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .short .pv {
-    flex: none;
-    font-size: 12px;
-  }
-  .short .thumb {
-    position: relative;
-    flex-shrink: 0;
   }
   .copied {
     position: absolute;

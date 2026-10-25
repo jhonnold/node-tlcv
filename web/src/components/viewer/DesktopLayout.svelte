@@ -76,7 +76,7 @@
 
     <section class="board-col" aria-label="Board" style:--ev-off="{ev + EV_GAP}px">
       {#if game.players}
-        <div class="bar"><PlayerBar compact side={view.top} {...game.players[view.top]} /></div>
+        <div class="bar"><PlayerBar side={view.top} {...game.players[view.top]} /></div>
       {/if}
       <div class="board-row" style:gap="{EV_GAP}px">
         <EvalBar score={game.evalScore} flipped={view.flipped} thickness={ev} />
@@ -92,7 +92,7 @@
         {/if}
       </div>
       {#if game.players}
-        <div class="bar"><PlayerBar compact side={view.bottom} {...game.players[view.bottom]} /></div>
+        <div class="bar"><PlayerBar side={view.bottom} {...game.players[view.bottom]} /></div>
       {/if}
       <div class="handle-slot" style:right="{-(pad / 2 + 4)}px">
         <ResizeHandle {size} min={MIN_BOARD} {max} onresize={dragTo} oncommit={() => view.commitBoardPref()} />
@@ -101,12 +101,12 @@
 
     <section class="table" aria-label="Engines, moves and tabs">
       <div bind:offsetHeight={cardH}>
-        {#if game.engines}<EngineCard short engine={game.engines[view.top]} {thumb} flipped={view.flipped} />{/if}
+        {#if game.engines}<EngineCard engine={game.engines[view.top]} {thumb} flipped={view.flipped} />{/if}
       </div>
       <NavControls variant="desktop" />
       <div class="tabs"><Panel {source} tabs="noChat" /></div>
-      {#if kib}<EngineCard short engine={kib} {thumb} flipped={view.flipped} />{/if}
-      {#if game.engines}<EngineCard short engine={game.engines[view.bottom]} {thumb} flipped={view.flipped} />{/if}
+      {#if kib}<EngineCard engine={kib} {thumb} flipped={view.flipped} />{/if}
+      {#if game.engines}<EngineCard engine={game.engines[view.bottom]} {thumb} flipped={view.flipped} />{/if}
     </section>
   </div>
 </main>

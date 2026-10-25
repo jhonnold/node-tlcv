@@ -9,7 +9,6 @@
     | 'contrast'
     | 'grid'
     | 'eye'
-    | 'more'
     | 'menu'
     | 'first'
     | 'prev'
@@ -73,10 +72,6 @@
   {:else if name === 'eye'}
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
     <circle cx="12" cy="12" r="3"></circle>
-  {:else if name === 'more'}
-    <circle cx="12" cy="5" r="1"></circle>
-    <circle cx="12" cy="12" r="1"></circle>
-    <circle cx="12" cy="19" r="1"></circle>
   {:else if name === 'menu'}
     <line x1="3" y1="6" x2="21" y2="6"></line>
     <line x1="3" y1="12" x2="21" y2="12"></line>
