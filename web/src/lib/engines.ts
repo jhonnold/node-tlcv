@@ -1,6 +1,6 @@
 import type { ColorCode, KibitzerMeta, MoveMetaData, SerializedGame, SerializedKibitzerLiveData } from '$shared/types';
 import { colorName, otherColor } from '$shared/colors';
-import { DASH, formatDuration, formatNodes, formatNps, formatScore, npsSeconds } from './format';
+import { DASH, formatDuration, formatNodes, formatNps, formatScore, moveScore, npsSeconds, whiteScore } from './format';
 import { EMPTY_PV, pvParts } from './pv';
 import type { PvParts } from './pv';
 
@@ -20,7 +20,7 @@ export type EngineView = {
 };
 export type EngineViews = { white: EngineView; black: EngineView; kibitzer: EngineView | null };
 
-function empty(role: EngineRole, name: string, status = ''): EngineView {
+export function empty(role: EngineRole, name: string, status = ''): EngineView {
   return {
     role,
     name,
@@ -42,12 +42,13 @@ function fromMeta(game: SerializedGame, color: ColorCode, meta: MoveMetaData | u
   if (!meta || meta.color !== color || meta.depth == null) return empty(role, game[role].name);
   const secs = npsSeconds(meta);
   const pv = pvParts(meta.pv, meta.pvMoveNumber ?? meta.number, meta.color, skip);
+  const s = moveScore(meta);
   return {
     role,
     name: game[role].name,
     status: skip === 1 && pv.first ? `Expects ${pv.first}` : '',
-    scoreValue: meta.score,
-    score: formatScore(meta.score),
+    scoreValue: s,
+    score: formatScore(s),
     depth: String(meta.depth),
     nodes: formatNodes(meta.nodes),
     nps: formatNps(meta.nodes, secs),
@@ -63,12 +64,13 @@ function fromLive(game: SerializedGame, thinkMs: number | null): EngineView {
   const role = colorName(ld.color);
   const name = game[role].name;
   if (ld.depth <= 0) return empty(role, name, 'Thinking…');
+  const s = whiteScore(ld.score, ld.color);
   return {
     role,
     name,
     status: 'Thinking…',
-    scoreValue: ld.score,
-    score: formatScore(ld.score),
+    scoreValue: s,
+    score: formatScore(s),
     depth: String(ld.depth),
     nodes: formatNodes(ld.nodes),
     nps: formatNps(ld.nodes, ld.usedTime / 1000),

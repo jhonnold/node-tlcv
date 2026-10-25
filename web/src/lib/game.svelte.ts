@@ -1,4 +1,4 @@
-import { createContext } from 'svelte';
+import { createContext, untrack } from 'svelte';
 import { io, type Socket } from 'socket.io-client';
 import type { BroadcastDelta, ColorCode, SerializedBroadcast, SerializedGame, StoredGameMeta } from '$shared/types';
 import { colorName, otherColor } from '$shared/colors';
@@ -27,6 +27,10 @@ export type PlayerView = {
 };
 
 const TICK_MS = 250;
+const CHAT_LIMIT = 2000; // the server keeps this many lines (src/broadcast.ts:28)
+const CHAT_SLACK = 200; // trim in batches, so the keyed chat list isn't re-indexed on every message
+const trimChat = (lines: string[]): string[] =>
+  lines.length > CHAT_LIMIT + CHAT_SLACK ? lines.slice(-CHAT_LIMIT) : lines;
 const EDITABLE = ['INPUT', 'TEXTAREA', 'SELECT']; // array, not Set (lint)
 
 export class GameStore {
@@ -35,6 +39,7 @@ export class GameStore {
   #socket: Socket | null = null;
   // Keyed by side, set when that side's turn ends. Plain, not state: it always changes together with #live.
   #turnEnd: Partial<Record<ColorCode, TurnEnd>> = {};
+  #gen = $state(0); // replay generation (A7): bumped by beginReplay and exitReplay
 
   chat = $state.raw<string[]>([]);
   connected = $state(false);
@@ -50,6 +55,11 @@ export class GameStore {
   }
   get replayNumber(): number | null {
     return this.#replay?.number ?? null;
+  }
+
+  /** The current replay generation (A7). A pending load compares its gen against this. */
+  get replayGen(): number {
+    return this.#gen;
   }
 
   isReplay = $derived(this.#replay !== null);
@@ -159,7 +169,7 @@ export class GameStore {
       const { chat, ...rest } = data;
       this.#turnEnd = {};
       this.#live = rest;
-      this.chat = chat;
+      this.chat = trimChat(chat);
       if (!this.#replay) this.cursor = null; // full sync re-follows live, but never disturbs a replay
     });
     socket.on('update', (delta: BroadcastDelta) => {
@@ -176,7 +186,7 @@ export class GameStore {
       if (moves.length > prev.game.moves.length) playMoveSound(moves[moves.length - 1].move);
     });
     socket.on('new-chat', (msgs: string[]) => {
-      this.chat = [...this.chat, ...msgs];
+      this.chat = trimChat([...this.chat, ...msgs]);
     });
     const tick = setInterval(() => {
       this.now = Date.now();
@@ -206,12 +216,21 @@ export class GameStore {
 
   // ---- replay ---------------------------------------------------------------
 
-  loadReplay(meta: StoredGameMeta, gameNumber: number): void {
+  /** Starts a replay generation. Call it before fetching, and pass the result to loadReplay. */
+  beginReplay(): number {
+    return untrack(() => ++this.#gen);
+  }
+
+  /** Applies a replay unless `gen` is given and is no longer the latest. Returns whether it applied. */
+  loadReplay(meta: StoredGameMeta, gameNumber: number, gen?: number): boolean {
+    if (gen !== undefined && gen !== this.#gen) return false;
     this.#replay = { meta, number: gameNumber };
     this.cursor = 0;
+    return true;
   }
 
   exitReplay(): void {
+    untrack(() => this.#gen++);
     this.#replay = null;
     this.cursor = null;
   }
