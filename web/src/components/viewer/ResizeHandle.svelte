@@ -1,7 +1,14 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
 
-  type Props = { size: number; min: number; max: number; onresize: (px: number) => void; oncommit: () => void };
+  type Props = {
+    size: number;
+    min: number;
+    max: number;
+    /** px = size at pointerdown + pointer delta; from = size at pointerdown. */
+    onresize: (px: number, from: number) => void;
+    oncommit: () => void;
+  };
   const { size, min, max, onresize, oncommit }: Props = $props();
 
   let start = $state<{ x: number; size: number } | null>(null);
@@ -22,14 +29,14 @@
     if (frame) return;
     frame = requestAnimationFrame(() => {
       frame = 0;
-      if (start) onresize(start.size + lastX - start.x);
+      if (start) onresize(start.size + lastX - start.x, start.size);
     });
   }
   function up(): void {
     if (!start) return;
     cancelAnimationFrame(frame);
     frame = 0;
-    onresize(start.size + lastX - start.x);
+    onresize(start.size + lastX - start.x, start.size);
     start = null;
     oncommit();
   }

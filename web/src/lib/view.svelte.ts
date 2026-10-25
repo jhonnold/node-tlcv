@@ -7,7 +7,7 @@ import { KEYS, readNumber, writeNumber } from './storage';
 
 export type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 export type Side = 'white' | 'black';
-/** Everything the headers show, built once in Viewer. */
+/** Everything the header, EventCard and focus caption show, built once in Viewer. */
 export type HeaderInfo = {
   site: string;
   game: number | null;
@@ -17,6 +17,7 @@ export type HeaderInfo = {
 
 export const MIN_BOARD = 320;
 export const floor8 = (n: number): number => Math.floor(n / 8) * 8;
+export const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n));
 /** Board px within [MIN_BOARD, max], on Board's 8 px grid. */
 export function clampBoard(px: number, max: number): number {
   return floor8(Math.max(MIN_BOARD, Math.min(px, max)));
