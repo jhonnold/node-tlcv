@@ -147,7 +147,7 @@
   }
   .block.tablet {
     --navH: 44px;
-    --rowH: 28px;
+    --rowH: 44px; /* the Back to live button is a 44px touch target */
   }
   .grid4 {
     display: grid;

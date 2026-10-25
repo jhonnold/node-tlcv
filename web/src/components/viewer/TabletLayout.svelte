@@ -30,8 +30,10 @@
   const TABLE_MAX = 360;
 
   let w = $state(0); // <main> clientWidth
+  let metaH = $state(0); // EventCard row above the board (its height is content-dependent)
   const fitW = $derived(w - 3 * PAD - TABLE_MIN - EV - EV_GAP);
-  const fitH = $derived((innerHeight.current ?? 0) - 56 - 2 * PAD - BARS);
+  // Header, page padding top and bottom, the meta row and the gap under it, then the board column's bars.
+  const fitH = $derived((innerHeight.current ?? 0) - 56 - 3 * PAD - metaH - BARS);
   const size = $derived(Math.max(240, floor8(Math.min(fitW, fitH))));
   const boardW = $derived(size + EV + EV_GAP);
   const tableW = $derived(Math.floor(clamp(w - 3 * PAD - boardW, TABLE_MIN, TABLE_MAX)));
@@ -39,7 +41,7 @@
 
 <main class="tab" bind:clientWidth={w}>
   <div class="grid" style:grid-template-columns="{boardW}px {tableW}px">
-    <div class="meta"><EventCard {info} /></div>
+    <div class="meta" bind:offsetHeight={metaH}><EventCard {info} /></div>
 
     <section class="board-col" aria-label="Board" style:--ev-off="{EV + EV_GAP}px">
       {#if game.players}

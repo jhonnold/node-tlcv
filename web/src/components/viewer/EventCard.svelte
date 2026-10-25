@@ -27,7 +27,7 @@
       <span class="watching"><Icon name="eye" size={16} />{info.watching} watching</span>
     {/if}
   </div>
-  <h1>{info.site}</h1>
+  {#if info.site}<h1>{info.site}</h1>{/if}
   {#if gt}<span class="line">{gt}</span>{/if}
   <span class="line"
     >{#if opening.eco}<b>{opening.eco}</b>{ecoSep}{/if}{rest}</span
