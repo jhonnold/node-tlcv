@@ -44,11 +44,11 @@
       <!-- White/Black names are in the player bars; only the kibitzer card names its engine. -->
       {#if engine.role === 'kibitzer'}
         <span class="name">{engine.name}</span>
-        <!-- Archived kibitzers have no name, only the 'Kibitzer' fallback (lib/engines.ts): don't repeat it. -->
+        <!-- Without a live kibitzer name (archives) the name is the 'Kibitzer' fallback (lib/engines.ts): don't repeat it. -->
         {#if engine.name !== ROLE.kibitzer}<span class="role">{ROLE.kibitzer}</span>{/if}
       {/if}
       <span class="spacer"></span>
-      <span class="status">{engine.status}</span>
+      <span class="status" title={engine.status}>{engine.status}</span>
     </div>
     <span class="sstats">{stats}</span>
     <p class="pv" title={pvText}>
