@@ -1,6 +1,7 @@
 <script module lang="ts">
   export const PV_LINE = 20; // px per PV line
   export const PV_LINES = 3; // default PV lines
+  export const SHORT_PV_LINE = 18; // px per PV line in the short card (12px × 1.5)
 </script>
 
 <script lang="ts">
@@ -16,8 +17,9 @@
     thumb?: number;
     flipped?: boolean;
     lines?: number;
+    short?: boolean;
   };
-  const { engine, compact = false, thumb = 0, flipped = false, lines }: Props = $props();
+  const { engine, compact = false, thumb = 0, flipped = false, lines, short = false }: Props = $props();
 
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
   // PV lines: `lines`, else PV_LINES, or as many as fit beside the PV-end board. The PV box keeps this
@@ -38,6 +40,8 @@
       engine.time,
     ].join(' · '),
   );
+  // Short card, row 2: the inline stats, then the status when there is one.
+  const shortStats = $derived([inline, engine.status].filter(Boolean).join(' · '));
 
   let copied = $state(false);
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
@@ -50,40 +54,36 @@
   }
 </script>
 
-<article
-  class="card {engine.role}"
-  class:compact
-  class:noboard={!thumb}
-  aria-label="{ROLE[engine.role]} engine {engine.name}, score {engine.score}"
->
-  <div class="head">
-    <span class="swatch" aria-hidden="true"></span>
-    <span class="name">{engine.name}</span>
-    <span class="role">{ROLE[engine.role]}</span>
-    <span class="spacer"></span>
-    <span class="status">{engine.status}</span>
-  </div>
-  <div class="numbers">
-    <span class="score">{engine.score}</span>
-    {#if compact}
-      <span class="inline">{inline}</span>
-    {:else}
-      <dl>
-        {#each stats as s (s.k)}
-          <div>
-            <dt>{s.k}</dt>
-            <dd>{s.v}</dd>
-          </div>
-        {/each}
-      </dl>
-    {/if}
-  </div>
-  <div class="pvrow">
-    <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={pvLines} title={pvText}>
-      {#if engine.pv.pre}<span class="pre">{engine.pv.pre}</span>{/if}
-      <strong>{engine.pv.first}</strong>
-      <span class="rest">{engine.pv.rest}</span>
-    </p>
+{#snippet pvSpans()}
+  {#if engine.pv.pre}<span class="pre">{engine.pv.pre}</span>{/if}
+  <strong>{engine.pv.first}</strong>
+  <span class="rest">{engine.pv.rest}</span>
+{/snippet}
+
+{#snippet pvBoard()}
+  <Board
+    fen={engine.pvFen ?? EMPTY_FEN}
+    size={thumb}
+    coords={false}
+    animate={false}
+    {flipped}
+    label="PV end position"
+  />
+{/snippet}
+
+{#if short}
+  <article class="card short {engine.role}" aria-label="{ROLE[engine.role]} engine {engine.name}, score {engine.score}">
+    <div class="main">
+      <div class="head">
+        <span class="swatch" aria-hidden="true"></span>
+        <span class="name">{engine.name}</span>
+        <span class="role">{ROLE[engine.role]}</span>
+        <span class="spacer"></span>
+        <span class="score">{engine.score}</span>
+      </div>
+      <span class="sstats">{shortStats}</span>
+      <p class="pv" style:--pv-line="{SHORT_PV_LINE}px" style:--pv-lines={2} title={pvText}>{@render pvSpans()}</p>
+    </div>
     {#if thumb > 0}
       <button
         type="button"
@@ -93,19 +93,60 @@
         disabled={!engine.pvFen}
         onclick={copy}
       >
-        <Board
-          fen={engine.pvFen ?? EMPTY_FEN}
-          size={thumb}
-          coords={false}
-          animate={false}
-          {flipped}
-          label="PV end position"
-        />
-        <span>{copied ? 'Copied' : 'PV end'}</span>
+        {@render pvBoard()}
+        {#if copied}<span class="copied">Copied</span>{/if}
       </button>
     {/if}
-  </div>
-</article>
+  </article>
+{:else}
+  <article
+    class="card {engine.role}"
+    class:compact
+    class:noboard={!thumb}
+    aria-label="{ROLE[engine.role]} engine {engine.name}, score {engine.score}"
+  >
+    <div class="head">
+      <span class="swatch" aria-hidden="true"></span>
+      <span class="name">{engine.name}</span>
+      <span class="role">{ROLE[engine.role]}</span>
+      <span class="spacer"></span>
+      <span class="status">{engine.status}</span>
+    </div>
+    <div class="numbers">
+      <span class="score">{engine.score}</span>
+      {#if compact}
+        <span class="inline">{inline}</span>
+      {:else}
+        <dl>
+          {#each stats as s (s.k)}
+            <div>
+              <dt>{s.k}</dt>
+              <dd>{s.v}</dd>
+            </div>
+          {/each}
+        </dl>
+      {/if}
+    </div>
+    <div class="pvrow">
+      <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={pvLines} title={pvText}>
+        {@render pvSpans()}
+      </p>
+      {#if thumb > 0}
+        <button
+          type="button"
+          class="thumb"
+          aria-label="Copy FEN of PV end position"
+          title="PV end position — click to copy FEN"
+          disabled={!engine.pvFen}
+          onclick={copy}
+        >
+          {@render pvBoard()}
+          <span>{copied ? 'Copied' : 'PV end'}</span>
+        </button>
+      {/if}
+    </div>
+  </article>
+{/if}
 
 <style>
   .card {
@@ -276,5 +317,54 @@
   }
   .thumb:disabled {
     cursor: default;
+  }
+  /* Short card (Engine.dc.html `short`): one row, PV board at the right. Height = max(82, thumb) + 22. */
+  .card.short {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+  }
+  .main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .short .name {
+    font-size: 13px;
+  }
+  .short .score {
+    font-size: 17px;
+    letter-spacing: -0.02em;
+    line-height: 22px;
+  }
+  .sstats {
+    font-family: var(--fontMono);
+    font-size: 11.5px;
+    line-height: 16px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .short .pv {
+    flex: none;
+    font-size: 12px;
+  }
+  .short .thumb {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .copied {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 2px 0;
+    background: var(--surface);
+    color: var(--text);
+    text-align: center;
   }
 </style>
