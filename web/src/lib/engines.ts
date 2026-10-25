@@ -118,6 +118,6 @@ export function engineViews(
   return {
     white: stm === 'w' ? toMove : moved,
     black: stm === 'w' ? moved : toMove,
-    kibitzer: cur?.kibitzer ? fromKibitzer('Kibitzer', cur.kibitzer) : null,
+    kibitzer: cur?.kibitzer ? fromKibitzer(game.kibitzerLiveData?.name ?? 'Kibitzer', cur.kibitzer) : null,
   };
 }
