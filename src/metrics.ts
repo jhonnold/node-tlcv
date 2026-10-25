@@ -105,7 +105,7 @@ export const httpRequestDuration = new Histogram({
   name: 'ccrl_http_request_duration_seconds',
   help: 'HTTP request duration in seconds, by method, normalized route, and status code',
   labelNames: ['method', 'route', 'status'] as const,
-  // Web latency: fast in-memory EJS renders (~ms) through filesystem reads and
+  // Web latency: fast in-memory responses (~ms) through filesystem reads and
   // JSON.parse work (tens to hundreds of ms) up to slow archive reconstruction (1s+).
   buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
   registers: [register],

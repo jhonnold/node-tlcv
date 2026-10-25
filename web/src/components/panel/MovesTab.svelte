@@ -45,7 +45,7 @@
     copiedTimer = setTimeout(() => (copied = false), 1500);
   }
 
-  // Keeps the active move in view (navigation/index.ts:90-110). scrollIntoView would scroll the page on mobile.
+  // Keeps the active move in view. scrollIntoView would scroll the page on mobile.
   let list = $state<HTMLElement>();
   let head = $state<HTMLElement>();
   $effect(() => {

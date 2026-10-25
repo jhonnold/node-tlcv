@@ -14,7 +14,7 @@
 
   let nick = $state(readString(KEYS.username) ?? '');
   let msg = $state('');
-  // onchange fires on blur or Enter (chat/index.ts:95-100).
+  // onchange fires on blur or Enter.
   function saveNick(): void {
     writeString(KEYS.username, nick.trim());
     game.send('nick', nick.trim() || 'Anonymous');
@@ -25,7 +25,7 @@
     msg = '';
   }
 
-  // Stick to the bottom only if the reader was already there (chat/index.ts:48-79).
+  // Stick to the bottom only if the reader was already there.
   // The first run after mount always lands at the bottom: the pre-effect measured the previous tab's DOM.
   let atBottom = true; // plain, not state
   let first = true;

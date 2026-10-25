@@ -36,7 +36,7 @@
   onDestroy(() => cancelAnimationFrame(frame));
 </script>
 
-<!-- Pointer-only, as in the old resize.ts: ←/→ always step moves (user decision), so the handle takes no keys and no focus. -->
+<!-- Pointer-only: ←/→ always step moves, so the handle takes no keys and no focus. -->
 <div
   class="handle"
   class:dragging={start !== null}

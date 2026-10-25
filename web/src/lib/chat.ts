@@ -35,8 +35,8 @@ function renderMarkdown(text: string): string {
 }
 
 export type ChatLine = { name: string; html: string };
-const TLCV_LINE = /\[(.*)\]\s+-\s+\((.*?)\)\s+(.*)/i; // chat/index.ts:20, our own users: "[tlcv.net] - (nick) text"
-const PLAIN_LINE = /\[(.*?)\]\s+-\s+(.*)/i; // chat/index.ts:26, "[Name] - text", "[Server] - Game 3: …"
+const TLCV_LINE = /\[(.*)\]\s+-\s+\((.*?)\)\s+(.*)/i; // our own users: "[tlcv.net] - (nick) text"
+const PLAIN_LINE = /\[(.*?)\]\s+-\s+(.*)/i; // "[Name] - text", "[Server] - Game 3: …"
 const cache = new Map<string, ChatLine>(); // history is re-sent on every reconnect; parse each line once
 const CACHE_MAX = 4000;
 
@@ -59,7 +59,7 @@ export function parseChatLine(msg: string): ChatLine {
 }
 
 const INKS = ['var(--engW)', 'var(--engB)', 'var(--engK)'];
-/** A stable per-name colour (PD:451): Anonymous muted, Server/no name text, everyone else hashed onto the engine colours. */
+/** A stable per-name colour: Anonymous muted, Server/no name text, everyone else hashed onto the engine colours. */
 export function nameColor(name: string): string {
   if (!name || name === 'Server') return 'var(--text)';
   if (name === 'Anonymous') return 'var(--muted)';
@@ -68,5 +68,4 @@ export function nameColor(name: string): string {
   return INKS[h % INKS.length];
 }
 
-/** chat/index.ts:62 */
 export const chatPayload = (nick: string, msg: string): string => `(${nick || 'Anonymous'}) ${msg}`;

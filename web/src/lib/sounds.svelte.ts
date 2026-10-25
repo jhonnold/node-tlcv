@@ -1,6 +1,6 @@
 import { KEYS, readBool, writeBool } from './storage';
 
-// Sound is off until the user turns it on (same default as the jQuery build).
+// Sound is off until the user turns it on.
 class SoundState {
   enabled = $state(readBool(KEYS.sound));
 }

@@ -36,7 +36,7 @@ export function empty(role: EngineRole, name: string, status = ''): EngineView {
   };
 }
 
-/** A finished search (player-info.ts:39-53). Book moves have no depth and render as empty. */
+/** A finished search. Book moves have no depth and render as empty. */
 function fromMeta(game: SerializedGame, color: ColorCode, meta: MoveMetaData | undefined, skip: 0 | 1): EngineView {
   const role = colorName(color);
   if (!meta || meta.color !== color || meta.depth == null) return empty(role, game[role].name);
@@ -58,7 +58,7 @@ function fromMeta(game: SerializedGame, color: ColorCode, meta: MoveMetaData | u
   };
 }
 
-/** The search in progress (player-info.ts:27-37). */
+/** The search in progress. */
 function fromLive(game: SerializedGame, thinkMs: number | null): EngineView {
   const ld = game.liveData;
   const role = colorName(ld.color);
@@ -80,7 +80,7 @@ function fromLive(game: SerializedGame, thinkMs: number | null): EngineView {
   };
 }
 
-/** player-info.ts:115-139. The thread count is hidden (master plan §5), so status and NPS/Time stay empty. */
+/** The thread count is hidden, so status and NPS/Time stay empty. */
 function fromKibitzer(name: string, k: KibitzerMeta | SerializedKibitzerLiveData): EngineView {
   return {
     ...empty('kibitzer', name),

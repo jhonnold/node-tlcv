@@ -1,6 +1,5 @@
 import type { GameRecord } from '$shared/types';
 
-// Ported from public/js/components/games/index.ts:17-47.
 function normalizeForMatch(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -41,7 +40,7 @@ export type GameRow = {
   metaUrl?: string;
   pgnUrl?: string;
 };
-/** filteredGames (games/index.ts:49-58) plus the live row on top. Records are newest-first (result-parser.ts:177-185). */
+/** The filtered games plus the live row on top. Records are newest-first (result-parser.ts:177-185). */
 export function gameRows(
   games: GameRecord[] | null,
   live: { number: number | null; white: string; black: string } | null,

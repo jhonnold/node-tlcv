@@ -101,7 +101,7 @@ function positiveBound(vals: number[]): number {
 }
 
 export type Averages = { depth: string; nps: string; clock: string };
-/** The averages table (PD:168-181): mean depth, total nodes ÷ total search seconds, clock used = Σ move time. */
+/** The averages table: mean depth, total nodes ÷ total search seconds, clock used = Σ move time. */
 export function averages(moves: MoveMetaData[], color: ColorCode): Averages {
   let dSum = 0,
     dN = 0,
@@ -235,13 +235,13 @@ export function chartConfig(
           type: 'linear',
           min: id === 'eval' ? -bound : 0,
           max: bound,
-          grid: { color: (ctx) => (ctx.index === 1 ? c.line : 'transparent'), drawTicks: false }, // the mid line (PD:149)
+          grid: { color: (ctx) => (ctx.index === 1 ? c.line : 'transparent'), drawTicks: false }, // the mid line
           border: { color: c.line },
           ticks: { count: 3, padding: 6, color: c.muted, font: axisFont, callback: (v) => t.tick(Number(v)) },
         },
       },
       plugins: {
-        legend: { display: false }, // HTML legend instead (PD:163-167)
+        legend: { display: false }, // HTML legend instead
         tooltip: {
           backgroundColor: c.surface2,
           titleColor: c.text,
