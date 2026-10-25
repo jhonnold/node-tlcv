@@ -15,19 +15,14 @@
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
   const label = $derived(`${ROLE[engine.role]} engine ${engine.name}, score ${engine.score}`);
   const pvText = $derived([engine.pv.pre, engine.pv.first, engine.pv.rest].filter(Boolean).join(' '));
-  // Row 2: depth · nodes · nps · time, then the status when there is one.
+  // Row 2: depth · nodes · nps · time. The status sits at the right end of row 1.
   const stats = $derived(
     [
-      [
-        engine.depth === DASH ? DASH : `d${engine.depth}`,
-        engine.nodes,
-        engine.nps === DASH ? DASH : `${engine.nps}/s`,
-        engine.time,
-      ].join(' · '),
-      engine.status,
-    ]
-      .filter(Boolean)
-      .join(' · '),
+      engine.depth === DASH ? DASH : `d${engine.depth}`,
+      engine.nodes,
+      engine.nps === DASH ? DASH : `${engine.nps}/s`,
+      engine.time,
+    ].join(' · '),
   );
 
   let copied = $state(false);
@@ -45,10 +40,15 @@
   <div class="main">
     <div class="head">
       <span class="swatch" aria-hidden="true"></span>
-      <span class="name">{engine.name}</span>
-      <span class="role">{ROLE[engine.role]}</span>
-      <span class="spacer"></span>
       <span class="score">{engine.score}</span>
+      <!-- White/Black names are in the player bars; only the kibitzer card names its engine. -->
+      {#if engine.role === 'kibitzer'}
+        <span class="name">{engine.name}</span>
+        <!-- Archived kibitzers have no name, only the 'Kibitzer' fallback (lib/engines.ts): don't repeat it. -->
+        {#if engine.name !== ROLE.kibitzer}<span class="role">{ROLE.kibitzer}</span>{/if}
+      {/if}
+      <span class="spacer"></span>
+      <span class="status">{engine.status}</span>
     </div>
     <span class="sstats">{stats}</span>
     <p class="pv" title={pvText}>
@@ -139,6 +139,14 @@
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 22px;
+  }
+  .status {
+    min-width: 0;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .main {
     flex: 1;
