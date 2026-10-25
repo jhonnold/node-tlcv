@@ -18,7 +18,8 @@ app.use(compression());
 
 // TODO: Run static assets through a script for
 // production readiness
-// index.html is only served via sendApp, so the page guards always run.
+// Directory requests don't fall back to index.html; page routes send the shell via
+// sendApp (`/index.html` itself is still served directly).
 app.use(express.static('build/public', { index: false }));
 
 // Serve a folder of PGNs

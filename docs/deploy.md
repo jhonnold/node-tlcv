@@ -39,7 +39,7 @@ Steps:
 One-liner:
 
 ```bash
-ssh ccrl 'cd /var/www/node-tlcv && git stash push -- config/config.json && git pull && git stash pop && npm run prebuild'
+ssh ccrl 'cd /var/www/node-tlcv && git stash push -- config/config.json && git pull && git stash pop && npm ci && npm run prebuild'
 ```
 
 ## Backend (or full) changes
@@ -59,7 +59,7 @@ Steps:
 One-liner:
 
 ```bash
-ssh ccrl 'cd /var/www/node-tlcv && git stash push -- config/config.json && git pull && git stash pop && npm run build && sudo systemctl restart tlcv'
+ssh ccrl 'cd /var/www/node-tlcv && git stash push -- config/config.json && git pull && git stash pop && npm ci && npm run build && sudo systemctl restart tlcv'
 ```
 
 ## Verification

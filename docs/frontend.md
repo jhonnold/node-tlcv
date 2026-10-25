@@ -36,7 +36,7 @@ The frontend is a Svelte 5 single-page app (runes mode) in `web/`, bundled by Vi
 | Module | Holds |
 |--------|-------|
 | `lib/game.svelte.ts` `GameStore` | One per Viewer (context `setGameStore` / `getGameStore`). Live data from Socket.IO (`connect(port)` returns the disconnect function), the replayed game, the navigation cursor and arrow-key handler, and derived views (players, engines, arrows, eval, FEN, position label). |
-| `lib/tournament.svelte.ts` `TournamentStore` | One per Viewer (context `setTournament` / `getTournament`). Fetches `<base>/games` and `<base>/results` in its constructor; a 404 means "none yet" (`null`). `refreshSoon()` re-fetches 5 s later (Panel calls it when a new live game starts); `dispose()` aborts. |
+| `lib/tournament.svelte.ts` `TournamentStore` | One per Viewer (context `setTournament` / `getTournament`). Fetches `<base>/games` and `<base>/results` in its constructor; a 404 means "none yet" (`null`). `refreshSoon()` re-fetches 5 s later (Viewer calls it when a new live game starts); `dispose()` aborts. |
 | `lib/view.svelte.ts` `ViewState` | One per Viewer (context `setView` / `getView`). Breakpoint `bp` from three `MediaQuery` thresholds (768 / 1280 / 1800 px): mobile, tablet, desktop, large. Fields `flipped`, `focus`, `themeOpen`, `boardPref`; only `boardPref` persists (`board-width`, written by `commitBoardPref()` when a resize drag ends). |
 | `lib/theme/theme.svelte.ts` `theme` | Module singleton: preset, base preset, board palette, piece set, custom overrides. |
 | `lib/sounds.svelte.ts` `sound` | Move sounds, off until enabled; `Capture.mp3` for SAN containing `x`, else `Move.mp3`. |
@@ -60,7 +60,7 @@ localStorage keys (`KEYS` in `lib/storage.ts`; every access is wrapped in try/ca
 | `lobby/*` | `FeaturedCard`, `LiveCard`, `SiteFooter`; helpers in `lobby.ts` (30 s poll). |
 | `admin/*` | `BroadcastsSection`, `KibitzersSection`, `WebhooksSection`; helpers in `forms.ts`; styles in `admin.css`. |
 | `viewer/Header.svelte` | Tablet/desktop/large header: brand, site, "Game N", LIVE/ARCHIVE badge, watching count, Focus/Flip/Sound/Theme buttons |
-| `viewer/MobileHeader.svelte` | Mobile header with Flip and the ⋮ menu (Focus mode, Move sounds, Theme, All broadcasts) |
+| `viewer/MobileHeader.svelte` | Mobile header with Flip and the ⋮ menu (Focus mode, Move sounds, Theme & pieces, All broadcasts) |
 | `viewer/DesktopLayout.svelte` | Desktop (1280–1799) and large (≥1800, `large` prop) grids |
 | `viewer/TabletLayout.svelte` | Tablet layout: board, eval bar, engine cards, nav row, kibitzer strip and the mobile-tab Panel |
 | `viewer/MobileLayout.svelte` | Mobile layout: board, horizontal eval bar, nav row and the Panel |
@@ -80,7 +80,7 @@ Plain-TS logic in `web/src/lib/`: `arrows.ts` (PV arrows), `chat.ts` (line parsi
 - Tokens (`TOKEN_KEYS`, `lib/theme/presets.ts`): `bg`, `surface`, `surface2`, `line`, `line2`, `text`, `muted`, `faint`, `invBg`, `invText`, `liveBg`, `liveText`, `engW`, `engB`, `engK`, `evalW`, `evalB`, `link`, `sel`, `tabSel`, `posBg`, `boardLight`, `boardDark`, `boardHl`, `arrowW`, `arrowB`, `arrowK`. Presets: `PRESETS.dark` (Nord) and `PRESETS.light`.
 - Board palettes (`BOARD_PALETTES`: nord, steel, walnut, green) and piece sets (`lib/theme/piece-sets.ts`: classic, livius, meridian, meridian_shaded) are chosen independently of the preset.
 - `theme.svelte.ts` writes every token as `--<key>` on `<html>` and sets `color-scheme`. `styles/tokens.css` holds the dark preset and the nord board as the pre-JS fallback and **must stay in sync** with `PRESETS.dark` and `BOARD_PALETTES.nord`.
-- Components use scoped `<style>` blocks that read only `var(--token)`, plus `var(--fontUi)` / `var(--fontMono)`. A new colour needs a token in `TOKEN_KEYS`, both presets, and (for dark) `tokens.css`.
+- Components use scoped `<style>` blocks that read only `var(--token)` (except deliberately theme-invariant colours: player discs, LIVE badge text, board outline, which say so in a comment), plus `var(--fontUi)` / `var(--fontMono)`. A new colour needs a token in `TOKEN_KEYS`, both presets, and (for dark) `tokens.css`.
 - With nothing stored, the preset follows `prefers-color-scheme` and is not persisted. Editing a colour switches to `custom`: overrides go to `tlcv.customTheme` (written 150 ms after the last change) and the preset they derive from to `tlcv.themeBase`. A stored custom theme with unknown keys (pre-Svelte themes) is dropped along with `tlcv.themeBase`.
 
 ## REST API
@@ -97,7 +97,7 @@ Public (`src/routes/index.ts`). Missing resources answer `404 {"error": …}`.
 | `GET /broadcasts/:port/pgn` | current game PGN, `text/plain` |
 | `GET /archives` | `ArchiveSummary[]`, excluding tournaments that are live |
 | `GET /archives/:slug` | `ArchiveInfo` |
-| `GET /archives/:slug/results`, `/games`, `/games/:n` | as for broadcasts |
+| `GET /archives/:slug/results`, `/games`, `/games/:n` | as for broadcasts, except `/games` always answers 200 |
 
 Kept for external links: `GET /:port/pgn` and `GET /:port/result-table` (`text/plain`), and `GET /pgns/` (static files plus a directory listing of `PGNS_DIR`).
 

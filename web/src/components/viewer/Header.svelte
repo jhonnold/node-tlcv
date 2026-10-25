@@ -166,6 +166,7 @@
   }
   .badge.live {
     background: var(--liveBg);
+    /* Theme-invariant: text on the LIVE badge. */
     color: #ffffff;
   }
   .badge.archive {

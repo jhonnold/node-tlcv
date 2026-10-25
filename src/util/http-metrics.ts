@@ -2,9 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import onFinished from 'on-finished';
 import { httpRequestDuration } from '../metrics.js';
 
-// Static assets are served from build/public: JS bundles + CSS at the root
-// (main.bundle.js, main.css, …), the img/ and audio/ dirs, favicon, and the /pgns
-// mount. These URLs are unbounded (one path per asset/game), so collapse them all
+// Static assets are served from build/public. Vite output: hashed bundles under
+// /assets/, plus img/, audio/, favicon and the /pgns mount. These URLs are unbounded
+// (one path per asset/game), so collapse them all
 // into a single `<static>` label to defend against a cardinality explosion. Match
 // by asset extension + dir so root-level bundles are covered too, not just subdirs.
 const STATIC_PATH = /^\/(img|audio|pgns)(\/|$)|\.(js|mjs|css|map|ico|png|svg|jpe?g|gif|webp|mp3|wav|woff2?|ttf)$/i;

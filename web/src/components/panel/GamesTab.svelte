@@ -229,6 +229,7 @@
     box-sizing: border-box;
     border: 1px solid;
   }
+  /* Theme-invariant disc colours, as in PlayerBar. */
   .disc.white {
     background: #eceff4;
     border-color: #b4bccb;
@@ -274,6 +275,7 @@
     padding: 0 10px;
     border: 0;
     background: var(--liveBg);
+    /* Theme-invariant: text on the LIVE badge. */
     color: #fff;
     font-size: 12px;
     font-weight: 700;
