@@ -20,6 +20,8 @@ deployment procedure as actually performed on the production host.
 > connection history, etc.) and clobbering it risks closing, changing, or losing
 > live broadcasts. Stash or otherwise preserve the prod config across the pull.
 
+> **Dependencies**: when `package.json` / `package-lock.json` change (e.g. the Svelte migration), run `npm ci` after `git stash pop` and before building. The build needs Node `^20.19.0 || >=22.12.0` (see [gotchas.md](./gotchas.md)).
+
 ## UI-only changes
 
 Frontend artifacts are served directly by Express, so no service restart is needed
@@ -32,7 +34,7 @@ Steps:
 3. `git stash push -- config/config.json` (preserve the live config)
 4. `git pull`
 5. `git stash pop` (restore the live config)
-6. `npm run prebuild` (webpack production build of public assets)
+6. `npm run prebuild` (`vite build` into `build/public`; Express reads `index.html` per request, so no restart)
 
 One-liner:
 
