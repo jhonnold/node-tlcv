@@ -10,10 +10,14 @@
     compact?: boolean;
     thumb?: number;
     flipped?: boolean;
+    lines?: number;
   };
-  const { engine, compact = false, thumb = 0, flipped = false }: Props = $props();
+  const { engine, compact = false, thumb = 0, flipped = false, lines }: Props = $props();
 
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
+  // PV lines (20 px each): `lines`, else 3, or as many as fit beside the PV-end board. The PV box keeps
+  // this height, so the card never grows or shrinks with the PV.
+  const pvLines = $derived(lines ?? Math.max(3, Math.floor(thumb / 20)));
   const stats = $derived([
     { k: 'Depth', v: engine.depth },
     { k: 'Nodes', v: engine.nodes },
@@ -68,7 +72,7 @@
     {/if}
   </div>
   <div class="pvrow">
-    <p class="pv">
+    <p class="pv" style:--pv-lines={pvLines}>
       {#if engine.pv.pre}<span class="pre">{engine.pv.pre}</span>{/if}
       <strong>{engine.pv.first}</strong>
       <span class="rest">{engine.pv.rest}</span>
@@ -119,6 +123,7 @@
   .card.compact {
     gap: 8px;
     padding: 12px;
+    container-type: inline-size;
   }
   .head {
     display: flex;
@@ -176,6 +181,12 @@
     font-size: 12px;
     color: var(--muted);
   }
+  /* Narrow compact cards (tablet) always put the stats under the score, so "—" → data never re-wraps. */
+  @container (width < 320px) {
+    .inline {
+      flex-basis: 100%;
+    }
+  }
   dl {
     flex: 1;
     display: grid;
@@ -216,8 +227,14 @@
     margin: 0;
     font-family: var(--fontMono);
     font-size: 12.5px;
-    line-height: 1.6;
+    line-height: 20px;
     color: var(--muted);
+    height: calc(var(--pv-lines) * 20px);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--pv-lines);
+    line-clamp: var(--pv-lines);
   }
   .pre {
     color: var(--faint);

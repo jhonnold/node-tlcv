@@ -16,11 +16,11 @@
 
 {#if game.engines}
   <div class="engines">
-    <EngineCard engine={game.engines[top]} compact thumb={84} {flipped} />
+    <EngineCard engine={game.engines[top]} compact thumb={80} {flipped} />
     {#if hasKibitzer}
-      <EngineCard engine={game.engines.kibitzer ?? emptyKibitzer} compact thumb={84} {flipped} />
+      <EngineCard engine={game.engines.kibitzer ?? emptyKibitzer} compact thumb={80} {flipped} />
     {/if}
-    <EngineCard engine={game.engines[bottom]} compact thumb={84} {flipped} />
+    <EngineCard engine={game.engines[bottom]} compact thumb={80} {flipped} />
   </div>
 {:else}
   <p class="empty">Waiting for game data…</p>
