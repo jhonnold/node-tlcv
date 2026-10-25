@@ -42,6 +42,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* Inline and short lines give way before the nav label; the row variant keeps its size under the board. */
+  .line:not(.row) {
+    flex-shrink: 1000;
+  }
   .row {
     display: flex;
     gap: 16px;

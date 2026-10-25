@@ -118,7 +118,7 @@
     min-width: 0;
   }
   .pos-label {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     font-family: var(--fontMono);
     font-size: 13px;
     color: var(--muted);
@@ -129,7 +129,7 @@
   }
   .desktop .pos-label,
   .tablet .pos-label {
-    flex: 1 0 auto;
+    flex: 1 1 auto;
   }
   .following {
     display: inline-flex;
