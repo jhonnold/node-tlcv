@@ -148,6 +148,7 @@
     --pCtlH: 36px;
     --pIconBtn: 32px;
     --pBtnH: 28px;
+    --pBackH: 32px;
     --pRowH: 40px;
     --pChartH: 220px;
     --pTabPad: 8px;
@@ -165,6 +166,7 @@
     --pCtlH: 44px;
     --pIconBtn: 44px;
     --pBtnH: 44px;
+    --pBackH: 44px;
     --pRowH: 44px;
     --pChartH: 180px;
     --pTabPad: 12px;
