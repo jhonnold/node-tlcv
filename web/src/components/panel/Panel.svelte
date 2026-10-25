@@ -137,8 +137,8 @@
   <div
     class="body"
     id="{uid}-body"
-    role={solo ? 'region' : 'tabpanel'}
-    aria-labelledby={solo ? `${uid}-solo` : `${uid}-tab-${active}`}
+    role={solo ? undefined : 'tabpanel'}
+    aria-labelledby={solo ? undefined : `${uid}-tab-${active}`}
     bind:this={body}
   >
     {#if active === 'engines'}<EnginesTab {flipped} />

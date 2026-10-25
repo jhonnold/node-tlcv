@@ -80,11 +80,16 @@
       label="PV end position"
     />
     {#if short}
-      {#if copied}<span class="copied" role="status">Copied</span>{/if}
+      {#if copied}<span class="copied" aria-hidden="true">Copied</span>{/if}
     {:else}
       <span>{copied ? 'Copied' : 'PV end'}</span>
     {/if}
   </button>
+{/snippet}
+
+<!-- Announces the copy outside the button, where a live region is read; the visual strip is aria-hidden. -->
+{#snippet copyStatus()}
+  <span class="sr-only" role="status">{copied ? 'FEN copied' : ''}</span>
 {/snippet}
 
 {#if short}
@@ -101,6 +106,7 @@
       <p class="pv" style:--pv-line="{SHORT_PV_LINE}px" style:--pv-lines={2} title={pvText}>{@render pvSpans()}</p>
     </div>
     {#if thumb > 0}{@render thumbButton()}{/if}
+    {@render copyStatus()}
   </article>
 {:else}
   <article class="card {engine.role}" class:compact class:noboard={!thumb} aria-label={label}>
@@ -132,6 +138,7 @@
       </p>
       {#if thumb > 0}{@render thumbButton()}{/if}
     </div>
+    {@render copyStatus()}
   </article>
 {/if}
 
@@ -353,5 +360,12 @@
     background: var(--surface);
     color: var(--text);
     text-align: center;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
   }
 </style>
