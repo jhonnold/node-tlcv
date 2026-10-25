@@ -1,6 +1,6 @@
 <script module lang="ts">
   export type TabId = 'engines' | 'moves' | 'chat' | 'graphs' | 'standings' | 'games' | 'info';
-  export type PanelTabs = 'all' | 'mobile';
+  export type PanelTabs = 'all' | 'mobile' | 'noChat' | 'chatFirst' | 'chatOnly';
 </script>
 
 <script lang="ts">
@@ -23,12 +23,28 @@
     height?: string;
     bordered?: boolean;
     flipped?: boolean;
+    touch?: boolean; // 44 px touch targets ('mobile' implies it)
   };
-  const { source, tabs, initialTab, height = '100%', bordered = true, flipped = false }: Props = $props();
+  const {
+    source,
+    tabs,
+    initialTab,
+    height = '100%',
+    bordered = true,
+    flipped = false,
+    touch = false,
+  }: Props = $props();
 
   const game = getGameStore();
   const ALL: TabId[] = ['moves', 'chat', 'graphs', 'standings', 'games', 'info'];
-  const SETS: Record<PanelTabs, TabId[]> = { all: ALL, mobile: ['engines', ...ALL] };
+  const NO_CHAT = ALL.filter((id) => id !== 'chat');
+  const SETS: Record<PanelTabs, TabId[]> = {
+    all: ALL,
+    mobile: ['engines', ...ALL],
+    noChat: NO_CHAT,
+    chatFirst: ['chat', ...NO_CHAT],
+    chatOnly: ['chat'],
+  };
   const LABEL: Record<TabId, string> = {
     engines: 'Engines',
     moves: 'Moves',
@@ -40,6 +56,9 @@
   };
   // Chat is hidden on archives and during any replay.
   const ids = $derived(SETS[tabs].filter((id) => id !== 'chat' || (source.kind === 'live' && !game.isReplay)));
+  // chatOnly: a "Chat" header instead of a tab bar, no ReplayBanner (the noChat Panel beside it shows one),
+  // and an empty state while chat is hidden (`ids` is empty, so `active` is undefined).
+  const solo = $derived(tabs === 'chatOnly');
   let picked = $state<TabId | null>(null);
   const active = $derived.by(() => {
     const order: (TabId | null | undefined)[] = [picked, initialTab, source.kind === 'archive' ? 'games' : null];
@@ -90,28 +109,50 @@
   });
 </script>
 
-<section class="panel" class:mobile={tabs === 'mobile'} class:bordered aria-label="Game panels" style:height>
-  <div class="tabbar" role="tablist" aria-label="Panel tabs">
-    {#each ids as id (id)}
-      <button
-        type="button"
-        role="tab"
-        id="{uid}-tab-{id}"
-        aria-selected={id === active}
-        aria-controls="{uid}-body"
-        onclick={() => pick(id)}>{LABEL[id]}</button
-      >
-    {/each}
-  </div>
-  <ReplayBanner {source} onBack={backToLive} />
-  <div class="body" id="{uid}-body" role="tabpanel" aria-labelledby="{uid}-tab-{active}" bind:this={body}>
+<section
+  class="panel"
+  class:touch={touch || tabs === 'mobile'}
+  class:bordered
+  aria-label={solo ? undefined : 'Game panels'}
+  aria-labelledby={solo ? `${uid}-solo` : undefined}
+  style:height
+>
+  {#if solo}
+    <div class="solo"><h2 id="{uid}-solo">Chat</h2></div>
+  {:else}
+    <div class="tabbar" role="tablist" aria-label="Panel tabs">
+      {#each ids as id (id)}
+        <button
+          type="button"
+          role="tab"
+          id="{uid}-tab-{id}"
+          aria-selected={id === active}
+          aria-controls="{uid}-body"
+          onclick={() => pick(id)}>{LABEL[id]}</button
+        >
+      {/each}
+    </div>
+    <ReplayBanner {source} onBack={backToLive} />
+  {/if}
+  <div
+    class="body"
+    id="{uid}-body"
+    role={solo ? undefined : 'tabpanel'}
+    aria-labelledby={solo ? undefined : `${uid}-tab-${active}`}
+    bind:this={body}
+  >
     {#if active === 'engines'}<EnginesTab {flipped} />
     {:else if active === 'moves'}<MovesTab {source} scroller={body} />
     {:else if active === 'chat'}<ChatTab scroller={body} />
     {:else if active === 'graphs'}<GraphsTab />
     {:else if active === 'standings'}<StandingsTab {source} />
     {:else if active === 'games'}<GamesTab {source} {busy} {err} onReplay={startReplay} onWatch={backToLive} />
-    {:else if active === 'info'}<InfoTab {source} />{/if}
+    {:else if active === 'info'}<InfoTab {source} />
+    {:else if solo}<p class="empty">
+        {source.kind === 'archive'
+          ? "Chat isn't available for archived games."
+          : 'Chat returns when you go back to live.'}
+      </p>{/if}
   </div>
 </section>
 
@@ -132,7 +173,7 @@
     color: var(--text);
     font-family: var(--fontUi);
   }
-  .panel.mobile {
+  .panel.touch {
     --pTabH: 44px;
     --pSegH: 40px;
     --pCtlH: 44px;
@@ -143,6 +184,22 @@
   }
   .panel.bordered {
     border: 1px solid var(--line);
+  }
+  .solo {
+    flex-shrink: 0;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .solo h2 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
   .tabbar {
     flex-shrink: 0;
@@ -175,5 +232,11 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+  }
+  .empty {
+    margin: 0;
+    padding: 14px;
+    font-size: 13px;
+    color: var(--muted);
   }
 </style>
