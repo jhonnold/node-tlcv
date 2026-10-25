@@ -39,7 +39,7 @@ export class GameStore {
   #socket: Socket | null = null;
   // Keyed by side, set when that side's turn ends. Plain, not state: it always changes together with #live.
   #turnEnd: Partial<Record<ColorCode, TurnEnd>> = {};
-  #gen = 0; // replay generation (A7): bumped by beginReplay and exitReplay
+  #gen = $state(0); // replay generation (A7): bumped by beginReplay and exitReplay
 
   chat = $state.raw<string[]>([]);
   connected = $state(false);

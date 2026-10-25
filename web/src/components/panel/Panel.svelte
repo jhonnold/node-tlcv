@@ -58,39 +58,14 @@
     picked = id;
     if (body) body.scrollTop = 0; // before the DOM swap, so MovesTab's own auto-scroll wins
   }
-  // Only keyboard focus steps the tabs; a mouse-clicked tab leaves the arrows to the board. Chrome sets
-  // :focus-visible on the keydown itself, so the focus origin is tracked: a pointerdown marks the next focus.
-  let pointerFocus = false;
-  let keyFocus = false;
-  function onTabPointer(): void {
-    pointerFocus = true;
-    setTimeout(() => (pointerFocus = false)); // the focus event fires within the same mousedown
-  }
-  function onTabFocus(): void {
-    keyFocus = !pointerFocus;
-  }
-  function onTabKey(e: KeyboardEvent): void {
-    if (!keyFocus) return;
-    if (e.altKey || e.ctrlKey || e.metaKey) return;
-    const n = ids.length;
-    const i = ids.indexOf(active);
-    let next: number;
-    if (e.key === 'ArrowRight') next = (i + 1) % n;
-    else if (e.key === 'ArrowLeft') next = (i - 1 + n) % n;
-    else if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = n - 1;
-    else return;
-    e.preventDefault();
-    e.stopPropagation(); // game.onKeydown would otherwise step the moves
-    pick(ids[next]);
-    document.getElementById(`${uid}-tab-${ids[next]}`)?.focus();
-  }
-
   // Replays start and end here. The store's generation (A7) drops a load that a newer Replay or a Watch overtook.
+  // Panel-local owner of busy/err: `mine` is the generation of this Panel's latest Replay.
+  let mine = 0;
   let busy = $state<number | null>(null);
   let err = $state('');
   async function startReplay(n: number): Promise<void> {
     const gen = game.beginReplay();
+    mine = gen;
     // busy disables the Replay button, which drops focus to BODY: remember whether the list had it.
     const hadFocus = body?.contains(document.activeElement) ?? false;
     busy = n;
@@ -104,16 +79,21 @@
         if (hadFocus && document.activeElement === document.body) document.getElementById(`${uid}-tab-moves`)?.focus();
       }
     } catch {
-      if (game.replayGen === gen) err = `Couldn't load game ${n}.`;
+      if (mine === gen) err = `Couldn't load game ${n}.`;
     } finally {
-      if (game.replayGen === gen) busy = null;
+      if (mine === gen) busy = null;
     }
   }
   function backToLive(): void {
     game.exitReplay(); // bumps the generation, so a pending load can't apply
+    mine = game.replayGen;
     busy = null;
     err = '';
   }
+  // An exitReplay from outside Panel bumps the store's generation: a Replay pending here then ends at once.
+  $effect(() => {
+    if (busy !== null && game.replayGen !== mine) busy = null;
+  });
 
   // A new live game: refresh standings and games once the CT dump has landed.
   let prevPair = '';
@@ -138,10 +118,6 @@
           type="button"
           role="tab"
           id="{uid}-tab-{id}"
-          tabindex={id === active ? 0 : -1}
-          onkeydown={onTabKey}
-          onpointerdown={onTabPointer}
-          onfocus={onTabFocus}
           aria-selected={id === active}
           aria-controls="{uid}-body"
           onclick={() => pick(id)}>{LABEL[id]}</button
