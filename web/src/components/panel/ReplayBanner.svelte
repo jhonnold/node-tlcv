@@ -3,8 +3,8 @@
   import { prettyResult } from '$lib/moves';
   import type { ViewerSource } from '$lib/url';
 
-  type Props = { source: ViewerSource };
-  const { source }: Props = $props();
+  type Props = { source: ViewerSource; onBack: () => void };
+  const { source, onBack }: Props = $props();
   const game = getGameStore();
 </script>
 
@@ -29,7 +29,7 @@
       </div>
     </div>
     {#if source.kind === 'live'}
-      <button type="button" class="back" onclick={() => game.exitReplay()}>Back to live</button>
+      <button type="button" class="back" onclick={onBack}>Back to live</button>
     {/if}
   </div>
 {/if}

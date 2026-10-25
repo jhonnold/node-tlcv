@@ -26,7 +26,9 @@
   }
 
   // Stick to the bottom only if the reader was already there (chat/index.ts:48-79).
+  // The first run after mount always lands at the bottom: the pre-effect measured the previous tab's DOM.
   let atBottom = true; // plain, not state
+  let first = true;
   $effect.pre(() => {
     void lines.length;
     const sc = scroller;
@@ -35,7 +37,8 @@
   $effect(() => {
     void lines.length;
     const sc = scroller;
-    if (sc && atBottom) sc.scrollTop = sc.scrollHeight;
+    if (sc && (atBottom || first)) sc.scrollTop = sc.scrollHeight;
+    if (sc) first = false;
   });
 </script>
 

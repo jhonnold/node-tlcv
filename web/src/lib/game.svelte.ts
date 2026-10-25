@@ -27,6 +27,7 @@ export type PlayerView = {
 };
 
 const TICK_MS = 250;
+const CHAT_LIMIT = 2000; // the server keeps this many lines (src/broadcast.ts:28)
 const EDITABLE = ['INPUT', 'TEXTAREA', 'SELECT']; // array, not Set (lint)
 
 export class GameStore {
@@ -159,7 +160,7 @@ export class GameStore {
       const { chat, ...rest } = data;
       this.#turnEnd = {};
       this.#live = rest;
-      this.chat = chat;
+      this.chat = chat.slice(-CHAT_LIMIT);
       if (!this.#replay) this.cursor = null; // full sync re-follows live, but never disturbs a replay
     });
     socket.on('update', (delta: BroadcastDelta) => {
@@ -176,7 +177,7 @@ export class GameStore {
       if (moves.length > prev.game.moves.length) playMoveSound(moves[moves.length - 1].move);
     });
     socket.on('new-chat', (msgs: string[]) => {
-      this.chat = [...this.chat, ...msgs];
+      this.chat = [...this.chat, ...msgs].slice(-CHAT_LIMIT);
     });
     const tick = setInterval(() => {
       this.now = Date.now();

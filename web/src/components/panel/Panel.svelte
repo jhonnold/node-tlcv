@@ -6,6 +6,7 @@
 <script lang="ts">
   import { getGameStore } from '$lib/game.svelte';
   import { getTournament } from '$lib/tournament.svelte';
+  import { loadReplayGame } from '$lib/replay';
   import type { ViewerSource } from '$lib/url';
   import ChatTab from './ChatTab.svelte';
   import EnginesTab from './EnginesTab.svelte';
@@ -57,6 +58,47 @@
     picked = id;
     if (body) body.scrollTop = 0; // before the DOM swap, so MovesTab's own auto-scroll wins
   }
+  function onTabKey(e: KeyboardEvent): void {
+    const n = ids.length;
+    const i = ids.indexOf(active);
+    let next: number;
+    if (e.key === 'ArrowRight') next = (i + 1) % n;
+    else if (e.key === 'ArrowLeft') next = (i - 1 + n) % n;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = n - 1;
+    else return;
+    e.preventDefault();
+    e.stopPropagation(); // game.onKeydown would otherwise step the moves
+    pick(ids[next]);
+    document.getElementById(`${uid}-tab-${ids[next]}`)?.focus();
+  }
+
+  // Replays start and end here. `req` drops a late load that a newer choice has overtaken.
+  let req = 0;
+  let busy = $state<number | null>(null);
+  let err = $state('');
+  async function startReplay(n: number): Promise<void> {
+    const id = ++req;
+    busy = n;
+    err = '';
+    let loaded = false;
+    try {
+      const meta = await loadReplayGame(source, n);
+      if (id !== req) return;
+      game.loadReplay(meta, n);
+      loaded = true;
+    } catch {
+      if (id === req) err = `Couldn't load game ${n}.`;
+    } finally {
+      if (id === req) busy = null;
+    }
+    if (loaded && SETS[tabs].includes('moves')) pick('moves'); // as the old client did (games/index.ts:113)
+  }
+  function backToLive(): void {
+    req++;
+    busy = null;
+    game.exitReplay();
+  }
 
   // A new live game: refresh standings and games once the CT dump has landed.
   let prevPair = '';
@@ -75,19 +117,20 @@
   {#if tabs === 'movesOnly'}
     <div class="title"><h2>Moves</h2></div>
   {:else}
-    <div class="tabbar" role="tablist" aria-label="Panel tabs">
+    <div class="tabbar" role="tablist" aria-label="Panel tabs" tabindex="-1" onkeydown={onTabKey}>
       {#each ids as id (id)}
         <button
           type="button"
           role="tab"
           id="{uid}-tab-{id}"
+          tabindex={id === active ? 0 : -1}
           aria-selected={id === active}
           aria-controls="{uid}-body"
           onclick={() => pick(id)}>{LABEL[id]}</button
         >
       {/each}
     </div>
-    <ReplayBanner {source} />
+    <ReplayBanner {source} onBack={backToLive} />
   {/if}
   <div
     class="body"
@@ -102,7 +145,7 @@
     {:else if active === 'chat'}<ChatTab scroller={body} />
     {:else if active === 'graphs'}<GraphsTab />
     {:else if active === 'standings'}<StandingsTab {source} />
-    {:else if active === 'games'}<GamesTab {source} />
+    {:else if active === 'games'}<GamesTab {source} {busy} {err} onReplay={startReplay} onWatch={backToLive} />
     {:else if active === 'info'}<InfoTab {source} />{/if}
   </div>
 </section>

@@ -11,7 +11,13 @@ export function engineKey(name: string): string {
     .map((t) => t.replace(/^v(?=\d)/, '').replace(/(\.0+)+$/, '')) // "v2.0" → "2"
     .join(' ');
 }
-export const sameEngine = (a: string, b: string): boolean => engineKey(a) === engineKey(b);
+/** Build tags can differ ("Caissa 1.25 AVX2" vs "CAISSA 1.25 64-BIT"), so the shorter name must be a prefix of the longer. */
+export function sameEngine(a: string, b: string): boolean {
+  const x = engineKey(a).split(' ');
+  const y = engineKey(b).split(' ');
+  const [s, l] = x.length <= y.length ? [x, y] : [y, x];
+  return s.every((t, i) => t === l[i]);
+}
 
 /** 2.5 → "2½", 0.5 → "½" (PD:443). */
 export function half(x: number): string {

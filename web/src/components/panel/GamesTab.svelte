@@ -3,20 +3,23 @@
   import { getGameStore } from '$lib/game.svelte';
   import { gameRows } from '$lib/games';
   import { prettyResult } from '$lib/moves';
-  import { loadReplayGame } from '$lib/replay';
   import { getTournament } from '$lib/tournament.svelte';
   import type { ViewerSource } from '$lib/url';
 
-  type Props = { source: ViewerSource };
-  const { source }: Props = $props();
+  type Props = {
+    source: ViewerSource;
+    busy: number | null;
+    err: string;
+    onReplay: (n: number) => void;
+    onWatch: () => void;
+  };
+  const { source, busy, err, onReplay, onWatch }: Props = $props();
   const game = getGameStore();
   const tournament = getTournament();
   const uid = $props.id();
 
   let query = $state('');
   let decisive = $state(false);
-  let busy = $state<number | null>(null);
-  let err = $state('');
 
   onMount(() => void tournament.refresh());
   // Strings, so the rows aren't rebuilt on every delta (game.live changes each time).
@@ -32,18 +35,6 @@
       decisive,
     ),
   );
-
-  async function replay(n: number): Promise<void> {
-    busy = n;
-    err = '';
-    try {
-      game.loadReplay(await loadReplayGame(source, n), n);
-    } catch {
-      err = `Couldn't load game ${n}.`;
-    } finally {
-      busy = null;
-    }
-  }
 </script>
 
 <div class="filter">
@@ -87,7 +78,7 @@
         </div>
         <span class="res" class:live={r.live}>{r.live ? 'LIVE' : prettyResult(r.result)}</span>
         {#if r.live}
-          <button type="button" class="watch" onclick={() => game.exitReplay()}>Watch</button>
+          <button type="button" class="watch" onclick={onWatch}>Watch</button>
         {:else}
           {#if r.metaUrl && r.num != null}
             <button
@@ -96,7 +87,7 @@
               aria-label="Replay game {r.num}"
               title="Replay"
               disabled={busy === r.num}
-              onclick={() => replay(r.num!)}
+              onclick={() => onReplay(r.num!)}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
                 ><polygon points="7 4 20 12 7 20 7 4"></polygon></svg
