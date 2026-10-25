@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getGameStore } from '$lib/game.svelte';
+  import { moveLabel } from '$lib/positions';
   import Icon from './Icon.svelte';
   import OpeningLine from './OpeningLine.svelte';
 
@@ -9,9 +10,7 @@
   const game = getGameStore();
   const iconSize = $derived(variant === 'tablet' || variant === 'mobile' ? 20 : 18);
   // Mobile middle button: the move just played, or Start.
-  const short = $derived(
-    game.moveMeta ? `${game.moveMeta.number}${game.moveMeta.color === 'w' ? '.' : '…'} ${game.moveMeta.move}` : 'Start',
-  );
+  const short = $derived(game.moveMeta ? moveLabel(game.moveMeta) : 'Start');
   const behind = $derived(!game.following && !game.isReplay);
   const midText = $derived(game.isReplay ? short : game.following ? `Live · ${short}` : `${short} · back to live`);
   const midLabel = $derived(

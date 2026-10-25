@@ -1,6 +1,8 @@
 <script lang="ts">
   import BrandMark from '../BrandMark.svelte';
   import Icon from './Icon.svelte';
+  import ModeLine from './ModeLine.svelte';
+  import { plural } from '../lobby/lobby';
   import { getView, gameText } from '$lib/view.svelte';
   import type { Breakpoint, HeaderInfo } from '$lib/view.svelte';
   import { sound, toggleSound } from '$lib/sounds.svelte';
@@ -10,7 +12,7 @@
 
   const view = getView();
   const iconSize = $derived(bp === 'tablet' ? 20 : 18);
-  const parts = $derived([gameText(info), info.archive ? '' : `${info.watching} watching`].filter(Boolean));
+  const gt = $derived(gameText(info));
 </script>
 
 <header class="hdr {bp}">
@@ -22,14 +24,9 @@
   <div class="titles">
     <span class="site">{info.site}</span>
     {#if bp === 'tablet'}
-      <span class="sub">
-        {#if info.archive}<span class="mode">ARCHIVE</span>{:else}<span class="mode live"
-            ><span class="dot"></span>LIVE</span
-          >{/if}
-        {#each parts as p (p)}<span>· {p}</span>{/each}
-      </span>
-    {:else if gameText(info)}
-      <span class="sub">{gameText(info)}</span>
+      <ModeLine {info} />
+    {:else if gt}
+      <span class="sub">{gt}</span>
     {/if}
   </div>
   {#if bp !== 'tablet'}
@@ -41,7 +38,7 @@
     {/if}
     <span class="spacer"></span>
     {#if bp === 'large' && info.others > 0}
-      <a class="others" href="/">{info.others} other broadcast{info.others === 1 ? '' : 's'}</a>
+      <a class="others" href="/">{plural(info.others, 'other broadcast')}</a>
     {/if}
   {/if}
   <nav aria-label="View options">
@@ -107,7 +104,6 @@
     letter-spacing: -0.01em;
   }
   .large .brand {
-    gap: 10px;
     font-size: 17px;
   }
   .tablet .brand {
@@ -146,24 +142,6 @@
     font-size: 12px;
     color: var(--muted);
     white-space: nowrap;
-  }
-  .tablet .sub {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    overflow: hidden;
-  }
-  .mode {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-  }
-  .mode.live {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--liveText);
   }
   .dot {
     display: inline-block;

@@ -2,7 +2,6 @@
   import { innerHeight } from 'svelte/reactivity/window';
   import { getGameStore } from '$lib/game.svelte';
   import { floor8, getView } from '$lib/view.svelte';
-  import type { Side } from '$lib/view.svelte';
   import type { ViewerSource } from '$lib/url';
   import Board from '../Board.svelte';
   import EvalBar from '../EvalBar.svelte';
@@ -15,8 +14,6 @@
 
   const game = getGameStore();
   const view = getView();
-  const top = $derived<Side>(view.flipped ? 'white' : 'black');
-  const bottom = $derived<Side>(view.flipped ? 'black' : 'white');
 
   let w = $state(0);
   // The second term keeps landscape phones from getting a board taller than the screen.
@@ -25,7 +22,7 @@
 
 <main class="mob" bind:clientWidth={w}>
   {#if game.players}
-    <div class="pbar"><PlayerBar compact showScore side={top} {...game.players[top]} /></div>
+    <div class="pbar"><PlayerBar compact showScore side={view.top} {...game.players[view.top]} /></div>
   {/if}
   <div class="board-wrap">
     {#if w > 0}
@@ -41,7 +38,7 @@
   </div>
   <EvalBar orientation="horizontal" thickness={6} bordered={false} score={game.evalScore} />
   {#if game.players}
-    <div class="pbar"><PlayerBar compact showScore side={bottom} {...game.players[bottom]} /></div>
+    <div class="pbar"><PlayerBar compact showScore side={view.bottom} {...game.players[view.bottom]} /></div>
   {/if}
   <NavControls variant="mobile" />
   <div class="panel">

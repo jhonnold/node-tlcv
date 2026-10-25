@@ -2,7 +2,6 @@
   import { innerHeight } from 'svelte/reactivity/window';
   import { getGameStore } from '$lib/game.svelte';
   import { clampBoard, floor8, getView, kibitzerView, MIN_BOARD } from '$lib/view.svelte';
-  import type { Side } from '$lib/view.svelte';
   import type { ViewerSource } from '$lib/url';
   import Board from '../Board.svelte';
   import EngineCard from '../EngineCard.svelte';
@@ -21,8 +20,6 @@
   const view = getView();
   const archive = $derived(source.kind === 'archive');
   const kib = $derived(kibitzerView(game));
-  const top = $derived<Side>(view.flipped ? 'white' : 'black');
-  const bottom = $derived<Side>(view.flipped ? 'black' : 'white');
 
   // Main.dc.html (desktop) and LargeDesktop.dc.html (large). `below` = board-column height besides the board:
   // player bars 2×56 + gaps 4×8 + nav row (6 + 36 | 38) + desktop's opening row (18).
@@ -61,17 +58,25 @@
   const cols = $derived(`${G.engines}px ${size + G.eval + 8}px ${large ? `${G.moves}px ` : ''}minmax(0, 1fr)`);
 </script>
 
-<main class="desk" class:large bind:clientWidth={mainW} style:grid-template-columns={cols} style:--board="{size}px">
+<main
+  class="desk"
+  class:large
+  bind:clientWidth={mainW}
+  style:padding="{G.pad}px"
+  style:gap="{G.gap}px"
+  style:grid-template-columns={cols}
+  style:--board="{size}px"
+>
   <section class="engines" aria-label="Engine analysis">
     <div class="cards">
       <div class="top">
-        {#if game.engines}<EngineCard engine={game.engines[top]} thumb={G.thumb} flipped={view.flipped} />{/if}
+        {#if game.engines}<EngineCard engine={game.engines[view.top]} thumb={G.thumb} flipped={view.flipped} />{/if}
       </div>
       {#if kib}
         <div class="mid"><EngineCard engine={kib} thumb={G.thumb} flipped={view.flipped} /></div>
       {/if}
       <div class="bottom">
-        {#if game.engines}<EngineCard engine={game.engines[bottom]} thumb={G.thumb} flipped={view.flipped} />{/if}
+        {#if game.engines}<EngineCard engine={game.engines[view.bottom]} thumb={G.thumb} flipped={view.flipped} />{/if}
       </div>
     </div>
     <ArrowLegend
@@ -83,7 +88,7 @@
   </section>
 
   <section class="board-col" aria-label="Board">
-    {#if game.players}<PlayerBar side={top} {...game.players[top]} />{/if}
+    {#if game.players}<PlayerBar side={view.top} {...game.players[view.top]} />{/if}
     <div class="board-row">
       <EvalBar score={game.evalScore} flipped={view.flipped} thickness={G.eval} />
       {#if mainW > 0}
@@ -97,7 +102,7 @@
         />
       {/if}
     </div>
-    {#if game.players}<PlayerBar side={bottom} {...game.players[bottom]} />{/if}
+    {#if game.players}<PlayerBar side={view.bottom} {...game.players[view.bottom]} />{/if}
     <NavControls variant={large ? 'large' : 'desktop'} />
     {#if !large}<OpeningLine variant="row" />{/if}
     <div class="handle-slot">
@@ -132,12 +137,6 @@
     overflow: auto;
     display: grid;
     grid-template-rows: minmax(0, 1fr);
-    gap: 20px;
-    padding: 20px;
-  }
-  .desk.large {
-    gap: 24px;
-    padding: 24px;
   }
   section,
   .panel {

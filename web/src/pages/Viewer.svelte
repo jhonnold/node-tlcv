@@ -31,15 +31,16 @@
   let site = $state('');
   let others = $state(0);
   const bp = $derived(view.bp);
+  const siteName = $derived(game.live?.game.site || site);
   const info = $derived<HeaderInfo>({
-    site: game.live?.game.site || site,
+    site: siteName,
     game: game.isReplay ? game.replayNumber : tournament.currentGameNumber,
     archive: source.kind === 'archive' || game.isReplay,
     watching: game.live?.spectators.length ?? 0,
     others,
   });
   $effect(() => {
-    document.title = info.site ? `${info.site} - CCRL Live` : 'CCRL Live';
+    document.title = siteName ? `${siteName} - CCRL Live` : 'CCRL Live';
   });
   // Leaving focus remounts the header: give focus back to its trigger (desktop/tablet button or the mobile ⋮).
   async function exitFocus(): Promise<void> {
@@ -85,16 +86,19 @@
 
 <svelte:window onkeydown={game.onKeydown} />
 {#if view.focus}
-  <FocusView site={info.site} gameNumber={info.game} onexit={() => void exitFocus()} />
+  <FocusView {info} onexit={() => void exitFocus()} />
 {:else}
   <div class="viewer" class:fixed={bp === 'desktop' || bp === 'large'}>
-    {#if bp === 'mobile'}<MobileHeader {info} />{:else}<Header {bp} {info} />{/if}
     {#if bp === 'mobile'}
+      <MobileHeader {info} />
       <MobileLayout {source} />
-    {:else if bp === 'tablet'}
-      <TabletLayout {source} />
     {:else}
-      <DesktopLayout {source} large={bp === 'large'} />
+      <Header {bp} {info} />
+      {#if bp === 'tablet'}
+        <TabletLayout {source} />
+      {:else}
+        <DesktopLayout {source} large={bp === 'large'} />
+      {/if}
     {/if}
   </div>
 {/if}

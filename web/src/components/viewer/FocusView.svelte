@@ -3,13 +3,13 @@
   import { innerHeight, innerWidth } from 'svelte/reactivity/window';
   import { getGameStore } from '$lib/game.svelte';
   import { formatDuration } from '$lib/format';
-  import { floor8, getView } from '$lib/view.svelte';
-  import type { Side } from '$lib/view.svelte';
+  import { floor8, gameText, getView } from '$lib/view.svelte';
+  import type { HeaderInfo, Side } from '$lib/view.svelte';
   import Board from '../Board.svelte';
   import EvalBar from '../EvalBar.svelte';
 
-  type Props = { site: string; gameNumber: number | null; onexit: () => void };
-  const { site, gameNumber, onexit }: Props = $props();
+  type Props = { info: HeaderInfo; onexit: () => void };
+  const { info, onexit }: Props = $props();
 
   const game = getGameStore();
   const view = getView();
@@ -18,11 +18,7 @@
   const size = $derived(
     floor8(Math.max(160, Math.min((innerWidth.current ?? 0) - 40 - 22, (innerHeight.current ?? 0) - 180))),
   );
-  const top = $derived<Side>(view.flipped ? 'white' : 'black');
-  const bottom = $derived<Side>(view.flipped ? 'black' : 'white');
-  const caption = $derived(
-    [gameNumber == null ? '' : `Game ${gameNumber}`, game.game?.opening ?? ''].filter(Boolean).join(' · '),
-  );
+  const caption = $derived([gameText(info), game.game?.opening ?? ''].filter(Boolean).join(' · '));
   let exitBtn: HTMLButtonElement;
   onMount(() => exitBtn.focus());
   function onkeydown(e: KeyboardEvent): void {
@@ -36,13 +32,13 @@
 
 <div class="focus-view">
   <div class="bar">
-    <span class="site">{site}</span>
+    <span class="site">{info.site}</span>
     <span>{caption}</span>
     <span class="spacer"></span>
     <button bind:this={exitBtn} type="button" class="exit" onclick={onexit}>Exit focus <kbd>Esc</kbd></button>
   </div>
   <div class="stage" style:width="{size + 22}px">
-    {@render row(top)}
+    {@render row(view.top)}
     <div class="board-row">
       <EvalBar score={game.evalScore} flipped={view.flipped} thickness={14} bordered={false} />
       <Board
@@ -54,7 +50,7 @@
         label="Main board"
       />
     </div>
-    {@render row(bottom)}
+    {@render row(view.bottom)}
   </div>
 </div>
 

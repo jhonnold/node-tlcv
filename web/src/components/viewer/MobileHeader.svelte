@@ -2,7 +2,8 @@
   import { tick } from 'svelte';
   import BrandMark from '../BrandMark.svelte';
   import Icon from './Icon.svelte';
-  import { getView, gameText } from '$lib/view.svelte';
+  import ModeLine from './ModeLine.svelte';
+  import { getView } from '$lib/view.svelte';
   import type { HeaderInfo } from '$lib/view.svelte';
   import { sound, toggleSound } from '$lib/sounds.svelte';
 
@@ -10,7 +11,6 @@
   const { info }: Props = $props();
 
   const view = getView();
-  const parts = $derived([gameText(info), info.archive ? '' : `${info.watching} watching`].filter(Boolean));
 
   let open = $state(false);
   let wrap: HTMLDivElement;
@@ -43,18 +43,12 @@
       return hide(true);
     }
     const list = items();
+    const n = list.length;
     const i = list.indexOf(document.activeElement as HTMLElement);
-    const next =
-      e.key === 'ArrowDown'
-        ? (i + 1) % list.length
-        : e.key === 'ArrowUp'
-          ? (i - 1 + list.length) % list.length
-          : e.key === 'Home'
-            ? 0
-            : e.key === 'End'
-              ? list.length - 1
-              : null;
-    if (next === null) return;
+    const next = ({ ArrowDown: (i + 1) % n, ArrowUp: (i - 1 + n) % n, Home: 0, End: n - 1 } as Record<string, number>)[
+      e.key
+    ];
+    if (next === undefined) return;
     e.preventDefault();
     e.stopPropagation();
     list[next].focus();
@@ -72,12 +66,7 @@
   </a>
   <div class="titles">
     <span class="site">{info.site}</span>
-    <span class="sub">
-      {#if info.archive}<span class="mode">ARCHIVE</span>{:else}<span class="mode live"
-          ><span class="dot"></span>LIVE</span
-        >{/if}
-      {#each parts as p (p)}<span>· {p}</span>{/each}
-    </span>
+    <ModeLine {info} />
   </div>
   <button type="button" class="icon" aria-label="Flip board" aria-pressed={view.flipped} onclick={view.toggleFlip}>
     <Icon name="flip" size={20} />
@@ -169,33 +158,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .sub {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-  }
-  .mode {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-  }
-  .mode.live {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--liveText);
-  }
-  .dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: currentColor;
   }
   .icon {
     display: grid;

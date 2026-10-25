@@ -2,7 +2,6 @@
   import { innerHeight } from 'svelte/reactivity/window';
   import { getGameStore } from '$lib/game.svelte';
   import { floor8, getView, kibitzerView } from '$lib/view.svelte';
-  import type { Side } from '$lib/view.svelte';
   import type { ViewerSource } from '$lib/url';
   import Board from '../Board.svelte';
   import EngineCard from '../EngineCard.svelte';
@@ -18,15 +17,12 @@
   const game = getGameStore();
   const view = getView();
   const kib = $derived(kibitzerView(game));
-  const top = $derived<Side>(view.flipped ? 'white' : 'black');
-  const bottom = $derived<Side>(view.flipped ? 'black' : 'white');
 
   let w = $state(0);
+  const avail = $derived((innerHeight.current ?? 0) - 56 - 32); // viewport below the header, less padding
   // Padding 32, eval 10, gaps 8+14, right column ≥ 270; the board plus the nav row fit the viewport; capped at 640.
-  const size = $derived(
-    floor8(Math.max(240, Math.min(w - 32 - 10 - 8 - 14 - 270, (innerHeight.current ?? 0) - 56 - 32 - 56, 640))),
-  );
-  const panelH = $derived(Math.max(420, (innerHeight.current ?? 0) - 56 - 32 - size - 24 - 44 - (kib ? 56 : 0)));
+  const size = $derived(floor8(Math.max(240, Math.min(w - 32 - 10 - 8 - 14 - 270, avail - 56, 640))));
+  const panelH = $derived(Math.max(420, avail - size - 24 - 44 - (kib ? 56 : 0)));
 </script>
 
 <main class="tab" bind:clientWidth={w}>
@@ -46,12 +42,12 @@
     </div>
     <div class="side" style:min-height="{size}px">
       <div class="grp">
-        {#if game.players}<PlayerBar compact side={top} {...game.players[top]} />{/if}
-        {#if game.engines}<EngineCard compact engine={game.engines[top]} />{/if}
+        {#if game.players}<PlayerBar compact side={view.top} {...game.players[view.top]} />{/if}
+        {#if game.engines}<EngineCard compact engine={game.engines[view.top]} />{/if}
       </div>
       <div class="grp">
-        {#if game.engines}<EngineCard compact engine={game.engines[bottom]} />{/if}
-        {#if game.players}<PlayerBar compact side={bottom} {...game.players[bottom]} />{/if}
+        {#if game.engines}<EngineCard compact engine={game.engines[view.bottom]} />{/if}
+        {#if game.players}<PlayerBar compact side={view.bottom} {...game.players[view.bottom]} />{/if}
       </div>
     </div>
   </div>

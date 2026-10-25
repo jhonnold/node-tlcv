@@ -40,6 +40,14 @@ export class ViewState {
     return this.#tablet.current ? 'tablet' : 'mobile';
   }
 
+  /** Side shown at the top / bottom of the board. */
+  get top(): Side {
+    return this.flipped ? 'white' : 'black';
+  }
+  get bottom(): Side {
+    return this.flipped ? 'black' : 'white';
+  }
+
   toggleFlip = (): void => {
     this.flipped = !this.flipped;
   };

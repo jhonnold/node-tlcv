@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getGameStore } from '$lib/game.svelte';
+  import { DASH } from '$lib/format';
   import { splitOpening } from '$lib/moves';
 
   type Props = { variant: 'row' | 'inline' | 'short' };
@@ -7,7 +8,7 @@
 
   const game = getGameStore();
   const opening = $derived(splitOpening(game.game?.opening ?? ''));
-  const tb = $derived(game.game?.tablebase || '—');
+  const tb = $derived(game.game?.tablebase || DASH);
   const hasOpening = $derived(opening.name !== '' || opening.eco !== '');
   const sep = $derived(hasOpening ? ' · ' : '');
 </script>
@@ -27,9 +28,7 @@
     <span>Tablebase: {tb}</span>
   </div>
 {:else if variant === 'inline'}
-  <span class="line"
-    >{#if hasOpening}{@render name()}{/if}{sep}Tablebase: {tb}</span
-  >
+  <span class="line">{@render name()}{sep}Tablebase: {tb}</span>
 {:else}
   <span class="line">{@render name()}</span>
 {/if}
