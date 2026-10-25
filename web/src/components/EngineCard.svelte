@@ -53,6 +53,7 @@
 <article
   class="card {engine.role}"
   class:compact
+  class:noboard={!thumb}
   aria-label="{ROLE[engine.role]} engine {engine.name}, score {engine.score}"
 >
   <div class="head">
@@ -242,9 +243,10 @@
     -webkit-line-clamp: var(--pv-lines);
     line-clamp: var(--pv-lines);
   }
-  /* Tablet side cards (< 320 px content) reserve 2 PV lines, so the column stays no taller than its board. */
+  /* Narrow cards with no PV board (tablet side cards, < 320 px content) reserve 2 PV lines, so the column
+     stays no taller than its board. Cards beside a PV board keep their lines. */
   @container (width < 320px) {
-    .pv {
+    .noboard .pv {
       height: calc(2 * var(--pv-line));
       -webkit-line-clamp: 2;
       line-clamp: 2;
