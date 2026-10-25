@@ -100,9 +100,9 @@
       <MobileHeader {info} />
       <MobileLayout {source} />
     {:else}
-      <Header {bp} />
+      <Header {bp} {info} />
       {#if bp === 'tablet'}
-        <TabletLayout {source} {info} />
+        <TabletLayout {source} />
       {:else}
         <DesktopLayout {source} {info} />
       {/if}
