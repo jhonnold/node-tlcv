@@ -111,7 +111,7 @@ export class GameStore {
       const e = engines[side];
       return {
         name: game[side].name,
-        clock: live ? msToString(live.remainingMs) : '--:--',
+        clock: live && game[side].clockTime > 0 ? msToString(live.remainingMs) : '--:--',
         active: sideToMove === c,
         thinkMs: live?.thinkMs ?? null,
         lastMs: lastMoveMs(moves, index, c),
