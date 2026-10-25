@@ -16,7 +16,7 @@
 
 <header class="hdr {bp}">
   <a class="brand" href="/">
-    <BrandMark size={24} />
+    <BrandMark />
     <span>CCRL Live</span>
   </a>
   <span class="divider" aria-hidden="true"></span>

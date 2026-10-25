@@ -18,7 +18,6 @@
 
   const game = getGameStore();
   const view = getView();
-  const archive = $derived(source.kind === 'archive');
   const kib = $derived(kibitzerView(game));
 
   // Main.dc.html. `below` = board-column height besides the board:
@@ -95,7 +94,7 @@
   </section>
 
   <div class="panel">
-    <Panel {source} tabs="all" initialTab={archive ? 'games' : 'moves'} flipped={view.flipped} />
+    <Panel {source} tabs="all" flipped={view.flipped} />
   </div>
 </main>
 

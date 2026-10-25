@@ -27,10 +27,8 @@
   const { source, tabs, initialTab, height = '100%', bordered = true, flipped = false }: Props = $props();
 
   const game = getGameStore();
-  const SETS: Record<PanelTabs, TabId[]> = {
-    mobile: ['engines', 'moves', 'chat', 'graphs', 'standings', 'games', 'info'],
-    all: ['moves', 'chat', 'graphs', 'standings', 'games', 'info'],
-  };
+  const ALL: TabId[] = ['moves', 'chat', 'graphs', 'standings', 'games', 'info'];
+  const SETS: Record<PanelTabs, TabId[]> = { all: ALL, mobile: ['engines', ...ALL] };
   const LABEL: Record<TabId, string> = {
     engines: 'Engines',
     moves: 'Moves',

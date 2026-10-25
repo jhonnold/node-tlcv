@@ -8,7 +8,7 @@
   const { variant }: Props = $props();
 
   const game = getGameStore();
-  const iconSize = $derived(variant === 'tablet' || variant === 'mobile' ? 20 : 18);
+  const iconSize = $derived(variant === 'desktop' ? 18 : 20);
   // Mobile middle button: the move just played, or Start.
   const short = $derived(game.moveMeta ? moveLabel(game.moveMeta) : 'Start');
   // Live controls only on a live broadcast: an archive page with no game loaded (or a failed load) shows none.
