@@ -9,6 +9,7 @@
   const opening = $derived(splitOpening(game.game?.opening ?? ''));
   const tb = $derived(game.game?.tablebase || '—');
   const hasOpening = $derived(opening.name !== '' || opening.eco !== '');
+  const sep = $derived(hasOpening ? ' · ' : '');
 </script>
 
 {#snippet name()}
@@ -27,8 +28,7 @@
   </div>
 {:else if variant === 'inline'}
   <span class="line"
-    >{#if hasOpening}{@render name()} ·
-    {/if}Tablebase: {tb}</span
+    >{#if hasOpening}{@render name()}{/if}{sep}Tablebase: {tb}</span
   >
 {:else}
   <span class="line">{@render name()}</span>

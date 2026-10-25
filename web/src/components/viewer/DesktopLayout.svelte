@@ -152,6 +152,7 @@
   .cards {
     min-height: calc(var(--board) + 128px);
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
     row-gap: 12px;
   }
