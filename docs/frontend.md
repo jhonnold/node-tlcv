@@ -54,7 +54,7 @@ localStorage keys (`KEYS` in `lib/storage.ts`; every access is wrapped in try/ca
 | `EngineCard.svelte` | Engine or kibitzer card; `compact` and `thumb` (PV-end board) variants. |
 | `BrandMark.svelte`, `SiteHeader.svelte` | Logo; the header of Lobby and Admin. |
 | `ThemeDrawer.svelte` (+ `theme/drawer.ts`) | Native modal `<dialog>`: presets, piece set, board palettes, colour rows, Reset to preset, Done. |
-| `panel/Panel.svelte` | Tab bar + `ReplayBanner`; starts and ends replays. Tab sets: `all` (Moves, Chat, Graphs, Standings, Games, Info; desktop) and `mobile` (adds Engines; tablet and mobile). Chat is hidden on archives and during replays; archives open on Games. |
+| `panel/Panel.svelte` | Tab bar + `ReplayBanner`; starts and ends replays. Tab sets: `all` (Moves, Chat, Graphs, Standings, Games, Info; desktop) and `mobile` (adds Engines; tablet and mobile). Chat is hidden on archives and during replays; archives open on Games on desktop. |
 | `panel/*Tab.svelte` | Moves, Chat, Graphs (Chart.js), Standings, Games, Info, Engines. |
 | `panel/ReplayBanner.svelte` | "Replaying game N"; Back to live on live pages only. |
 | `lobby/*` | `FeaturedCard`, `LiveCard`, `SiteFooter`; helpers in `lobby.ts` (30 s poll). |

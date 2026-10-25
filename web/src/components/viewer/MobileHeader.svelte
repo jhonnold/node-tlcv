@@ -65,7 +65,7 @@
 
 <header>
   <a href="/" aria-label="CCRL Live — all broadcasts" class="brand">
-    <BrandMark size={24} />
+    <BrandMark />
   </a>
   <div class="titles">
     <span class="site">{info.site}</span>
