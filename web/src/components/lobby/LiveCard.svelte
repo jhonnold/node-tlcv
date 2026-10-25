@@ -100,6 +100,7 @@
     flex-shrink: 0;
     border: 1px solid;
   }
+  /* Theme-invariant disc colours, as in PlayerBar. */
   .disc.white {
     background: #eceff4;
     border-color: #b4bccb;

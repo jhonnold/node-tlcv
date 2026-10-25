@@ -9,8 +9,7 @@ const svelteFiles = ['web/**/*.svelte', 'web/**/*.svelte.ts'];
 const scoped = (configs) => configs.map((c) => ({ ...c, files: c.files ?? svelteFiles }));
 
 export default tseslint.config(
-  // public/ is the old jQuery frontend, kept only as porting reference until U7 deletes it.
-  { ignores: ['build/**', 'public/**'] },
+  { ignores: ['build/**'] },
   {
     files: ['{src,shared,web}/**/*.{ts,svelte}'],
     extends: [js.configs.recommended, tseslint.configs.recommended, prettier],

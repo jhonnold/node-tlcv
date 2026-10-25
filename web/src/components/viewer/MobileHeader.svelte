@@ -34,7 +34,7 @@
     void show();
   }
   // Roving focus (WAI-ARIA menu button). ↑/↓/Home/End/Esc stop here. ←/→ pass through to game.onKeydown (they always step
-  // moves, user decision). Delegated keydown runs on #app before window, so stopPropagation keeps the window handler out.
+  // moves). Delegated keydown runs on #app before window, so stopPropagation keeps the window handler out.
   function menuKey(e: KeyboardEvent): void {
     if (e.key === 'Tab') return hide(false);
     if (e.key === 'Escape') {

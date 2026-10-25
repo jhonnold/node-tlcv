@@ -41,7 +41,7 @@ export function moveRows(moves: MoveMetaData[]): MoveRow[] {
   return rows;
 }
 
-/** The move being thought about (PD:73-81). null when nobody is searching. */
+/** The move being thought about. null when nobody is searching. */
 export function ghostCell(
   moves: MoveMetaData[],
   ld: SerializedLiveData,
@@ -72,7 +72,7 @@ export function placeGhost(rows: MoveRow[], g: GhostCell | null): MoveRow[] {
   return [...rows, { num: g.number, cells: g.color === 'w' ? [g, EMPTY] : [EMPTY, g] }];
 }
 
-/** ECO is a leading /^[A-E]\d\d/ (master plan §5). */
+/** ECO is a leading /^[A-E]\d\d/. */
 export function splitOpening(opening: string): { eco: string; name: string } {
   const m = /^([A-E]\d\d)\b\s*(.*)$/.exec(opening.trim());
   return m ? { eco: m[1], name: m[2] } : { eco: '', name: opening.trim() };

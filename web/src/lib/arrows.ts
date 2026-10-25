@@ -6,7 +6,7 @@ export type Arrow = { uci: string; color: string; opacity: number };
 export type ArrowColors = { white: string; black: string; kibitzer: string };
 export type ArrowSources = { kMove: string; fMove: string; tMove: string };
 
-/** board/index.ts:73-97. Browsing uses moves[index] (the search run from this position), also at index 0. */
+/** Browsing uses moves[index] (the search run from this position), also at index 0. */
 export function arrowSources(game: SerializedGame, index: number, following: boolean): ArrowSources {
   if (following) {
     const last = game.moves[game.moves.length - 1];
@@ -22,7 +22,7 @@ export function arrowSources(game: SerializedGame, index: number, following: boo
 }
 
 /**
- * board/index.ts:99-142. Only moves legal in `fen` are kept (PVs go stale). The side to move's colour
+ * Only moves legal in `fen` are kept (PVs go stale). The side to move's colour
  * goes on tMove, the other side's on its predicted reply fMove, kibitzer on kMove. One arrow per
  * distinct move (colours blended); later entries draw on top.
  */

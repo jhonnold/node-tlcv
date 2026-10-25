@@ -56,7 +56,7 @@
     board = b;
     untrack(paintHighlight);
     return () => {
-      destroy(); // full cleanup, see §2.1
+      destroy(); // also removes chessboardjs's leftover window/body handlers
       board = null;
     };
   });

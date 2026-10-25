@@ -19,7 +19,7 @@ export function sameEngine(a: string, b: string): boolean {
   return s.every((t, i) => t === l[i]);
 }
 
-/** 2.5 → "2½", 0.5 → "½" (PD:443). */
+/** 2.5 → "2½", 0.5 → "½". */
 export function half(x: number): string {
   const w = Math.floor(x);
   const h = x - w >= 0.5;

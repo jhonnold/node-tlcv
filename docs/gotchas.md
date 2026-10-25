@@ -9,8 +9,8 @@ Project-wide pitfalls and constraints that don't fit a single subsystem.
 
 ## Configuration
 
-- **Connections format**: Each `connections` entry is either a bare `"host:port"` string (default mode) or an object `{ "connection": "host:port", "ephemeral": true }`. Both forms are accepted on read; the admin "Add new" form writes a bare string unless the "Ephemeral local port" checkbox is set.
-- **Connection history**: Optional `connectionHistory` array of bare `"host:port"` strings, newest first, capped at 50. Seeded from `connections` at boot and prepended on every add; **not** pruned when a connection is closed — it backs the `<datalist>` autocomplete on the admin "Add new" form, whose whole purpose is remembering closed broadcasts. Absent in older configs (treated as empty).
+- **Connections format**: Each `connections` entry is either a bare `"host:port"` string (default mode) or an object `{ "connection": "host:port", "ephemeral": true }`. Both forms are accepted on read; the admin "Add broadcast" form writes a bare string unless the "Ephemeral local port" checkbox is set.
+- **Connection history**: Optional `connectionHistory` array of bare `"host:port"` strings, newest first, capped at 50. Seeded from `connections` at boot and prepended on every add; **not** pruned when a connection is closed — it backs the `<datalist>` autocomplete on the admin "Add broadcast" form, whose whole purpose is remembering closed broadcasts. Absent in older configs (treated as empty).
 - **Kibitzer config**: Optional. Each entry has an `id` (auto-assigned if missing), `type` (`"local"` or `"ssh"`), `priority` (higher = assigned to more-viewed broadcasts), and type-specific fields. Both types accept optional `threads` (default 1) and `hash` (default 256).
 - **Webhook config**: Optional. Each entry has an `id` (auto-assigned if missing), `type` (`"discord"` only), `url`, optional `name`, optional `ports` array (empty = all broadcasts), and optional `events` array of `"game-started"` / `"game-finished"` (empty = both).
 
@@ -18,6 +18,10 @@ Project-wide pitfalls and constraints that don't fit a single subsystem.
 
 - **Lichess API**: Uses Bearer auth token (`LICHESS_OAUTH_TOKEN`). Openings explorer and tablebase endpoints have rate limits.
 
+## Tooling
+
+- **Node version**: Vite 8 requires Node `^20.19.0 || >=22.12.0` (its `engines` field, mirrored in package.json). Check the host's `node -v` before deploying a build.
+
 ## Verification
 
-- **No test infrastructure**: This project has no test runner or test files. Verification is done via `npm run build` (TypeScript + webpack) and manual testing.
+- **No test infrastructure**: This project has no test runner or test files. Verification is `npm run build` (Vite + `tsc`), `npm run check` (svelte-check, warnings fail) and `npm run lint`, plus manual testing.

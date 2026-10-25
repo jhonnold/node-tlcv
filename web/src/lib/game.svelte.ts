@@ -39,7 +39,7 @@ export class GameStore {
   #socket: Socket | null = null;
   // Keyed by side, set when that side's turn ends. Plain, not state: it always changes together with #live.
   #turnEnd: Partial<Record<ColorCode, TurnEnd>> = {};
-  #gen = $state(0); // replay generation (A7): bumped by beginReplay and exitReplay
+  #gen = $state(0); // replay generation: bumped by beginReplay and exitReplay
 
   chat = $state.raw<string[]>([]);
   connected = $state(false);
@@ -57,7 +57,7 @@ export class GameStore {
     return this.#replay?.number ?? null;
   }
 
-  /** The current replay generation (A7). A pending load compares its gen against this. */
+  /** The current replay generation. A pending load compares its gen against this. */
   get replayGen(): number {
     return this.#gen;
   }

@@ -26,7 +26,7 @@
   const view = new ViewState();
   setView(view);
   // App keys Viewer by pagePath(source), so the source never changes for an instance.
-  const tournament = new TournamentStore(untrack(() => source)); // amendment A3
+  const tournament = new TournamentStore(untrack(() => source));
   setTournament(tournament);
   let site = $state('');
   let others = $state(0);

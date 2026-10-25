@@ -10,7 +10,7 @@
   const top = $derived(flipped ? 'white' : 'black');
   const bottom = $derived(flipped ? 'black' : 'white');
   const hasKibitzer = $derived(!!game.game?.kibitzerLiveData || game.moves.some((m) => m.kibitzer));
-  // Stays mounted once shown (U2 §5): the kibitzer card is never swapped for a different component.
+  // Stays mounted once shown: the kibitzer card is never swapped for a different component.
   const emptyKibitzer = $derived(empty('kibitzer', game.game?.kibitzerLiveData?.name ?? 'Kibitzer'));
 </script>
 

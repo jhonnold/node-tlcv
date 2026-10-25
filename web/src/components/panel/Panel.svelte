@@ -42,7 +42,7 @@
     games: 'Games',
     info: 'Info',
   };
-  // Chat is hidden on archives and during any replay (decision 4, decision 5).
+  // Chat is hidden on archives and during any replay.
   const ids = $derived(SETS[tabs].filter((id) => id !== 'chat' || (source.kind === 'live' && !game.isReplay)));
   let picked = $state<TabId | null>(null);
   const active = $derived.by(() => {
@@ -56,7 +56,7 @@
     picked = id;
     if (body) body.scrollTop = 0; // before the DOM swap, so MovesTab's own auto-scroll wins
   }
-  // Replays start and end here. The store's generation (A7) drops a load that a newer Replay or a Watch overtook.
+  // Replays start and end here. The store's generation drops a load that a newer Replay or a Watch overtook.
   // Panel-local owner of busy/err: `mine` is the generation of this Panel's latest Replay.
   let mine = 0;
   let busy = $state<number | null>(null);
@@ -71,7 +71,7 @@
     try {
       const meta = await loadReplayGame(source, n);
       if (!game.loadReplay(meta, n, gen)) return; // superseded: busy and err belong to the newer request
-      // As the old client did (games/index.ts:113): only from Games, and focus stays on the moved-to tab.
+      // Only from Games, and focus stays on the moved-to tab.
       if (active === 'games' && SETS[tabs].includes('moves')) {
         pick('moves');
         if (hadFocus && document.activeElement === document.body) document.getElementById(`${uid}-tab-moves`)?.focus();

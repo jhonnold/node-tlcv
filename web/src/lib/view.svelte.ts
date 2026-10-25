@@ -59,7 +59,7 @@ export class ViewState {
 
 export const [getView, setView] = createContext<ViewState>();
 
-/** "Game 111", or '' when unknown. No "of M": totalGames counts games played, not scheduled (amendment A2). */
+/** "Game 111", or '' when unknown. No "of M": totalGames counts games played, not scheduled. */
 export function gameText(info: HeaderInfo): string {
   return info.game == null ? '' : `Game ${info.game}`;
 }
