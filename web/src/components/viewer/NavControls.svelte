@@ -2,7 +2,6 @@
   import { getGameStore } from '$lib/game.svelte';
   import { moveLabel } from '$lib/positions';
   import Icon from './Icon.svelte';
-  import OpeningLine from './OpeningLine.svelte';
 
   type Props = { variant: 'desktop' | 'tablet' | 'mobile' };
   const { variant }: Props = $props();
@@ -24,57 +23,63 @@
   );
 </script>
 
-<div class="nav {variant}">
-  <div class="btns" role="group" aria-label="Move navigation">
-    <button type="button" aria-label="Start position" title="Start (↑)" onclick={game.first}>
-      <Icon name="first" size={iconSize} />
-    </button>
-    <button type="button" aria-label="Previous move" title="Previous (←)" onclick={game.prev}>
-      <Icon name="prev" size={iconSize} />
-    </button>
-    {#if variant === 'mobile'}
+{#if variant === 'mobile'}
+  <div class="nav mobile">
+    <div class="btns" role="group" aria-label="Move navigation">
+      <button type="button" aria-label="Start position" title="Start (↑)" onclick={game.first}>
+        <Icon name="first" size={iconSize} />
+      </button>
+      <button type="button" aria-label="Previous move" title="Previous (←)" onclick={game.prev}>
+        <Icon name="prev" size={iconSize} />
+      </button>
       <button type="button" class="mid" class:behind aria-label={midLabel} onclick={game.latest}>
         {#if liveUi && game.following}<span class="live-dot"></span>{/if}
         <span class="txt">{midText}</span>
       </button>
-    {/if}
-    <button type="button" aria-label="Next move" title="Next (→)" onclick={game.next}>
-      <Icon name="next" size={iconSize} />
-    </button>
-    <button type="button" aria-label="Latest position" title="Latest (↓)" onclick={game.latest}>
-      <Icon name="last" size={iconSize} />
-    </button>
+      <button type="button" aria-label="Next move" title="Next (→)" onclick={game.next}>
+        <Icon name="next" size={iconSize} />
+      </button>
+      <button type="button" aria-label="Latest position" title="Latest (↓)" onclick={game.latest}>
+        <Icon name="last" size={iconSize} />
+      </button>
+    </div>
   </div>
-
-  {#if variant !== 'mobile'}
-    <span class="pos-label">{game.label}</span>
-    {#if liveUi}
-      {#if game.following}
-        {#if variant === 'desktop'}
+{:else}
+  <!-- Lichess2.dc.html table column: four equal buttons over a position / live status row. -->
+  <div class="block {variant}">
+    <div class="grid4" role="group" aria-label="Move navigation">
+      <button type="button" aria-label="Start position" title="Start (↑)" onclick={game.first}>
+        <Icon name="first" size={iconSize} />
+      </button>
+      <button type="button" aria-label="Previous move" title="Previous (←)" onclick={game.prev}>
+        <Icon name="prev" size={iconSize} />
+      </button>
+      <button type="button" aria-label="Next move" title="Next (→)" onclick={game.next}>
+        <Icon name="next" size={iconSize} />
+      </button>
+      <button type="button" aria-label="Latest position" title="Latest (↓)" onclick={game.latest}>
+        <Icon name="last" size={iconSize} />
+      </button>
+    </div>
+    <div class="status">
+      <span class="pos-label">{game.label}</span>
+      {#if liveUi}
+        {#if game.following}
           <span class="following"><span class="live-dot"></span>Following live</span>
+        {:else}
+          <button type="button" class="back" onclick={game.latest}>Back to live</button>
         {/if}
-      {:else}
-        <button type="button" class="back" onclick={game.latest}>Back to live</button>
       {/if}
-    {/if}
-    {#if variant === 'tablet'}
-      <OpeningLine variant="short" />
-    {/if}
-  {/if}
-</div>
+    </div>
+  </div>
+{/if}
 
 <style>
+  /* Mobile row (MobileLayout); rules kept as they were. */
   .nav {
     display: flex;
     align-items: center;
     min-width: 0;
-  }
-  .nav.desktop {
-    gap: 12px;
-    margin-top: 6px;
-  }
-  .nav.tablet {
-    gap: 10px;
   }
   .nav.mobile {
     padding: 0 12px 12px;
@@ -92,66 +97,14 @@
     color: var(--text);
     padding: 0;
   }
-  .desktop .btns button {
-    width: 40px;
-    height: 36px;
-  }
-  .tablet .btns,
   .mobile .btns {
     gap: 6px;
-  }
-  .tablet .btns button,
-  .mobile .btns button {
-    width: 48px;
-    height: 44px;
-  }
-  .mobile .btns {
     flex: 1;
     min-width: 0;
   }
-  .pos-label {
-    flex: 0 1 auto;
-    font-family: var(--fontMono);
-    font-size: 13px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-  }
-  .desktop .pos-label,
-  .tablet .pos-label {
-    flex: 1 1 auto;
-  }
-  .following {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  .live-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--liveText);
-  }
-  .back {
-    height: 32px;
-    flex-shrink: 0;
-    padding: 0 12px;
-    border: 0;
-    background: var(--invBg);
-    color: var(--invText);
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-  .tablet .back {
+  .mobile .btns button {
+    width: 48px;
     height: 44px;
-    padding: 0 16px;
-    font-size: 13px;
   }
   .mid {
     flex: 1;
@@ -177,5 +130,79 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--liveText);
+  }
+  /* Desktop / tablet block: 66 px tall on desktop, 78 px on tablet (DesktopLayout's NAV). */
+  .block {
+    --navH: 40px;
+    --rowH: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .block.tablet {
+    --navH: 44px;
+    --rowH: 28px;
+  }
+  .grid4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .grid4 button {
+    height: var(--navH);
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text);
+    padding: 0;
+  }
+  .status {
+    height: var(--rowH);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .pos-label {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--fontMono);
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .following {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .back {
+    height: var(--rowH);
+    flex-shrink: 0;
+    padding: 0 8px;
+    border: 0;
+    background: var(--invBg);
+    color: var(--invText);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .tablet .back {
+    padding: 0 12px;
+    font-size: 12px;
   }
 </style>
