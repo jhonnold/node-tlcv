@@ -51,7 +51,7 @@ localStorage keys (`KEYS` in `lib/storage.ts`; every access is wrapped in try/ca
 | `Board.svelte` | chessboardjs wrapper. Props `fen`, `size` (rendered at a multiple of 8 px), `flipped`, `coords`, `lastMove`, `arrows` (SVG overlay), `animate`, `label`. Used for the main board, PV thumbnails, lobby cards and the theme preview. |
 | `EvalBar.svelte` | Vertical or horizontal eval bar; `score` is White's view. |
 | `PlayerBar.svelte` | Name, status and clock (`role="timer"`); `compact` and `showScore` variants. |
-| `EngineCard.svelte` | Engine or kibitzer card; `compact` and `thumb` (PV-end board) variants. |
+| `EngineCard.svelte` | Engine or kibitzer card; `compact` and `thumb` (PV-end board) variants. The PV is clamped with an ellipsis to a fixed-height box (the `lines` prop, else 3 lines, or `floor(thumb / 20)` beside a PV board), so a card never changes height with the PV; narrow compact cards (< 320 px content) always put the stats line under the score. |
 | `BrandMark.svelte`, `SiteHeader.svelte` | Logo; the header of Lobby and Admin. |
 | `ThemeDrawer.svelte` (+ `theme/drawer.ts`) | Native modal `<dialog>`: presets, piece set, board palettes, colour rows, Reset to preset, Done. |
 | `panel/Panel.svelte` | Tab bar + `ReplayBanner`; starts and ends replays. Tab sets: `all` (Moves, Chat, Graphs, Standings, Games, Info; desktop) and `mobile` (adds Engines; tablet and mobile). Chat is hidden on archives and during replays; archives open on Games on desktop. |
@@ -61,7 +61,7 @@ localStorage keys (`KEYS` in `lib/storage.ts`; every access is wrapped in try/ca
 | `admin/*` | `BroadcastsSection`, `KibitzersSection`, `WebhooksSection`; helpers in `forms.ts`; styles in `admin.css`. |
 | `viewer/Header.svelte` | Tablet/desktop header (same height, padding and brand as `SiteHeader`): brand, site, "Game N", LIVE/ARCHIVE badge, watching count, Focus/Flip/Sound/Theme buttons |
 | `viewer/MobileHeader.svelte` | Mobile header with Flip and the ⋮ menu (Focus mode, Move sounds, Theme & pieces, All broadcasts) |
-| `viewer/DesktopLayout.svelte` | Desktop grid (≥1280 px): engine cards, board column, and a Panel with every tab (Moves included). The board fits the window height, the panel takes the remaining width |
+| `viewer/DesktopLayout.svelte` | Desktop grid (≥1280 px): engine cards, board column, and a Panel with every tab (Moves included). The board fits the window height, the panel takes the remaining width (≥ 368 px; 380 px when the board is width-limited, e.g. 1280×800, 1440×900). Engine column 400 px; PV boards 136 px, shrunk so two cards, or three with a kibitzer, end level with the bottom player bar (below 64 px the boards are dropped, then the PV shows 2 lines, then 1). |
 | `viewer/TabletLayout.svelte` | Tablet layout: board, eval bar, engine cards, nav row, kibitzer strip and the mobile-tab Panel |
 | `viewer/MobileLayout.svelte` | Mobile layout: board, horizontal eval bar, nav row and the Panel |
 | `viewer/NavControls.svelte` | First/prev/next/latest, position label, Following live / Back to live |
