@@ -45,9 +45,12 @@
     const list = items();
     const n = list.length;
     const i = list.indexOf(document.activeElement as HTMLElement);
-    const next = ({ ArrowDown: (i + 1) % n, ArrowUp: (i - 1 + n) % n, Home: 0, End: n - 1 } as Record<string, number>)[
-      e.key
-    ];
+    const next = (
+      { ArrowDown: (i + 1) % n, ArrowUp: i < 0 ? n - 1 : (i - 1 + n) % n, Home: 0, End: n - 1 } as Record<
+        string,
+        number
+      >
+    )[e.key];
     if (next === undefined) return;
     e.preventDefault();
     e.stopPropagation();

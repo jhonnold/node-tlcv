@@ -11,13 +11,13 @@
   const tb = $derived(game.game?.tablebase || DASH);
   const hasOpening = $derived(opening.name !== '' || opening.eco !== '');
   const sep = $derived(hasOpening ? ' · ' : '');
+  const ecoGap = $derived(opening.eco ? ' ' : '');
 </script>
 
 {#snippet name()}
   {#if hasOpening}
     <span class="opening"
-      >{#if opening.eco}<b>{opening.eco}</b>
-      {/if}{opening.name}</span
+      >{#if opening.eco}<b>{opening.eco}</b>{ecoGap}{/if}{opening.name}</span
     >
   {/if}
 {/snippet}
@@ -39,6 +39,8 @@
     color: var(--muted);
     white-space: nowrap;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .row {
     display: flex;

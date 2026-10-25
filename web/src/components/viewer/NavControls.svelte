@@ -11,14 +11,16 @@
   const iconSize = $derived(variant === 'tablet' || variant === 'mobile' ? 20 : 18);
   // Mobile middle button: the move just played, or Start.
   const short = $derived(game.moveMeta ? moveLabel(game.moveMeta) : 'Start');
-  const behind = $derived(!game.following && !game.isReplay);
-  const midText = $derived(game.isReplay ? short : game.following ? `Live · ${short}` : `${short} · back to live`);
+  // Live controls only on a live broadcast: an archive page with no game loaded (or a failed load) shows none.
+  const liveUi = $derived(game.live != null && !game.isReplay);
+  const behind = $derived(liveUi && !game.following);
+  const midText = $derived(liveUi ? (game.following ? `Live · ${short}` : `${short} · back to live`) : short);
   const midLabel = $derived(
-    game.following
-      ? `Following live, after ${short}`
-      : game.isReplay
-        ? `Viewing ${short}, go to the last move`
-        : `Viewing ${short}, tap to return to live`,
+    liveUi
+      ? game.following
+        ? `Following live, after ${short}`
+        : `Viewing ${short}, tap to return to live`
+      : `Viewing ${short}, go to the last move`,
   );
 </script>
 
@@ -32,7 +34,7 @@
     </button>
     {#if variant === 'mobile'}
       <button type="button" class="mid" class:behind aria-label={midLabel} onclick={game.latest}>
-        {#if game.following}<span class="live-dot"></span>{/if}
+        {#if liveUi && game.following}<span class="live-dot"></span>{/if}
         <span class="txt">{midText}</span>
       </button>
     {/if}
@@ -46,7 +48,7 @@
 
   {#if variant !== 'mobile'}
     <span class="pos-label">{game.label}</span>
-    {#if !game.isReplay}
+    {#if liveUi}
       {#if game.following}
         {#if variant === 'desktop'}
           <span class="following"><span class="live-dot"></span>Following live</span>
@@ -116,6 +118,7 @@
     min-width: 0;
   }
   .pos-label {
+    flex: 0 0 auto;
     font-family: var(--fontMono);
     font-size: 13px;
     color: var(--muted);
@@ -126,7 +129,7 @@
   }
   .desktop .pos-label,
   .tablet .pos-label {
-    flex: 1;
+    flex: 1 0 auto;
   }
   .following {
     display: inline-flex;

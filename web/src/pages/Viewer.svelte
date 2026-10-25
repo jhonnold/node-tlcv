@@ -42,6 +42,18 @@
   $effect(() => {
     document.title = siteName ? `${siteName} - CCRL Live` : 'CCRL Live';
   });
+  // A new live game: refresh standings and games once the CT dump has landed. Lives here, not in Panel, so focus mode
+  // (which unmounts Panel) still refreshes.
+  let prevPair = '';
+  let prevLen = -1;
+  $effect(() => {
+    const g = game.live?.game;
+    if (!g) return;
+    const pair = `${g.white.name}|${g.black.name}`;
+    if (prevLen >= 0 && (pair !== prevPair || g.moves.length < prevLen)) tournament.refreshSoon();
+    prevPair = pair;
+    prevLen = g.moves.length;
+  });
   // Leaving focus remounts the header: give focus back to its trigger (desktop/tablet button or the mobile ⋮).
   async function exitFocus(): Promise<void> {
     view.focus = false;
