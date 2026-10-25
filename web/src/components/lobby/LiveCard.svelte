@@ -122,7 +122,7 @@
   .eval {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
   }
   .track {
     flex: 1;
@@ -134,6 +134,7 @@
   }
   .live-card.mobile .score {
     color: var(--text);
+    font-weight: 400;
   }
   .spacer {
     flex: 1;
