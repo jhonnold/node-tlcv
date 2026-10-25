@@ -22,6 +22,7 @@
   const { engine, compact = false, thumb = 0, flipped = false, lines, short = false }: Props = $props();
 
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
+  const label = $derived(`${ROLE[engine.role]} engine ${engine.name}, score ${engine.score}`);
   // PV lines: `lines`, else PV_LINES, or as many as fit beside the PV-end board. The PV box keeps this
   // height, so the card never grows or shrinks with the PV.
   const pvLines = $derived(lines ?? Math.max(PV_LINES, Math.floor(thumb / PV_LINE)));
@@ -60,19 +61,31 @@
   <span class="rest">{engine.pv.rest}</span>
 {/snippet}
 
-{#snippet pvBoard()}
-  <Board
-    fen={engine.pvFen ?? EMPTY_FEN}
-    size={thumb}
-    coords={false}
-    animate={false}
-    {flipped}
-    label="PV end position"
-  />
+<!-- The PV-end board; clicking it copies the FEN. The short card shows "Copied" over the board, with no caption. -->
+{#snippet thumbButton(overlay: boolean)}
+  <button
+    type="button"
+    class="thumb"
+    aria-label="Copy FEN of PV end position"
+    title="PV end position — click to copy FEN"
+    disabled={!engine.pvFen}
+    onclick={copy}
+  >
+    <Board
+      fen={engine.pvFen ?? EMPTY_FEN}
+      size={thumb}
+      coords={false}
+      animate={false}
+      {flipped}
+      label="PV end position"
+    />
+    {#if !overlay}<span>{copied ? 'Copied' : 'PV end'}</span>
+    {:else if copied}<span class="copied">Copied</span>{/if}
+  </button>
 {/snippet}
 
 {#if short}
-  <article class="card short {engine.role}" aria-label="{ROLE[engine.role]} engine {engine.name}, score {engine.score}">
+  <article class="card short {engine.role}" aria-label={label}>
     <div class="main">
       <div class="head">
         <span class="swatch" aria-hidden="true"></span>
@@ -84,27 +97,10 @@
       <span class="sstats">{shortStats}</span>
       <p class="pv" style:--pv-line="{SHORT_PV_LINE}px" style:--pv-lines={2} title={pvText}>{@render pvSpans()}</p>
     </div>
-    {#if thumb > 0}
-      <button
-        type="button"
-        class="thumb"
-        aria-label="Copy FEN of PV end position"
-        title="PV end position — click to copy FEN"
-        disabled={!engine.pvFen}
-        onclick={copy}
-      >
-        {@render pvBoard()}
-        {#if copied}<span class="copied">Copied</span>{/if}
-      </button>
-    {/if}
+    {#if thumb > 0}{@render thumbButton(true)}{/if}
   </article>
 {:else}
-  <article
-    class="card {engine.role}"
-    class:compact
-    class:noboard={!thumb}
-    aria-label="{ROLE[engine.role]} engine {engine.name}, score {engine.score}"
-  >
+  <article class="card {engine.role}" class:compact class:noboard={!thumb} aria-label={label}>
     <div class="head">
       <span class="swatch" aria-hidden="true"></span>
       <span class="name">{engine.name}</span>
@@ -131,19 +127,7 @@
       <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={pvLines} title={pvText}>
         {@render pvSpans()}
       </p>
-      {#if thumb > 0}
-        <button
-          type="button"
-          class="thumb"
-          aria-label="Copy FEN of PV end position"
-          title="PV end position — click to copy FEN"
-          disabled={!engine.pvFen}
-          onclick={copy}
-        >
-          {@render pvBoard()}
-          <span>{copied ? 'Copied' : 'PV end'}</span>
-        </button>
-      {/if}
+      {#if thumb > 0}{@render thumbButton(false)}{/if}
     </div>
   </article>
 {/if}

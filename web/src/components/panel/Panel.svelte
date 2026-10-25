@@ -37,11 +37,12 @@
 
   const game = getGameStore();
   const ALL: TabId[] = ['moves', 'chat', 'graphs', 'standings', 'games', 'info'];
+  const NO_CHAT = ALL.filter((id) => id !== 'chat');
   const SETS: Record<PanelTabs, TabId[]> = {
     all: ALL,
     mobile: ['engines', ...ALL],
-    noChat: ['moves', 'graphs', 'standings', 'games', 'info'],
-    chatFirst: ['chat', 'moves', 'graphs', 'standings', 'games', 'info'],
+    noChat: NO_CHAT,
+    chatFirst: ['chat', ...NO_CHAT],
     chatOnly: ['chat'],
   };
   const LABEL: Record<TabId, string> = {
@@ -140,7 +141,7 @@
     {:else if active === 'standings'}<StandingsTab {source} />
     {:else if active === 'games'}<GamesTab {source} {busy} {err} onReplay={startReplay} onWatch={backToLive} />
     {:else if active === 'info'}<InfoTab {source} />
-    {:else}<p class="empty">
+    {:else if solo}<p class="empty">
         {source.kind === 'archive'
           ? "Chat isn't available for archived games."
           : 'Chat returns when you go back to live.'}
