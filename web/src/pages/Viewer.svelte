@@ -62,8 +62,9 @@
           disconnect = game.connect(source.port);
         } else {
           // Its own catch: a failed game fetch leaves the page up, and only the summary 404 goes home.
+          const gen = game.beginReplay();
           loadLatestReplay(source, ac.signal)
-            .then((r) => r && game.loadReplay(r.meta, r.gameNumber))
+            .then((r) => r && game.loadReplay(r.meta, r.gameNumber, gen))
             .catch(() => {
               // Load failure or abort: the page stays as it is.
             });

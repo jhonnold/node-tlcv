@@ -58,7 +58,20 @@
     picked = id;
     if (body) body.scrollTop = 0; // before the DOM swap, so MovesTab's own auto-scroll wins
   }
+  // Only keyboard focus steps the tabs; a mouse-clicked tab leaves the arrows to the board. Chrome sets
+  // :focus-visible on the keydown itself, so the focus origin is tracked: a pointerdown marks the next focus.
+  let pointerFocus = false;
+  let keyFocus = false;
+  function onTabPointer(): void {
+    pointerFocus = true;
+    setTimeout(() => (pointerFocus = false)); // the focus event fires within the same mousedown
+  }
+  function onTabFocus(): void {
+    keyFocus = !pointerFocus;
+  }
   function onTabKey(e: KeyboardEvent): void {
+    if (!keyFocus) return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
     const n = ids.length;
     const i = ids.indexOf(active);
     let next: number;
@@ -73,31 +86,33 @@
     document.getElementById(`${uid}-tab-${ids[next]}`)?.focus();
   }
 
-  // Replays start and end here. `req` drops a late load that a newer choice has overtaken.
-  let req = 0;
+  // Replays start and end here. The store's generation (A7) drops a load that a newer Replay or a Watch overtook.
   let busy = $state<number | null>(null);
   let err = $state('');
   async function startReplay(n: number): Promise<void> {
-    const id = ++req;
+    const gen = game.beginReplay();
+    // busy disables the Replay button, which drops focus to BODY: remember whether the list had it.
+    const hadFocus = body?.contains(document.activeElement) ?? false;
     busy = n;
     err = '';
-    let loaded = false;
     try {
       const meta = await loadReplayGame(source, n);
-      if (id !== req) return;
-      game.loadReplay(meta, n);
-      loaded = true;
+      if (!game.loadReplay(meta, n, gen)) return; // superseded: busy and err belong to the newer request
+      // As the old client did (games/index.ts:113): only from Games, and focus stays on the moved-to tab.
+      if (active === 'games' && SETS[tabs].includes('moves')) {
+        pick('moves');
+        if (hadFocus && document.activeElement === document.body) document.getElementById(`${uid}-tab-moves`)?.focus();
+      }
     } catch {
-      if (id === req) err = `Couldn't load game ${n}.`;
+      if (game.replayGen === gen) err = `Couldn't load game ${n}.`;
     } finally {
-      if (id === req) busy = null;
+      if (game.replayGen === gen) busy = null;
     }
-    if (loaded && SETS[tabs].includes('moves')) pick('moves'); // as the old client did (games/index.ts:113)
   }
   function backToLive(): void {
-    req++;
+    game.exitReplay(); // bumps the generation, so a pending load can't apply
     busy = null;
-    game.exitReplay();
+    err = '';
   }
 
   // A new live game: refresh standings and games once the CT dump has landed.
@@ -117,13 +132,16 @@
   {#if tabs === 'movesOnly'}
     <div class="title"><h2>Moves</h2></div>
   {:else}
-    <div class="tabbar" role="tablist" aria-label="Panel tabs" tabindex="-1" onkeydown={onTabKey}>
+    <div class="tabbar" role="tablist" aria-label="Panel tabs">
       {#each ids as id (id)}
         <button
           type="button"
           role="tab"
           id="{uid}-tab-{id}"
           tabindex={id === active ? 0 : -1}
+          onkeydown={onTabKey}
+          onpointerdown={onTabPointer}
+          onfocus={onTabFocus}
           aria-selected={id === active}
           aria-controls="{uid}-body"
           onclick={() => pick(id)}>{LABEL[id]}</button
