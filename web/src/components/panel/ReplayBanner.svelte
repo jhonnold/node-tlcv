@@ -57,7 +57,7 @@
     color: var(--muted);
   }
   .back {
-    height: 32px;
+    height: var(--pBackH);
     padding: 0 12px;
     display: inline-flex;
     align-items: center;

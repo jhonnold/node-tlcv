@@ -24,7 +24,7 @@
   const PAD = 16; // page padding and grid gap
   const EV = 10;
   const EV_GAP = 6;
-  const BARS = 112; // 2 compact player bars (48) + 2 gaps (8)
+  const BARS = 112; // 2 player bars (48) + 2 gaps (8)
   const THUMB = 56;
   const TABLE_MIN = 270;
   const TABLE_MAX = 360;
@@ -45,7 +45,7 @@
 
     <section class="board-col" aria-label="Board" style:--ev-off="{EV + EV_GAP}px">
       {#if game.players}
-        <div class="bar"><PlayerBar compact side={view.top} {...game.players[view.top]} /></div>
+        <div class="bar"><PlayerBar side={view.top} {...game.players[view.top]} /></div>
       {/if}
       <div class="board-row" style:gap="{EV_GAP}px">
         <EvalBar thickness={EV} score={game.evalScore} flipped={view.flipped} />
@@ -61,25 +61,20 @@
         {/if}
       </div>
       {#if game.players}
-        <div class="bar"><PlayerBar compact side={view.bottom} {...game.players[view.bottom]} /></div>
+        <div class="bar"><PlayerBar side={view.bottom} {...game.players[view.bottom]} /></div>
       {/if}
     </section>
 
     <section class="table" aria-label="Engines and navigation">
       <div>
-        {#if game.engines}<EngineCard short engine={game.engines[view.top]} thumb={THUMB} flipped={view.flipped} />{/if}
+        {#if game.engines}<EngineCard engine={game.engines[view.top]} thumb={THUMB} flipped={view.flipped} />{/if}
       </div>
       <div class="mid">
-        {#if kib}<EngineCard short engine={kib} thumb={THUMB} flipped={view.flipped} />{/if}
+        {#if kib}<EngineCard engine={kib} thumb={THUMB} flipped={view.flipped} />{/if}
         <NavControls variant="tablet" />
       </div>
       <div>
-        {#if game.engines}<EngineCard
-            short
-            engine={game.engines[view.bottom]}
-            thumb={THUMB}
-            flipped={view.flipped}
-          />{/if}
+        {#if game.engines}<EngineCard engine={game.engines[view.bottom]} thumb={THUMB} flipped={view.flipped} />{/if}
       </div>
     </section>
 

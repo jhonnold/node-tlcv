@@ -26,10 +26,6 @@ export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> 
   return (await res.json()) as T;
 }
 
-export async function getText(url: string): Promise<string> {
-  return (await request(url)).text();
-}
-
 export async function postJson(url: string, body: unknown): Promise<void> {
   await request(url, {
     method: 'POST',

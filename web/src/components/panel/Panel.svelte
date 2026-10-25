@@ -1,6 +1,6 @@
 <script module lang="ts">
-  export type TabId = 'engines' | 'moves' | 'chat' | 'graphs' | 'standings' | 'games' | 'info';
-  export type PanelTabs = 'all' | 'mobile' | 'noChat' | 'chatFirst' | 'chatOnly';
+  export type TabId = 'moves' | 'chat' | 'graphs' | 'standings' | 'games' | 'info';
+  export type PanelTabs = 'noChat' | 'chatFirst' | 'chatOnly';
 </script>
 
 <script lang="ts">
@@ -8,7 +8,6 @@
   import { loadReplayGame } from '$lib/replay';
   import type { ViewerSource } from '$lib/url';
   import ChatTab from './ChatTab.svelte';
-  import EnginesTab from './EnginesTab.svelte';
   import GamesTab from './GamesTab.svelte';
   import GraphsTab from './GraphsTab.svelte';
   import StandingsTab from './StandingsTab.svelte';
@@ -19,34 +18,21 @@
   type Props = {
     source: ViewerSource;
     tabs: PanelTabs;
-    initialTab?: TabId;
     height?: string;
     bordered?: boolean;
-    flipped?: boolean;
-    touch?: boolean; // 44 px touch targets ('mobile' implies it)
+    touch?: boolean; // 44 px touch targets
   };
-  const {
-    source,
-    tabs,
-    initialTab,
-    height = '100%',
-    bordered = true,
-    flipped = false,
-    touch = false,
-  }: Props = $props();
+  const { source, tabs, height = '100%', bordered = true, touch = false }: Props = $props();
 
   const game = getGameStore();
   const ALL: TabId[] = ['moves', 'chat', 'graphs', 'standings', 'games', 'info'];
   const NO_CHAT = ALL.filter((id) => id !== 'chat');
   const SETS: Record<PanelTabs, TabId[]> = {
-    all: ALL,
-    mobile: ['engines', ...ALL],
     noChat: NO_CHAT,
     chatFirst: ['chat', ...NO_CHAT],
     chatOnly: ['chat'],
   };
   const LABEL: Record<TabId, string> = {
-    engines: 'Engines',
     moves: 'Moves',
     chat: 'Chat',
     graphs: 'Graphs',
@@ -61,7 +47,7 @@
   const solo = $derived(tabs === 'chatOnly');
   let picked = $state<TabId | null>(null);
   const active = $derived.by(() => {
-    const order: (TabId | null | undefined)[] = [picked, initialTab, source.kind === 'archive' ? 'games' : null];
+    const order: (TabId | null)[] = [picked, source.kind === 'archive' ? 'games' : null];
     for (const t of order) if (t && ids.includes(t)) return t;
     return ids[0];
   });
@@ -111,7 +97,7 @@
 
 <section
   class="panel"
-  class:touch={touch || tabs === 'mobile'}
+  class:touch
   class:bordered
   aria-label={solo ? undefined : 'Game panels'}
   aria-labelledby={solo ? `${uid}-solo` : undefined}
@@ -141,8 +127,7 @@
     aria-labelledby={solo ? undefined : `${uid}-tab-${active}`}
     bind:this={body}
   >
-    {#if active === 'engines'}<EnginesTab {flipped} />
-    {:else if active === 'moves'}<MovesTab {source} scroller={body} />
+    {#if active === 'moves'}<MovesTab {source} scroller={body} />
     {:else if active === 'chat'}<ChatTab scroller={body} />
     {:else if active === 'graphs'}<GraphsTab />
     {:else if active === 'standings'}<StandingsTab {source} />
@@ -162,6 +147,8 @@
     --pSegH: 30px;
     --pCtlH: 36px;
     --pIconBtn: 32px;
+    --pBtnH: 28px;
+    --pBackH: 32px;
     --pRowH: 40px;
     --pChartH: 220px;
     --pTabPad: 8px;
@@ -175,9 +162,11 @@
   }
   .panel.touch {
     --pTabH: 44px;
-    --pSegH: 40px;
+    --pSegH: 44px;
     --pCtlH: 44px;
     --pIconBtn: 44px;
+    --pBtnH: 44px;
+    --pBackH: 44px;
     --pRowH: 44px;
     --pChartH: 180px;
     --pTabPad: 12px;

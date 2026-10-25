@@ -29,7 +29,7 @@ The frontend is a Svelte 5 single-page app (runes mode) in `web/`, bundled by Vi
 - Links to `/admin` are never intercepted: the browser always does a full load, so the basic-auth challenge runs.
 - `App.svelte` keys `Viewer` by `pagePath(source)`, so switching broadcast or archive remounts the page.
 - Client-side navigation skips the server guards, so `Viewer` fetches its summary (`/broadcasts/:port` or `/archives/:slug`) and navigates home on a 404.
-- `lib/http.ts` (`getJson`, `getText`, `postJson`, `del`) throws `HttpError` with the status. A redirected GET (the catch-all) counts as a 404.
+- `lib/http.ts` (`getJson`, `postJson`, `del`) throws `HttpError` with the status. A redirected GET (the catch-all) counts as a 404.
 
 ## State
 
@@ -37,12 +37,21 @@ The frontend is a Svelte 5 single-page app (runes mode) in `web/`, bundled by Vi
 |--------|-------|
 | `lib/game.svelte.ts` `GameStore` | One per Viewer (context `setGameStore` / `getGameStore`). Live data from Socket.IO (`connect(port)` returns the disconnect function), the replayed game, the navigation cursor and arrow-key handler, and derived views (players, engines, arrows, eval, FEN, position label). |
 | `lib/tournament.svelte.ts` `TournamentStore` | One per Viewer (context `setTournament` / `getTournament`). Fetches `<base>/games` and `<base>/results` in its constructor; a 404 means "none yet" (`null`). `refreshSoon()` re-fetches 5 s later (Viewer calls it when a new live game starts); `dispose()` aborts. |
-| `lib/view.svelte.ts` `ViewState` | One per Viewer (context `setView` / `getView`). Breakpoint `bp` from two `MediaQuery` thresholds (768 / 1280 px): mobile, tablet, desktop. Fields `flipped`, `focus`, `themeOpen`, `boardPref`; only `boardPref` persists (`board-width`, written by `commitBoardPref()` when a resize drag ends). |
+| `lib/view.svelte.ts` `ViewState` | One per Viewer (context `setView` / `getView`). Breakpoint `bp` from two `MediaQuery` thresholds (768 / 1280 px): mobile, tablet, desktop. Fields `flipped`, `focus`, `themeOpen`, `boardPref`; only `boardPref` persists (`board-width`, written by `commitBoardPref()` when a resize drag ends). Helpers in the same file: `floor8`, `clamp`, `clampBoard` and `MIN_BOARD` (board sizing), `kibitzerView` (the kibitzer card's data) and `gameText` ("Game N"). |
 | `lib/theme/theme.svelte.ts` `theme` | Module singleton: preset, base preset, board palette, piece set, custom overrides. |
 | `lib/sounds.svelte.ts` `sound` | Move sounds, off until enabled; `Capture.mp3` for SAN containing `x`, else `Move.mp3`. |
 | `lib/router.svelte.ts` `router` | The current route. |
 
 localStorage keys (`KEYS` in `lib/storage.ts`; every access is wrapped in try/catch): `theme`, `tlcv.themeBase`, `tlcv.customTheme`, `tlcv.pieceSet`, `tlcv.boardPalette`, `soundEnabled`, `tlcv.net-username`, `board-width`.
+
+## Viewer layouts
+
+One layout tree per breakpoint (`ViewState.bp`: mobile < 768 px, tablet 768–1279 px, desktop ≥ 1280 px); each has exactly one `Board` labelled "Main board". Focus mode replaces it.
+
+- **Desktop (≥ 1280 px)**: `Header` (56 px: brand; Focus, Flip, Sound, Theme) over `DesktopLayout`, a centred grid `meta board table` / `chat board table`. The meta cell is `EventCard`. The chat column is always `Panel tabs="chatOnly"`, which on archives and replays shows its empty-state line. The board column is a `PlayerBar`, the eval bar and board, and a `PlayerBar`. The table column is the top short engine card, `NavControls`, `Panel tabs="noChat"`, the kibitzer short card and the bottom short engine card. Sizing is fluid with t = clamp((w − 1440) / 480, 0, 1): page padding 20 → 24 px, eval bar 12 → 14 px, PV-end boards 72 → 80 px, chat column 240–400 px, table column ≤ 520 px. The board, table and meta/chat columns share one height.
+- **Desktop board resize**: `ResizeHandle` reports `onresize(px, from)`, with `from` the board size at pointerdown. `DesktopLayout` maps the drag piecewise, so the handle stays under the pointer whether the grid is left-anchored or centred at the 520 px table cap. The size is clamped with `clampBoard(…, max)` and `MIN_BOARD`, and persisted as `board-width` on release.
+- **Tablet (768–1279 px)**: `Header` over `TabletLayout`, a grid `meta meta` / `board table` / `tabs tabs`. The table column holds the top short card, then the kibitzer short card with `NavControls`, then the bottom short card. `Panel tabs="chatFirst" touch` spans the full width below, 480–640 px tall (`clamp(480px, 100dvh − 88px, 640px)`). The page scrolls and there is no resize handle.
+- **Mobile (< 768 px)**: `MobileHeader` (52 px: brand link, site, LIVE/ARCHIVE · Game N · M watching, Flip) over `MobileLayout`, a single scrolling column: short engine card for the top side, `PlayerBar`, the full-width board (8 px grid; on landscape phones no taller than the screen less header and nav bar), 6 px horizontal `EvalBar`, `PlayerBar`, short engine card for the bottom side, the kibitzer short card when the game has one, then `Panel tabs="chatFirst" touch` (`max(420px, 100svh − 56px)` tall, so it fills the screen above the nav bar). `MobileNavBar` sticks to the bottom (56 px): the ≡ "More options" menu (Focus mode, Move sounds, Theme & pieces, All broadcasts; opens upward), Start, Previous, a wide middle button (`Live · 20… Qb6` while following, `20… Qb6 · live` when behind; returns to live), Next, Latest. Every control is at least 44×44 px. There is no Engines tab.
 
 ## Components (`web/src/components/`)
 
@@ -50,27 +59,25 @@ localStorage keys (`KEYS` in `lib/storage.ts`; every access is wrapped in try/ca
 |-----------|---------|
 | `Board.svelte` | chessboardjs wrapper. Props `fen`, `size` (rendered at a multiple of 8 px), `flipped`, `coords`, `lastMove`, `arrows` (SVG overlay), `animate`, `label`. Used for the main board, PV thumbnails, lobby cards and the theme preview. |
 | `EvalBar.svelte` | Vertical or horizontal eval bar; `score` is White's view. |
-| `PlayerBar.svelte` | Name, status and clock (`role="timer"`); `compact` and `showScore` variants. |
-| `EngineCard.svelte` | Engine or kibitzer card; `compact` and `thumb` (PV-end board) variants. The PV is clamped with an ellipsis to a fixed-height box (the `lines` prop; else at least 3, or `floor(thumb / 20)` beside a PV board), so a card never changes height with the PV; narrow compact cards (< 320 px content) always put the stats line under the score, and those without a PV board reserve 2 PV lines. |
+| `PlayerBar.svelte` | Name, status (Thinking / Last + duration) and clock (`role="timer"`); one 48 px look. |
+| `EngineCard.svelte` | Single short card: row 1 colour square, name (ellipsis), role, score; row 2 stats `d… · nodes · nps/s · time · status`; the PV clamped to 2 lines (full PV in `title`), so the height is constant; an optional PV-end board (`thumb` px) whose click copies the FEN. |
 | `BrandMark.svelte`, `SiteHeader.svelte` | Logo; the header of Lobby and Admin. |
 | `ThemeDrawer.svelte` (+ `theme/drawer.ts`) | Native modal `<dialog>`: presets, piece set, board palettes, colour rows, Reset to preset, Done. |
-| `panel/Panel.svelte` | Tab bar + `ReplayBanner`; starts and ends replays. Tab sets: `all` (Moves, Chat, Graphs, Standings, Games, Info; desktop) and `mobile` (adds Engines; tablet and mobile). Chat is hidden on archives and during replays; archives open on Games on desktop. |
-| `panel/*Tab.svelte` | Moves, Chat, Graphs (Chart.js), Standings, Games, Info, Engines. |
+| `panel/Panel.svelte` | Tab bar + `ReplayBanner`; starts and ends replays. Tab sets: `noChat` (Moves, Graphs, Standings, Games, Info); `chatFirst` (Chat first, opens on Chat when live); `chatOnly` (a "Chat" header with no tab bar). `touch` gives 44 px controls through the `--p*` size variables, including `--pSegH` and `--pBtnH`. Chat is hidden on archives and during replays; archives open on Games. |
+| `panel/*Tab.svelte` | Moves, Chat, Graphs (Chart.js), Standings, Games, Info. |
 | `panel/ReplayBanner.svelte` | "Replaying game N"; Back to live on live pages only. |
 | `lobby/*` | `LiveCard`, `SiteFooter`; helpers in `lobby.ts` (30 s poll). |
 | `admin/*` | `BroadcastsSection`, `KibitzersSection`, `WebhooksSection`; helpers in `forms.ts`; styles in `admin.css`. |
-| `viewer/Header.svelte` | Tablet/desktop header (same height, padding and brand as `SiteHeader`): brand, site, "Game N", LIVE/ARCHIVE badge, watching count, Focus/Flip/Sound/Theme buttons |
-| `viewer/MobileHeader.svelte` | Mobile header with Flip and the ⋮ menu (Focus mode, Move sounds, Theme & pieces, All broadcasts) |
-| `viewer/DesktopLayout.svelte` | Desktop grid (≥1280 px): engine cards, board column, and a Panel with every tab (Moves included). The board fits the window height, the panel takes the remaining width (≥ 368 px; 380 px when the board is width-limited, e.g. 1280×800, 1440×900). Engine column 400 px; PV boards 136 px, shrunk so two cards, or three with a kibitzer, end level with the bottom player bar (below 64 px the boards are dropped, then the PV shows 2 lines, then 1). |
-| `viewer/TabletLayout.svelte` | Tablet layout: board, eval bar, engine cards, nav row, kibitzer strip and the mobile-tab Panel |
-| `viewer/MobileLayout.svelte` | Mobile layout: board, horizontal eval bar, nav row and the Panel |
-| `viewer/NavControls.svelte` | First/prev/next/latest, position label, Following live / Back to live |
-| `viewer/ResizeHandle.svelte` | Desktop board-size drag handle (pointer only; stored in `board-width`) |
+| `viewer/Header.svelte` | Tablet/desktop header (56 px, 20 px padding): brand; Focus, Flip, Sound, Theme. |
+| `viewer/EventCard.svelte` | Meta box (`section[aria-label="Event"]`): LIVE badge + N watching, or ARCHIVE; site `<h1>`; Game N; opening (bold ECO) · Tablebase. |
+| `viewer/MobileHeader.svelte` | Mobile header (52 px): brand link, site, LIVE/ARCHIVE · Game N · M watching, Flip. |
+| `viewer/MobileNavBar.svelte` | Mobile sticky bottom bar (56 px): ≡ "More options" menu (Focus mode, Move sounds, Theme & pieces, All broadcasts; opens upward, roving focus, Esc returns to the button), Start / Previous / Live / Next / Latest. |
+| `viewer/DesktopLayout.svelte` | Desktop grid (≥ 1280 px); see "Viewer layouts". |
+| `viewer/TabletLayout.svelte` | Tablet grid (768–1279 px); see "Viewer layouts". |
+| `viewer/MobileLayout.svelte` | Mobile column (< 768 px); see "Viewer layouts". |
+| `viewer/NavControls.svelte` | Desktop/tablet table-column nav block: four equal buttons (40/44 px) over a position label and Following live / Back to live. |
+| `viewer/ResizeHandle.svelte` | Desktop board-size drag handle (pointer only); reports `onresize(px, from)`; stored in `board-width`. |
 | `viewer/FocusView.svelte` | Focus mode (Esc exits) |
-| `viewer/ModeLine.svelte` | Tablet/mobile header sub-line: LIVE or ARCHIVE, then "· Game N · M watching" (no watching count on archives) |
-| `viewer/ArrowLegend.svelte` | Legend for the PV arrow colours: White, Black and, when present, the kibitzer |
-| `viewer/KibitzerStrip.svelte` | Tablet kibitzer summary strip (name and score) |
-| `viewer/OpeningLine.svelte` | Opening name and ECO, plus the tablebase result; `row` and `short` variants |
 | `viewer/Icon.svelte` | Inline SVG icon set (`IconName`) used by the viewer headers and nav |
 
 Plain-TS logic in `web/src/lib/`: `arrows.ts` (PV arrows), `chat.ts` (line parsing, markdown + DOMPurify), `chessboard.ts` + `jquery-global.ts` (chessboardjs bootstrap), `clocks.ts`, `color.ts` (arrow colour blending), `delta.ts` (Socket.IO delta merge), `engines.ts` (engine card views), `fen.ts`, `format.ts` (scores, counts, times), `games.ts` (Games tab rows), `graphs.ts` (series + Chart.js config), `moves.ts` (move grid), `positions.ts` (SAN → FEN list), `pv.ts`, `replay.ts`, `standings.ts` (crosstable), `storage.ts`, `url.ts`.

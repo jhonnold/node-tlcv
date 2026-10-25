@@ -52,7 +52,7 @@
     prevPair = pair;
     prevLen = g.moves.length;
   });
-  // Leaving focus remounts the header: give focus back to its trigger (desktop/tablet button or the mobile ⋮).
+  // Leaving focus remounts the layout: refocus its trigger (Header's Focus button or MobileNavBar's More options).
   async function exitFocus(): Promise<void> {
     view.focus = false;
     await tick();
