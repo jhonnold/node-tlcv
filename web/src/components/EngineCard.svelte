@@ -23,6 +23,7 @@
   // PV lines: `lines`, else PV_LINES, or as many as fit beside the PV-end board. The PV box keeps this
   // height, so the card never grows or shrinks with the PV.
   const pvLines = $derived(lines ?? Math.max(PV_LINES, Math.floor(thumb / PV_LINE)));
+  const pvText = $derived([engine.pv.pre, engine.pv.first, engine.pv.rest].filter(Boolean).join(' '));
   const stats = $derived([
     { k: 'Depth', v: engine.depth },
     { k: 'Nodes', v: engine.nodes },
@@ -77,7 +78,7 @@
     {/if}
   </div>
   <div class="pvrow">
-    <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={pvLines}>
+    <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={pvLines} title={pvText}>
       {#if engine.pv.pre}<span class="pre">{engine.pv.pre}</span>{/if}
       <strong>{engine.pv.first}</strong>
       <span class="rest">{engine.pv.rest}</span>
@@ -240,6 +241,14 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--pv-lines);
     line-clamp: var(--pv-lines);
+  }
+  /* Tablet side cards (< 320 px content) reserve 2 PV lines, so the column stays no taller than its board. */
+  @container (width < 320px) {
+    .pv {
+      height: calc(2 * var(--pv-line));
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
   }
   .pre {
     color: var(--faint);
