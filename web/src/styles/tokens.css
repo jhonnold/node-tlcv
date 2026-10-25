@@ -1,0 +1,84 @@
+/* Dark (Nord) preset + nord board — pre-JS fallback. MUST stay in sync with PRESETS.dark / BOARD_PALETTES.nord in lib/theme/presets.ts. */
+:root {
+  --bg: #2e3440;
+  --surface: #3b4252;
+  --surface2: #434c5e;
+  --line: #4c566a;
+  --line2: #434c5e;
+  --text: #eceff4;
+  --muted: #b4bccb;
+  --faint: #aab3c4;
+  --invBg: #88c0d0;
+  --invText: #2e3440;
+  --liveBg: #bf616a;
+  --liveText: #e5a3a9;
+  --engW: #ebcb8b;
+  --engB: #88c0d0;
+  --engK: #c8a9c2;
+  --evalW: #eceff4;
+  --evalB: #4c566a;
+  --link: #88c0d0;
+  --sel: #4c566a;
+  --tabSel: #4c566a;
+  --posBg: rgba(136, 192, 208, 0.14);
+  --boardLight: #d8dee9;
+  --boardDark: #81a1c1;
+  --boardHl: #ebcb8b;
+  --arrowW: #ebcb8b;
+  --arrowB: #88c0d0;
+  --arrowK: #b48ead;
+  --fontUi: Archivo, system-ui, sans-serif;
+  --fontMono: 'JetBrains Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--fontUi);
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure {
+  margin: 0;
+}
+a {
+  color: var(--link);
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  border-radius: 0;
+}
+button {
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+.mono {
+  font-family: var(--fontMono);
+  font-variant-numeric: tabular-nums;
+}

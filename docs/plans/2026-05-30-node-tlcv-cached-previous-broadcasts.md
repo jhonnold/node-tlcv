@@ -6,6 +6,8 @@ author: claude_code (drafted) + Jay Honnold (direction + approval)
 synthesis: done
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # Reintroduce "Previous Broadcasts" on the homepage — with caching
 
 Plan + implementation for node-tlcv PR #172 (`dec71ec`, merged 2026-05-30):

@@ -7,6 +7,8 @@ synthesis: done
 migrated_from: library/imports/plans/2026-05-24-node-tlcv-previous-broadcasts.md
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # node-tlcv — Previous Broadcasts (tournament archive)
 
 Shipped as **PR #165** (`feat: previous broadcasts (tournament archive)`,

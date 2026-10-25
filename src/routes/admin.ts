@@ -8,7 +8,9 @@ import configStore from '../config/config-store.js';
 import { env } from '../config/env.js';
 import type { KibitzerConfig } from '../kibitzer/types.js';
 import type { WebhookConfig, WebhookEventKind } from '../webhooks/types.js';
+import type { AdminBroadcast } from '../../shared/types.js';
 import { register } from '../metrics.js';
+import { sendApp } from './spa.js';
 
 const router = Router();
 
@@ -51,23 +53,40 @@ function guard(label: string, fn: (req: Request, res: Response) => Promise<void>
 
 const optionalNumber = (value: unknown): number | undefined => (value ? Number(value) : undefined);
 
-router.get('/', async (_: Request, res: Response) => {
-  const kibitzerManager = getKibitzerManager();
+router.get('/', sendApp);
+
+router.get('/broadcasts', (_: Request, res: Response) => {
+  res.json(
+    [...broadcasts.values()].map((b): AdminBroadcast => ({
+      connection: b.connection,
+      host: b.host,
+      port: b.port,
+      site: b.game.site,
+      ephemeral: b.ephemeral,
+      viewerCount: b.browserCount,
+    })),
+  );
+});
+
+router.get('/connection-history', async (_: Request, res: Response) => {
   // Already-live connections would only 400 with "Port already in use!" — keep them out of the picker.
   const active = new Set([...broadcasts.values()].map((b) => b.connection));
 
-  res.render('pages/admin', {
-    broadcasts: broadcasts.values(),
-    kibitzers: kibitzerManager?.getStatus() ?? [],
-    webhooks: getWebhookManager()?.getStatus() ?? [],
-    connectionHistory: (await configStore.getConnectionHistory()).filter((c) => !active.has(c)),
-  });
+  res.json((await configStore.getConnectionHistory()).filter((c) => !active.has(c)));
 });
 
-router.post(
-  '/close',
+router.get('/kibitzers', (_: Request, res: Response) => {
+  res.json(getKibitzerManager()?.getStatus() ?? []);
+});
+
+router.get('/webhooks', (_: Request, res: Response) => {
+  res.json(getWebhookManager()?.getStatus() ?? []);
+});
+
+router.delete(
+  '/broadcasts/:connection',
   guard('Unable to close connection', async (req, res) => {
-    const { connection } = req.body;
+    const { connection } = req.params;
 
     logger.info(`Attempting to close connection ${connection}`);
     await closeConnection(connection);
@@ -76,7 +95,7 @@ router.post(
 );
 
 router.post(
-  '/new',
+  '/broadcasts',
   guard('Unable to add connection', async (req, res) => {
     const { connection } = req.body;
     const ephemeral = Boolean(req.body.ephemeral);

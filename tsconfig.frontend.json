@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "moduleResolution": "bundler",
-    "skipLibCheck": true,
-    "typeRoots": ["./node_modules/@types"]
-  },
-  "include": ["shared/**/*", "public/js/**/*"]
-}

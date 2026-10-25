@@ -32,6 +32,15 @@ assumes a new upstream message.
 3. Cross-checked against shipped PRs (to exclude done work) and the four
    open GitHub issues (#57, #114, #22, #70).
 
+> **2026-10-25 — refreshed for the Svelte app.** The steps above (and the
+> observations below) describe the 2026-05-25 review of the pre-Svelte
+> frontend (EJS + webpack). The Svelte 5 SPA redesign (PR #234) replaced it
+> with `web/` (see [docs/frontend.md](../frontend.md)): the homepage is the
+> lobby, the tabs are Moves, Chat, Graphs, Standings, Games and Info (Results
+> became Standings, Details became Info), and the theme modal is the theme
+> drawer. File paths, component and tab names in the catalogue were updated
+> to match, and each `status` was re-checked against the code.
+
 ## Live-site observations (2026-05-25)
 
 What the running site actually shows — the evidence behind the catalogue:
@@ -66,7 +75,7 @@ What the running site actually shows — the evidence behind the catalogue:
 
 ## Candidate ideas
 
-Status legend: `idea` (captured) · `exploring` · `building` · `shipped` · `dropped`.
+Status legend: `idea` (captured) · `exploring` · `building` · `partly shipped` · `shipped` · `dropped`.
 
 ### A. Reliability & self-healing (backend)
 
@@ -75,14 +84,17 @@ Highest-leverage backend work. Complements the existing Grafana alerting
 outages but cannot *recover*.
 
 - **A1 — Kibitzer auto-reconnect.** On engine `exit` / SSH `close`
-  (`local-transport.ts:40`, `ssh-transport.ts:63`) the transport sets
+  (`local-transport.ts:25`, `ssh-transport.ts:66`) the transport sets
   `ready=false` and goes dark with no retry. Add backoff reconnection. The
   `create`/`teardown` vs `startAnalysis`/`stopAnalysis` split already
   supports this cleanly. *Medium / high. status: idea.*
 - **A2 — UDP broadcast self-healing.** `UdpTransport` has an `onError` but no
-  reconnect (`udp-transport.ts:23`). Auto-reconnect (re-LOGON) with backoff
+  reconnect (`udp-transport.ts:55`). Auto-reconnect (re-LOGON) with backoff
   on error/silence — directly prevents the silent-outage class the alerting
-  was built to catch. *Medium / high. status: idea.*
+  was built to catch. *Medium / high. status: partly shipped — PRs #214 and
+  #217 re-send LOGON when broadcast data goes quiet and on the server's
+  logout notice, rate-limited (`Broadcast.relogin()` in `src/broadcast.ts`);
+  a socket `error` still closes the `UdpTransport` for good.*
 - **A3 — Graceful shutdown.** No `SIGTERM`/`SIGINT` handlers anywhere in
   `src/`. Cleanly tear down broadcasts, SSH sessions, child engines before
   exit — matters for the `systemctl restart tlcv` deploy flow. *Low /
@@ -93,65 +105,97 @@ outages but cannot *recover*.
 
 ### B. Analytical surfaces (frontend, on existing data)
 
-- **B1 — Results crosstable rework.** Two wins from data already in the CT
+- **B1 — Standings crosstable rework.** Two wins from data already in the CT
   result strings: (a) derive & show **W-L-D + score %** per engine; (b) a
   **gauntlet-aware view** — detect the one engine with `G ≫ others` and
   render a clean "gauntlet vs each opponent" record instead of the sparse
   matrix. Plus row highlight, sticky engine-name column, filter. *Medium /
-  high — the heart of what the audience reads. status: idea.*
+  high — the heart of what the audience reads. status: idea (the Svelte
+  Standings tab, `web/src/components/panel/StandingsTab.svelte` +
+  `web/src/lib/standings.ts`, colour-codes head-to-head cells and marks the
+  engines playing now, but still shows only `G` and `Pts`).*
 - **B2 — Evaluation bar.** A vertical advantage bar by the board, driven by
   the kibitzer/engine scores already on the cards (bare numbers today).
-  *Medium / high. status: idea.*
+  *Medium / high. status: shipped — `web/src/components/EvalBar.svelte`,
+  beside the board on desktop and tablet, under it on mobile, in focus mode
+  and on lobby cards (not in the mobile lobby layout); fed by the broadcast engines' scores in the viewer
+  (`GameStore.evalScore` in `web/src/lib/game.svelte.ts`) and by the
+  kibitzer score on lobby cards (`score` from `GET /broadcasts`).*
 - **B3 — Richer move list.** Surface per-move **think-time** (already in
   metadata) + eval, and **move-quality glyphs** (`!`/`?`/`??`) derived from
-  eval deltas. *Low–medium / medium. status: idea.*
-- **B4 — Fill the Details tab.** Natural, zero-architecture home for
+  eval deltas. *Low–medium / medium. status: partly shipped — the Moves tab
+  (`web/src/components/panel/MovesTab.svelte`, `web/src/lib/moves.ts`)
+  shows each move's score and `d<depth> · <think-time>`; glyphs: idea.*
+- **B4 — Fill the Info tab.** Natural, zero-architecture home for
   **broadcast metadata**: time control, hardware/CPU, opening book, ECO,
   start time, games played/remaining, current leader. *Low / medium.
-  status: idea.*
+  status: idea (the Svelte Info tab, `web/src/components/panel/InfoTab.svelte`,
+  now holds links — PGN archive, current game PGN, the TLCS menu links —
+  plus the opening (ECO code + name), tablebase, FEN and keyboard
+  shortcuts; the rest of the metadata above is still missing).*
 
 ### C. Sharing & navigation
 
 - **C1 — Deep-link to a move/position.** Encode move index in the URL (e.g.
-  `?m=42`). Today the URL never changes, so an exact position can't be
-  shared. *Low–medium / high for sharing. status: idea.*
+  `?m=42`). Today the URL never encodes the move, so an exact position
+  can't be shared. *Low–medium / high for sharing. status: idea (the Svelte routes in
+  `web/src/lib/url.ts` still carry no position).*
 - **C2 — Embeddable board widget.** Minimal iframe view for the CCRL
   discussion board / TalkChess. Pairs with C1. *Medium / medium.
   status: idea.*
-- **C3 — Search/filter on big tables.** Results, Games (475 rows), and the
-  homepage archive index (~70 entries, will only grow). *Medium / medium.
-  status: idea.*
-- **C4 — Homepage card spectator counts + sort.** Show how many are watching
+- **C3 — Search/filter on big tables.** Standings, Games (475 rows), and the
+  lobby archive index (~70 entries, will only grow). *Medium / medium.
+  status: partly shipped — the Games tab has an engine filter and a
+  "Decisive only" toggle (`web/src/components/panel/GamesTab.svelte`), and
+  the lobby's "Previous broadcasts" has a search box
+  (`web/src/pages/Lobby.svelte`);
+  Standings has no filter.*
+- **C4 — Lobby card spectator counts + sort.** Show how many are watching
   each live card; allow sorting. (Spectator set already exists; ties to E2 /
-  issue #22.) *Low–medium / medium. status: idea.*
+  issue #22.) *Low–medium / medium. status: partly shipped — each lobby card
+  shows "N watching" (web viewers;
+  `web/src/components/lobby/LiveCard.svelte`), and `GET /broadcasts` orders
+  the cards most-watched first; there is no user-chosen sort.*
 
 ### D. Accessibility (in-game viewer)
 
 The home cards got a11y attention ([[2026-05-24-node-tlcv-board-a11y-screen-reader]]);
-the **viewer** did not.
+the **viewer** did not (as of 2026-05-25; see D1–D3 for the Svelte app).
 
 - **D1 — Tab bar semantics.** Tabs render as plain buttons — add
   `role="tab"` / `role="tablist"` / `aria-selected`. *Low / medium.
-  status: idea.*
+  status: shipped — `web/src/components/panel/Panel.svelte`.*
 - **D2 — Icon-button labels.** Flip / sound / theme / focus / copy-FEN rely
-  on `title` only; add `aria-label`. *Low / low–medium. status: idea.*
+  on `title` only; add `aria-label`. *Low / low–medium. status: shipped —
+  the icon buttons in `web/src/components/viewer/` (`Header`,
+  `MobileHeader`, `MobileNavBar`, `NavControls`), `EngineCard.svelte` and
+  `MovesTab.svelte` have an `aria-label`.*
 - **D3 — Live regions.** `aria-live="polite"` on the move list and chat box
-  so new moves/messages are announced. *Low–medium / medium. status: idea.*
+  so new moves/messages are announced. *Low–medium / medium. status: idea
+  (neither `MovesTab.svelte` nor `ChatTab.svelte` has a live region).*
 
 ### E. Notifications & engagement
 
 - **E1 — "Engine about to move" / game-finished notification.** Browser/desktop
-  notification and/or tab-title flash. Reuses the existing sound infra and
-  webhook event model. *(GitHub issue #57.)* *Medium / medium. status: idea.*
+  notification and/or tab-title flash. Reuses the existing sound infra
+  (`web/src/lib/sounds.svelte.ts`) and webhook event model.
+  *(GitHub issue #57.)* *Medium / medium. status: idea.*
 - **E2 — Surface spectators to web viewers.** The `ADDUSER`/`DELUSER`
   spectator set is tracked but the native-client spectator list/count isn't
-  shown prominently. *(GitHub issue #22.)* *Low–medium / low. status: idea.*
+  shown prominently. *(GitHub issue #22.)* *Low–medium / low. status:
+  shipped — the viewer shows "M watching" from the spectator set (in the
+  mobile and tablet headers via `web/src/components/viewer/EventLine.svelte`,
+  on desktop in `EventCard.svelte`), and the Chat tab has a Show/Hide
+  spectator list (`ChatTab.svelte`).*
 
 ### F. Data & exports
 
 - **F1 — Annotated PGN export.** Augment exported PGN with per-move comments:
   eval, clock/think-time, kibitzer best line. Raises the value of an endpoint
-  people already use (Games + Details tabs). *Medium / high. status: idea.*
+  people already use (Games + Info tabs, the Moves tab's Download PGN).
+  *Medium / high. status: partly shipped (saved PGNs already carry one engine comment
+  per move, `(PV) score/depth time`, from `applyPvToMeta()` in
+  `src/game-service.ts`; the clock and kibitzer line are not in them).*
 - **F2 — Cross-tournament / per-engine stats.** Aggregate the persisted
   `tournament-results.json` + per-game meta sidecars into per-engine and
   head-to-head pages (record by color, opening repertoire, avg think-time).
@@ -162,11 +206,15 @@ the **viewer** did not.
 - **G1 — Tests for the pure parsers.** `result-parser.ts`, `uci-parser.ts`,
   `protocol.ts`, `slugs.ts` are pure and trivially testable; a captured-
   message replay fixture would exercise `game-service` end-to-end. The repo
-  has **no test runner** today, and frontend churn (themes/graphs/etc.) keeps
+  has **no test runner** today (`npm test` is `echo OK`; `npm run check` is
+  type and a11y checks only), and frontend churn (themes/graphs/etc.) keeps
   passing through these. *Low to start / high confidence-of-change.
   status: idea.*
-- **G2 — Clipboard API.** Replace deprecated `execCommand('copy')` in
-  `public/js/utils/fen.ts`. *Trivial. status: idea.*
+- **G2 — Clipboard API.** Replace deprecated `execCommand('copy')` in the
+  copy-FEN helper (pre-Svelte: `public/js/utils/fen.ts`). *Trivial. status:
+  shipped — `copyFen()` in `web/src/lib/fen.ts` uses
+  `navigator.clipboard.writeText()`, keeping `execCommand('copy')` only as a
+  fallback when the Clipboard API is refused.*
 
 ### H. Open GitHub issues (mapping)
 
@@ -185,7 +233,9 @@ board/page theme split, piece-set selection, move sounds, chat markdown,
 tournament archive + legacy fallback, persisted tournament results,
 Prometheus metrics + Grafana alerting, graph legend/axis, broadcast-card
 a11y, mobile card overflow, configurable `PORT`, live spectator updates,
-rename-clears-chat fix, opening-lookup self-disable.
+rename-clears-chat fix, opening-lookup self-disable. Since then (2026-10-25):
+the Svelte 5 SPA redesign (PR #234); its effect on each idea is in the
+statuses above.
 
 ## Re-evaluated after the live review — dropped
 

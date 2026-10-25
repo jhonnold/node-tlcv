@@ -155,3 +155,58 @@ export type ArchiveSummary = {
   updated: string; // ISO 8601 timestamp
   gameCount: number;
 };
+
+/** A lobby card — `GET /broadcasts`. Sorted by viewerCount desc. */
+export type LobbyBroadcast = {
+  port: number;
+  white: string;
+  black: string;
+  whiteTime: number;
+  blackTime: number;
+  site: string;
+  fen: string;
+  score: number | null;
+  opening: string;
+  moveCount: number;
+  viewerCount: number;
+};
+/** `GET /broadcasts/:port` */
+export type BroadcastSummary = { port: number; site: string; white: string; black: string };
+/** `GET /archives/:slug` */
+export type ArchiveInfo = { site: string; slug: string };
+/** `GET /admin/broadcasts` */
+export type AdminBroadcast = {
+  connection: string;
+  host: string;
+  port: number;
+  site: string;
+  ephemeral: boolean;
+  viewerCount: number;
+};
+export type WebhookEventKind = 'game-started' | 'game-finished';
+/** `GET /admin/kibitzers` */
+export type KibitzerStatus = {
+  id: string;
+  type: string;
+  priority: number;
+  enginePath: string;
+  threads: number;
+  hash: number;
+  ready: boolean;
+  engineName: string;
+  targetPort: number | null;
+  targetName: string | null;
+  host?: string;
+  port?: number;
+  username?: string;
+  privateKeyPath?: string;
+};
+/** `GET /admin/webhooks` */
+export type WebhookStatus = {
+  id: string;
+  type: string;
+  name: string;
+  url: string;
+  ports: number[];
+  events: WebhookEventKind[];
+};

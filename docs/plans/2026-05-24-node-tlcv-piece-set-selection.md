@@ -6,6 +6,8 @@ author: claude_code (plan + implementation), Jay Honnold (direction)
 synthesis: done
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # node-tlcv — piece set selection in the theme chooser
 
 Plan + as-built notes for adding chess piece-set selection to the node-tlcv theme

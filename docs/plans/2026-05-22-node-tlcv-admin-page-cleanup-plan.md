@@ -5,6 +5,8 @@ author: Claude Code
 synthesis: done
 ---
 
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 > Status: implemented 2026-05-22 on branch `cleanup-admin-page` (commit
 > `2a41671`). Plan authored by Claude Code with Jay's direction/approval.
 > Related: [[node-tlcv]], [[2026-05-20-node-tlcv-issue-132-plan]] (the

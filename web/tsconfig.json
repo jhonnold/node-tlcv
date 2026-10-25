@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": { "$lib/*": ["./src/lib/*"], "$shared/*": ["../shared/*"] }
+  },
+  "include": ["src/**/*.ts", "src/**/*.svelte", "../shared/**/*.ts"]
+}

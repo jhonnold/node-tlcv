@@ -24,4 +24,4 @@ Outbound webhooks POST a notification when a game **starts** or **finishes**. Co
 
 - **Fire-and-forget**: Do not `await` `dispatch()`. `DiscordSender.send()` catches every error and always resolves, so a slow or failing webhook never blocks `onResult()` / the message batch.
 - **Game-started dedup**: Connecting mid-game fires one game-started for the already-in-progress game — accepted.
-- **URL is a secret**: Discord webhook URLs embed a token. The admin table masks all but the last 8 chars, but the edit button still carries the full URL in a `data-url` attribute (admin page is basic-auth protected).
+- **URL is a secret**: Discord webhook URLs embed a token. The admin table masks all but the last 8 chars, but the full URL is still sent in the `GET /admin/webhooks` JSON (the Edit form is prefilled from it; the admin routes are basic-auth protected).

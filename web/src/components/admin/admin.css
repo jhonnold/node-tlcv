@@ -1,0 +1,442 @@
+/* Admin page. Global stylesheet: every rule is under .admin-page. SiteHeader/ThemeDrawer live outside it. */
+.admin-page .layout {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  gap: 32px;
+  padding: 32px 24px 48px;
+}
+.admin-page nav {
+  width: 200px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-page nav a {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.admin-page nav a.active {
+  background: var(--surface2);
+  color: var(--text);
+}
+.admin-page nav .count {
+  font-family: var(--fontMono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.admin-page main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.admin-page h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.admin-page h2 {
+  font-size: 17px;
+  font-weight: 600;
+}
+.admin-page h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.admin-page .alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--liveBg);
+  background: var(--surface);
+  color: var(--liveText);
+}
+.admin-page .alert span {
+  flex: 1;
+}
+.admin-page .card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  overflow: hidden;
+  scroll-margin-top: 16px;
+}
+.admin-page .card-head {
+  padding: 16px 20px;
+}
+.admin-page .empty {
+  padding: 4px 20px 16px;
+  color: var(--muted);
+}
+.admin-page .table-wrap {
+  overflow-x: auto;
+  position: relative;
+}
+.admin-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.admin-page thead tr {
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.admin-page th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.admin-page td {
+  padding: 12px;
+}
+.admin-page tbody tr {
+  border-top: 1px solid var(--line2);
+}
+.admin-page th:first-child,
+.admin-page td:first-child {
+  padding-left: 20px;
+}
+.admin-page th:last-child,
+.admin-page td:last-child {
+  padding-right: 20px;
+}
+.admin-page td:first-child {
+  font-weight: 600;
+}
+.admin-page .num {
+  text-align: right;
+}
+.admin-page .mono {
+  font-size: 13px;
+}
+.admin-page .dim {
+  color: var(--muted);
+}
+.admin-page td.actions {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  text-align: right;
+  white-space: nowrap;
+}
+.admin-page .actions .btn + .btn {
+  margin-left: 6px;
+}
+.admin-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.admin-page .chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.admin-page .chip {
+  padding: 2px 8px;
+  background: var(--surface2);
+  font-size: 12px;
+}
+.admin-page .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--engW);
+}
+.admin-page .status.ready {
+  color: var(--text);
+}
+.admin-page .status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+}
+.admin-page .btn {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-page .btn.danger {
+  border-color: var(--liveBg);
+  color: var(--liveText);
+}
+.admin-page .btn.primary {
+  height: 40px;
+  padding: 0 18px;
+  border: 0;
+  background: var(--invBg);
+  color: var(--invText);
+  font-size: 14px;
+  font-weight: 700;
+}
+.admin-page .btn.secondary {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+.admin-page .btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.admin-page form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+.admin-page form.inline {
+  flex-direction: row;
+  align-items: flex-end;
+  padding: 16px 20px;
+}
+.admin-page .form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-page .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.admin-page form.inline .field {
+  flex: 1;
+}
+.admin-page .field label,
+.admin-page legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.admin-page input:not([type='checkbox']),
+.admin-page select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 14px;
+}
+.admin-page input.mono {
+  font-size: 13px;
+}
+.admin-page .check {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.admin-page input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+.admin-page .grid {
+  display: grid;
+  gap: 14px 16px;
+}
+.admin-page .grid.kib {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.admin-page .grid.hook {
+  grid-template-columns: 180px minmax(0, 1fr) minmax(0, 2fr);
+}
+.admin-page .span2 {
+  grid-column: span 2;
+}
+.admin-page .pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.admin-page fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.admin-page legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+.admin-page .checks {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.admin-page .form-error {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--liveText);
+}
+.admin-page .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.admin-page .segmented {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--surface2);
+}
+.admin-page .segmented button {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-page .segmented button[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--bg);
+}
+.admin-page .metrics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 18px 20px;
+}
+.admin-page .metrics > div {
+  flex: 1;
+  min-width: 200px;
+}
+.admin-page .metrics p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.admin-page .metrics code {
+  padding: 8px 12px;
+  background: var(--surface2);
+  font-family: var(--fontMono);
+  font-size: 13px;
+}
+.admin-page .metrics .btn {
+  height: 36px;
+  padding: 0 14px;
+}
+
+@media (max-width: 767px) {
+  .admin-page .layout {
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 16px 32px;
+  }
+  .admin-page nav {
+    position: static;
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .admin-page nav a {
+    flex: none;
+    height: 44px;
+  }
+  .admin-page h1 {
+    font-size: 24px;
+  }
+  .admin-page button,
+  .admin-page input:not([type='checkbox']),
+  .admin-page select {
+    min-height: 44px;
+  }
+  .admin-page .table-wrap {
+    overflow: visible;
+  }
+  .admin-page table,
+  .admin-page tbody,
+  .admin-page tr,
+  .admin-page td {
+    display: block;
+  }
+  .admin-page thead {
+    display: none;
+  }
+  .admin-page tbody tr {
+    padding: 6px 0;
+  }
+  .admin-page td,
+  .admin-page td:first-child,
+  .admin-page td:last-child {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 16px;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .admin-page td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+  }
+  .admin-page td.actions {
+    justify-content: flex-end;
+  }
+  .admin-page td.actions::before {
+    content: none;
+  }
+  .admin-page form,
+  .admin-page form.inline {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  .admin-page .grid.kib,
+  .admin-page .grid.hook {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-page .span2 {
+    grid-column: auto;
+  }
+  .admin-page .metrics code {
+    overflow-wrap: anywhere;
+  }
+}

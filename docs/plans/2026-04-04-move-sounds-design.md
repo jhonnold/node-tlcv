@@ -1,3 +1,5 @@
+> **Historical (pre-Svelte frontend).** A dated record of past work; paths, routes and build steps here may refer to the old EJS/webpack frontend that the Svelte app in `web/` replaced. See [docs/frontend.md](../frontend.md) for the current app.
+
 # Move Sounds Design
 
 ## Overview

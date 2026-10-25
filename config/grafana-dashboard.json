@@ -1282,7 +1282,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/|/:port|/archive/:slug|/admin\"}[5m])) by (route)",
+          "expr": "sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/|/:port|/archive/:slug|/admin/?\"}[5m])) by (route)",
           "legendFormat": "{{route}}",
           "refId": "A"
         }
@@ -1332,19 +1332,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.50, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/|/:port|/archive/:slug|/admin\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/|/:port|/archive/:slug|/admin/?\"}[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.90, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/|/:port|/archive/:slug|/admin\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.90, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/|/:port|/archive/:slug|/admin/?\"}[5m])) by (le))",
           "legendFormat": "p90",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/|/:port|/archive/:slug|/admin\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/|/:port|/archive/:slug|/admin/?\"}[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -1387,7 +1387,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "100 * sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/|/:port|/archive/:slug|/admin\", status=~\"5..\"}[5m])) / sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/|/:port|/archive/:slug|/admin\"}[5m]))",
+          "expr": "100 * sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/|/:port|/archive/:slug|/admin/?\", status=~\"5..\"}[5m])) / sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/|/:port|/archive/:slug|/admin/?\"}[5m]))",
           "legendFormat": "5xx %",
           "refId": "A"
         }
@@ -1437,7 +1437,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/broadcasts|/:port/.+|/archive/:slug/.+|/admin/.+\"}[5m])) by (route)",
+          "expr": "sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/broadcasts.*|/archives.*|/:port/.+|/admin/.+\"}[5m])) by (route)",
           "legendFormat": "{{route}}",
           "refId": "A"
         }
@@ -1487,19 +1487,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.50, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/broadcasts|/:port/.+|/archive/:slug/.+|/admin/.+\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/broadcasts.*|/archives.*|/:port/.+|/admin/.+\"}[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.90, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/broadcasts|/:port/.+|/archive/:slug/.+|/admin/.+\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.90, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/broadcasts.*|/archives.*|/:port/.+|/admin/.+\"}[5m])) by (le))",
           "legendFormat": "p90",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "histogram_quantile(0.99, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/broadcasts|/:port/.+|/archive/:slug/.+|/admin/.+\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(ccrl_http_request_duration_seconds_bucket{route=~\"/broadcasts.*|/archives.*|/:port/.+|/admin/.+\"}[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -1542,7 +1542,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "100 * sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/broadcasts|/:port/.+|/archive/:slug/.+|/admin/.+\", status=~\"5..\"}[5m])) by (route) / sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/broadcasts|/:port/.+|/archive/:slug/.+|/admin/.+\"}[5m])) by (route)",
+          "expr": "100 * sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/broadcasts.*|/archives.*|/:port/.+|/admin/.+\", status=~\"5..\"}[5m])) by (route) / sum(rate(ccrl_http_request_duration_seconds_count{route=~\"/broadcasts.*|/archives.*|/:port/.+|/admin/.+\"}[5m])) by (route)",
           "legendFormat": "{{route}}",
           "refId": "A"
         }

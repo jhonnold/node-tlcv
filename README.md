@@ -9,7 +9,7 @@ A server implementation of Tom's live chess viewer. Designed to work with Graham
 ### Requirements
 - Your own [Tom's live chess server](https://www.chessprogramming.org/TLCS-TLCV)
   - I do not know how TLCS is setup as I do not host any broadcasts myself
-- [Node.JS](https://nodejs.org/en/) (>= 20)
+- [Node.JS](https://nodejs.org/en/) (^20.19 or >= 22.12)
   - [pm2](https://pm2.keymetrics.io/) if you'd like to run this in the background
 - (Production uses systemd — see [docs/deploy.md](./docs/deploy.md))
 
