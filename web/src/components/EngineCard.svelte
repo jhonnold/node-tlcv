@@ -1,3 +1,8 @@
+<script module lang="ts">
+  export const PV_LINE = 20; // px per PV line
+  export const PV_LINES = 3; // default PV lines
+</script>
+
 <script lang="ts">
   import Board from './Board.svelte';
   import type { EngineView } from '$lib/engines';
@@ -15,9 +20,9 @@
   const { engine, compact = false, thumb = 0, flipped = false, lines }: Props = $props();
 
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
-  // PV lines (20 px each): `lines`, else 3, or as many as fit beside the PV-end board. The PV box keeps
-  // this height, so the card never grows or shrinks with the PV.
-  const pvLines = $derived(lines ?? Math.max(3, Math.floor(thumb / 20)));
+  // PV lines: `lines`, else PV_LINES, or as many as fit beside the PV-end board. The PV box keeps this
+  // height, so the card never grows or shrinks with the PV.
+  const pvLines = $derived(lines ?? Math.max(PV_LINES, Math.floor(thumb / PV_LINE)));
   const stats = $derived([
     { k: 'Depth', v: engine.depth },
     { k: 'Nodes', v: engine.nodes },
@@ -72,7 +77,7 @@
     {/if}
   </div>
   <div class="pvrow">
-    <p class="pv" style:--pv-lines={pvLines}>
+    <p class="pv" style:--pv-line="{PV_LINE}px" style:--pv-lines={pvLines}>
       {#if engine.pv.pre}<span class="pre">{engine.pv.pre}</span>{/if}
       <strong>{engine.pv.first}</strong>
       <span class="rest">{engine.pv.rest}</span>
@@ -227,9 +232,9 @@
     margin: 0;
     font-family: var(--fontMono);
     font-size: 12.5px;
-    line-height: 20px;
     color: var(--muted);
-    height: calc(var(--pv-lines) * 20px);
+    line-height: var(--pv-line);
+    height: calc(var(--pv-lines) * var(--pv-line));
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
