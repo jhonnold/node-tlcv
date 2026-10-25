@@ -57,7 +57,7 @@ localStorage keys (`KEYS` in `lib/storage.ts`; every access is wrapped in try/ca
 | `panel/Panel.svelte` | Tab bar + `ReplayBanner`; starts and ends replays. Tab sets: `all` (Moves, Chat, Graphs, Standings, Games, Info; desktop) and `mobile` (adds Engines; tablet and mobile). Chat is hidden on archives and during replays; archives open on Games on desktop. |
 | `panel/*Tab.svelte` | Moves, Chat, Graphs (Chart.js), Standings, Games, Info, Engines. |
 | `panel/ReplayBanner.svelte` | "Replaying game N"; Back to live on live pages only. |
-| `lobby/*` | `FeaturedCard`, `LiveCard`, `SiteFooter`; helpers in `lobby.ts` (30 s poll). |
+| `lobby/*` | `LiveCard`, `SiteFooter`; helpers in `lobby.ts` (30 s poll). |
 | `admin/*` | `BroadcastsSection`, `KibitzersSection`, `WebhooksSection`; helpers in `forms.ts`; styles in `admin.css`. |
 | `viewer/Header.svelte` | Tablet/desktop header (same height, padding and brand as `SiteHeader`): brand, site, "Game N", LIVE/ARCHIVE badge, watching count, Focus/Flip/Sound/Theme buttons |
 | `viewer/MobileHeader.svelte` | Mobile header with Flip and the ⋮ menu (Focus mode, Move sounds, Theme & pieces, All broadcasts) |

@@ -9,8 +9,6 @@ export function moveNumber(b: LobbyBroadcast): number {
   return Number.isInteger(n) && n > 0 ? n : Math.floor(b.moveCount / 2) + 1;
 }
 
-export const whiteToMove = (b: LobbyBroadcast): boolean => b.fen.split(' ')[1] !== 'b';
-
 /** Static clock (no ticking data in /broadcasts). 0 = no clock info yet. */
 export const clock = (ms: number): string => (ms > 0 ? msToString(ms) : '--:--');
 

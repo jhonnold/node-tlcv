@@ -4,7 +4,6 @@
   import { getJson } from '$lib/http';
   import type { ArchiveSummary, LobbyBroadcast } from '$shared/types';
   import SiteHeader from '../components/SiteHeader.svelte';
-  import FeaturedCard from '../components/lobby/FeaturedCard.svelte';
   import LiveCard from '../components/lobby/LiveCard.svelte';
   import SiteFooter from '../components/lobby/SiteFooter.svelte';
   import { formatArchiveDate, matchesQuery, plural, POLL_MS } from '../components/lobby/lobby';
@@ -15,10 +14,6 @@
   let loadError = $state(false);
   const narrow = new MediaQuery('(max-width: 767px)');
   const mobile = $derived(narrow.current);
-  let pageWidth = $state(document.documentElement.clientWidth); // usable width (excludes a classic scrollbar)
-  const featured = $derived(live?.[0] ?? null); // server sorts by viewerCount desc
-  const rest = $derived(live?.slice(1) ?? []);
-  const featuredSize = $derived(mobile ? Math.min(380, pageWidth - 66) : 380); // 16 main + 1 border + 16 card padding, per side
   const q = $derived(query.trim().toLowerCase());
   const shown = $derived(archives.filter((a) => matchesQuery(a.site, a.slug, q)));
 
@@ -52,7 +47,7 @@
   });
 </script>
 
-<div class="page" class:mobile bind:clientWidth={pageWidth}>
+<div class="page" class:mobile>
   <SiteHeader />
   <main>
     <div class="title-row">
@@ -61,17 +56,13 @@
         >{/if}
     </div>
 
-    {#if featured}
-      {#key featured.port}
-        <FeaturedCard b={featured} {mobile} size={featuredSize} />
-      {/key}
-      {#if rest.length}
-        <ul class="live-grid">
-          {#each rest as b (b.port)}
-            <li><LiveCard {b} {mobile} /></li>
-          {/each}
-        </ul>
-      {/if}
+    {#if live?.length}
+      <!-- Server order: most viewers first, so the most-watched game is the first card. -->
+      <ul class="live-grid">
+        {#each live as b (b.port)}
+          <li><LiveCard {b} {mobile} /></li>
+        {/each}
+      </ul>
     {:else if loadError}
       <p class="load-error">Couldn't load broadcasts — retrying</p>
     {:else if live}
