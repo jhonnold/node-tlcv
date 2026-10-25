@@ -4,16 +4,13 @@
 
 <footer>
   <p>
-    {#if !mobile}
-      Chessboard by <a href="https://chessboardjs.com/">chessboard.js</a>. Pieces by
-      <a href="https://en.wikipedia.org/wiki/User:Cburnett">Cburnett</a> and
-      <a href="https://www.chessprogramming.org/Martin_Sedlak">Martin Sedlák</a>.
-    {/if}
-    Broadcasts by <a href="https://computerchess.org.uk/ccrl/4040/">CCRL</a>. Hosting and development by
+    {#if !mobile}Chessboard by <a href="https://chessboardjs.com/">chessboard.js</a>.{/if}
+    Pieces by <a href="https://en.wikipedia.org/wiki/User:Cburnett">Cburnett</a> and
+    <a href="https://www.chessprogramming.org/Martin_Sedlak">Martin Sedlák</a>. Broadcasts by
+    <a href="https://computerchess.org.uk/ccrl/4040/">CCRL</a>. Hosting and development by
     <a href="https://github.com/jhonnold">Jay Honnold</a>.
-    {#if !mobile}
-      Questions or ideas? <a href="https://github.com/jhonnold/node-tlcv/issues">Open an issue</a>.
-    {/if}
+    {#if !mobile}Questions or ideas?{/if}
+    <a href="https://github.com/jhonnold/node-tlcv/issues">Open an issue</a>.
   </p>
 </footer>
 

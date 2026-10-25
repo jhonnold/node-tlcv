@@ -18,6 +18,8 @@
   let form = $state<WebhookForm>(blankWebhook());
   let editingId = $state<string | null>(null);
   let nameInput: HTMLInputElement;
+  let tried = $state(false); // the no-event error shows only after a submit attempt
+  const noEvents = $derived(!form.started && !form.finished);
 
   function edit(w: WebhookStatus) {
     editingId = w.id;
@@ -27,9 +29,12 @@
   function reset() {
     editingId = null;
     form = blankWebhook();
+    tried = false;
   }
   async function submit(e: SubmitEvent) {
     e.preventDefault();
+    tried = true;
+    if (noEvents) return; // the server would subscribe to every event instead
     const ok = await saveEntry(mutate, '/admin/webhooks', 'webhook', editingId, webhookBody(form));
     if (ok) reset();
     // The delete may have succeeded before the add failed. Then the form stays filled in as a plain add.
@@ -113,6 +118,7 @@
           <label class="check"><input type="checkbox" bind:checked={form.started} />Game started</label>
           <label class="check"><input type="checkbox" bind:checked={form.finished} />Game finished</label>
         </div>
+        {#if tried && noEvents}<p class="form-error" role="alert">Pick at least one event</p>{/if}
       </fieldset>
     </div>
     <div class="form-actions">

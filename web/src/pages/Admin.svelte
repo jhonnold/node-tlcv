@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { getJson } from '$lib/http';
   import { copyFen } from '$lib/fen'; // generic clipboard helper (Clipboard API + execCommand fallback)
   import type { AdminBroadcast, KibitzerStatus, WebhookStatus } from '$shared/types';
@@ -17,23 +17,32 @@
   let loaded = $state(false);
   let busy = $state(false);
   let error = $state<string | null>(null);
-  let active = $state(location.hash.slice(1) || 'broadcasts');
+  const hashSection = () => location.hash.slice(1) || 'broadcasts';
+  let active = $state(hashSection());
   let copied = $state(false);
   let copyTimer: ReturnType<typeof setTimeout> | undefined;
   const metricsUrl = `${location.origin}/admin/metrics`;
 
-  async function refresh(): Promise<void> {
-    const [b, k, w, h] = await Promise.all([
+  // Each list loads on its own: a failing list keeps its old value and is reported, the rest still render.
+  async function refresh(): Promise<string | null> {
+    const [b, k, w, h] = await Promise.allSettled([
       getJson<AdminBroadcast[]>('/admin/broadcasts'),
       getJson<KibitzerStatus[]>('/admin/kibitzers'),
       getJson<WebhookStatus[]>('/admin/webhooks'),
       getJson<string[]>('/admin/connection-history'),
     ]);
-    broadcasts = b;
-    kibitzers = k;
-    webhooks = w;
-    history = h;
+    const errs: string[] = [];
+    const take = <T,>(r: PromiseSettledResult<T>, what: string, keep: T): T => {
+      if (r.status === 'fulfilled') return r.value;
+      errs.push(describeError(`Loading ${what}`, r.reason));
+      return keep;
+    };
+    broadcasts = take(b, 'the broadcasts', broadcasts);
+    kibitzers = take(k, 'the kibitzers', kibitzers);
+    webhooks = take(w, 'the webhooks', webhooks);
+    history = take(h, 'the connection history', history);
     loaded = true;
+    return errs.length ? errs.join(' ') : null;
   }
   // One mutation at a time; always refetch afterwards (even on failure: a delete-then-add edit may be half done).
   const mutate: Mutate = async (label, action) => {
@@ -47,11 +56,8 @@
       ok = false;
       error = describeError(label, e);
     }
-    try {
-      await refresh();
-    } catch (e) {
-      error ??= describeError('Refreshing the lists', e);
-    }
+    const refreshError = await refresh();
+    error = [error, refreshError].filter(Boolean).join(' ') || null;
     busy = false;
     return ok;
   };
@@ -69,8 +75,20 @@
   ]);
   onMount(() => {
     document.title = 'Admin Panel - CCRL Live';
-    refresh().catch((e) => (error = describeError('Loading the admin data', e)));
-    return () => clearTimeout(copyTimer);
+    // Back/Forward and nav clicks both change the hash, so this one listener keeps the nav highlight right.
+    const onHash = () => (active = hashSection());
+    window.addEventListener('hashchange', onHash);
+    void refresh().then(async (e) => {
+      error = e;
+      if (location.hash) {
+        await tick(); // the sections render after the first fetch, so the target only exists now
+        document.getElementById(location.hash.slice(1))?.scrollIntoView();
+      }
+    });
+    return () => {
+      clearTimeout(copyTimer);
+      window.removeEventListener('hashchange', onHash);
+    };
   });
 </script>
 
@@ -80,11 +98,7 @@
   <div class="layout">
     <nav aria-label="Admin sections">
       {#each nav as n (n.id)}
-        <a
-          href="#{n.id}"
-          class:active={active === n.id}
-          aria-current={active === n.id ? 'true' : undefined}
-          onclick={() => (active = n.id)}
+        <a href="#{n.id}" class:active={active === n.id} aria-current={active === n.id ? 'true' : undefined}
           >{n.label}{#if n.count != null}<span class="count">{n.count}</span>{/if}</a
         >
       {/each}

@@ -12,6 +12,7 @@
   let live = $state<LobbyBroadcast[] | null>(null); // null until the first response: no empty-state flash
   let archives = $state<ArchiveSummary[]>([]);
   let query = $state('');
+  let loadError = $state(false);
   const narrow = new MediaQuery('(max-width: 767px)');
   const mobile = $derived(narrow.current);
   let pageWidth = $state(document.documentElement.clientWidth); // usable width (excludes a classic scrollbar)
@@ -30,8 +31,13 @@
       inflight = true;
       Promise.all([
         getJson<LobbyBroadcast[]>('/broadcasts', ctrl.signal)
-          .then((d) => (live = d))
-          .catch(() => (live ??= [])),
+          .then((d) => {
+            live = d;
+            loadError = false;
+          })
+          .catch(() => {
+            if (live === null) loadError = true; // only before the first success: keep polling, show the retry line
+          }),
         getJson<ArchiveSummary[]>('/archives', ctrl.signal)
           .then((d) => (archives = d))
           .catch(() => {}),
@@ -66,6 +72,8 @@
           {/each}
         </ul>
       {/if}
+    {:else if loadError}
+      <p class="load-error">Couldn't load broadcasts — retrying</p>
     {:else if live}
       <div class="empty">
         <h2>No broadcasts available</h2>
@@ -139,6 +147,10 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px;
+  }
+  .load-error {
+    color: var(--muted);
+    font-size: 14px;
   }
   .empty {
     padding: 48px 24px;

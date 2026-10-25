@@ -300,6 +300,11 @@
   align-items: center;
   gap: 20px;
 }
+.admin-page .form-error {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--liveText);
+}
 .admin-page .form-actions {
   display: flex;
   justify-content: flex-end;
