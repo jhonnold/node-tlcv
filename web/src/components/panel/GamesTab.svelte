@@ -275,7 +275,7 @@
     padding: 0 10px;
     border: 0;
     background: var(--liveBg);
-    /* Theme-invariant: text on the LIVE badge. */
+    /* Theme-invariant: text on the live-coloured Watch button. */
     color: #fff;
     font-size: 12px;
     font-weight: 700;

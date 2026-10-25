@@ -26,7 +26,7 @@ Code style, tooling, and project conventions for Node TLCV.
 
 ## Styles
 
-- Scoped `<style>` per component; colours only via `var(--token)` (except deliberately theme-invariant colours: player discs, LIVE badge text, board outline, which say so in a comment), fonts via `var(--fontUi)` / `var(--fontMono)` (see [docs/frontend.md](./docs/frontend.md) for the token set)
+- Scoped `<style>` per component; colours only via `var(--token)` (except deliberately theme-invariant colours: player discs, text on live-coloured badges and buttons, PV arrow outline, which say so in a comment), fonts via `var(--fontUi)` / `var(--fontMono)` (see [docs/frontend.md](./docs/frontend.md) for the token set)
 - Square corners and flat surfaces: no `border-radius`, no `box-shadow`
 - Global CSS only in `web/src/styles/tokens.css` (token fallback, reset, base) and the admin page's `components/admin/admin.css`, plus chessboardjs's own stylesheet, imported by `lib/chessboard.ts`
 
