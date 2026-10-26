@@ -1,3 +1,4 @@
+import { emptyExtras } from '$shared/types';
 import type { GameRecord, StoredGameMeta } from '$shared/types';
 import { getJson } from './http';
 import type { GameData } from './delta';
@@ -22,11 +23,7 @@ export function metaToGameData(meta: StoredGameMeta): GameData {
         pvAlg: '',
         pvFen: EMPTY_FEN,
         pvMoveNumber: 1,
-        seldepth: null,
-        hashfull: null,
-        tbhits: null,
-        mate: null,
-        wdl: null,
+        ...emptyExtras(),
       },
       fen: meta.fen,
       opening: meta.opening,

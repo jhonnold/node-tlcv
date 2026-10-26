@@ -29,11 +29,13 @@ export type SearchExtras = {
   seldepth: number | null;
   hashfull: number | null;
   tbhits: number | null;
-  // Moves to mate, from `score mate y`. Negative when the side to move is being mated.
-  mate: number | null;
   // Permille win / draw / loss, engine POV, as sent.
   wdl: [number, number, number] | null;
 };
+
+export function emptyExtras(): SearchExtras {
+  return { seldepth: null, hashfull: null, tbhits: null, wdl: null };
+}
 
 export type MoveMetaData = {
   color: ColorCode;

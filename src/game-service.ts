@@ -14,6 +14,7 @@ import { replayUciFromFen } from './util/uci.js';
 import { colorName } from '../shared/colors.js';
 import type { ColorName } from '../shared/colors.js';
 import type { BroadcastDelta, ColorCode, GameDelta, MoveMetaData, SearchExtras } from '../shared/types.js';
+import { emptyExtras } from '../shared/types.js';
 
 type CommandTokens = [Command, ...Array<string>];
 
@@ -43,17 +44,15 @@ type ParsedPv = {
   ext: SearchExtras | null;
 };
 
-type PvUpdate = {
-  depth: number;
-  score: number;
-  nodes: number;
-  usedTime: number;
-  ext: SearchExtras | null;
+type PvUpdate = Omit<ParsedPv, 'pv'> & {
   pvMoveNumber: number;
   san: string[];
   alg: string[];
   fen: string;
 };
+
+// WINFO tags whose value is a single integer.
+const INFO_INT_TAGS = new Set(['depth', 'seldepth', 'nodes', 'time', 'hashfull', 'tbhits']);
 
 export type GameServiceResult = {
   update: BroadcastDelta | null;
@@ -219,55 +218,29 @@ class GameService {
   // Tags are read by walking the line, so unknown ones (nps, lowerbound, ...) are skipped
   // without knowing their arity. Null if a core field or the pv is missing.
   private parseInfoTokens(tokens: string[]): ParsedPv | null {
-    let depth = NaN;
+    const ints: Partial<Record<string, number>> = {};
     let score = NaN;
-    let nodes = NaN;
-    let usedTime = NaN;
+    let wdl: SearchExtras['wdl'] = null;
     let pv: string[] | null = null;
-    const ext: SearchExtras = { seldepth: null, hashfull: null, tbhits: null, mate: null, wdl: null };
 
     for (let i = 0; i < tokens.length && pv === null; i++) {
       const tag = tokens[i];
-      const next = tokens[i + 1];
+      if (INFO_INT_TAGS.has(tag)) {
+        ints[tag] = parseInt(tokens[++i]);
+        continue;
+      }
       switch (tag) {
-        case 'depth':
-          depth = parseInt(next);
-          i++;
-          break;
-        case 'seldepth':
-          ext.seldepth = parseInt(next);
-          i++;
-          break;
         case 'score': {
           const value = parseInt(tokens[i + 2]);
-          if (next === 'cp') score = value / 100;
+          if (tokens[i + 1] === 'cp') score = value / 100;
           // Same encoding as WPV: the mate distance rides as cp, so ±M renders without special-casing.
-          else if (next === 'mate') {
-            ext.mate = value;
-            score = ((value >= 0 ? 1 : -1) * (100000 - Math.abs(value))) / 100;
-          }
+          else if (tokens[i + 1] === 'mate') score = ((value >= 0 ? 1 : -1) * (100000 - Math.abs(value))) / 100;
           i += 2;
           break;
         }
-        case 'nodes':
-          nodes = parseInt(next);
-          i++;
-          break;
-        case 'time':
-          usedTime = parseInt(next);
-          i++;
-          break;
-        case 'hashfull':
-          ext.hashfull = parseInt(next);
-          i++;
-          break;
-        case 'tbhits':
-          ext.tbhits = parseInt(next);
-          i++;
-          break;
         case 'wdl': {
-          const wdl = tokens.slice(i + 1, i + 4).map((t) => parseInt(t));
-          if (wdl.every(Number.isFinite)) ext.wdl = wdl as SearchExtras['wdl'];
+          const triple = tokens.slice(i + 1, i + 4).map((t) => parseInt(t));
+          if (triple.every(Number.isFinite)) wdl = triple as SearchExtras['wdl'];
           i += 3;
           break;
         }
@@ -277,7 +250,15 @@ class GameService {
       }
     }
 
+    const { depth = NaN, nodes = NaN, time: usedTime = NaN } = ints;
     if (pv === null || ![depth, score, nodes, usedTime].every(Number.isFinite)) return null;
+    const ext: SearchExtras = {
+      ...emptyExtras(),
+      seldepth: ints.seldepth ?? null,
+      hashfull: ints.hashfull ?? null,
+      tbhits: ints.tbhits ?? null,
+      wdl,
+    };
     return { depth, score, nodes, usedTime, pv, ext };
   }
 
@@ -307,7 +288,7 @@ class GameService {
     const lastMove = this.game.moveMeta[this.game.moveMeta.length - 1];
     if (!lastMove || lastMove.color !== colorCode || !this.fenBeforeLastMove) return;
 
-    const { depth, score, nodes, usedTime, pv, ext } = parsed;
+    const { depth, nodes, pv } = parsed;
 
     // A shallower line, or one with fewer nodes (unsequenced XPV reordered), is a stale
     // iteration, not the final flush.
@@ -320,18 +301,10 @@ class GameService {
     // different position and must not overwrite this move's meta.
     if (!playout || playout.san[0] !== lastMove.move) return;
 
-    this.applyPvToMeta(lastMove, {
-      depth,
-      score,
-      nodes,
-      usedTime,
-      ext,
-      pvMoveNumber: lastMove.number,
-      ...playout,
-    });
+    this.applyPvToMeta(lastMove, { ...parsed, pvMoveNumber: lastMove.number, ...playout });
 
     logger.info(
-      `Updated game ${this.game.name} - Trailing PV for move ${lastMove.number}: Color: ${colorCode}, Depth: ${depth}, Score: ${score}, Nodes: ${nodes}`,
+      `Updated game ${this.game.name} - Trailing PV for move ${lastMove.number}: Color: ${colorCode}, Depth: ${depth}, Score: ${parsed.score}, Nodes: ${nodes}`,
       { port: this.broadcast.port },
     );
 
@@ -454,11 +427,7 @@ class GameService {
         pvFollowup: null,
         pvAlg: null,
         kibitzer: null,
-        seldepth: null,
-        hashfull: null,
-        tbhits: null,
-        mate: null,
-        wdl: null,
+        ...emptyExtras(),
       };
       this.game.moveMeta.push(meta);
 

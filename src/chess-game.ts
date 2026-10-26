@@ -10,6 +10,7 @@ import type {
   SerializedKibitzerLiveData,
   SearchExtras,
 } from '../shared/types.js';
+import { emptyExtras } from '../shared/types.js';
 
 export type { ColorCode, MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
 
@@ -43,7 +44,7 @@ export class LiveData {
     this.pvAlg = [];
     this.pvFen = EMPTY_FEN;
     this.pvMoveNumber = pvMoveNumber;
-    this.ext = { seldepth: null, hashfull: null, tbhits: null, mate: null, wdl: null };
+    this.ext = emptyExtras();
   }
 
   toJSON(): SerializedLiveData {

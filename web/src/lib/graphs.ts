@@ -12,8 +12,8 @@ export type Pt = { x: number; y: number };
 type GraphType = {
   label: string;
   title: string;
-  // Lower-case noun for the canvas aria label.
-  aria: string;
+  // Lower-case noun for the canvas aria label, where it isn't the lower-cased label.
+  aria?: string;
   value(m: MoveMetaData): number | null;
   tick(v: number): string;
   tip(v: number): string;
@@ -21,6 +21,8 @@ type GraphType = {
   range?: [number, number];
   // Value of the dashed midline, if any.
   zero?: number;
+  // A second, dotted series per side from the same moves.
+  sub?: { label: string; value(m: MoveMetaData): number | null };
 };
 
 const clampEval = (v: number): number => Math.max(-10, Math.min(10, v));
@@ -36,7 +38,6 @@ export const GRAPH_TYPES: Record<GraphId, GraphType> = {
   eval: {
     label: 'Eval',
     title: 'Evaluation (White’s view)',
-    aria: 'eval',
     value: moveScore, // unclamped: buildSeries clamps the plotted point
     tick: (v) => (v === 0 ? '0' : v > 0 ? `+${v}` : String(v)),
     tip: (v) => formatScore(v),
@@ -45,23 +46,15 @@ export const GRAPH_TYPES: Record<GraphId, GraphType> = {
   depth: {
     label: 'Depth',
     title: 'Search depth',
-    aria: 'depth',
     value: (m) => m.depth,
     tick: (v) => String(Math.round(v)),
     tip: (v) => String(v),
+    sub: { label: 'seldepth', value: (m) => m.seldepth ?? null },
   },
-  nodes: {
-    label: 'Nodes',
-    title: 'Nodes searched',
-    aria: 'nodes',
-    value: (m) => m.nodes,
-    tick: formatCount,
-    tip: formatCount,
-  },
+  nodes: { label: 'Nodes', title: 'Nodes searched', value: (m) => m.nodes, tick: formatCount, tip: formatCount },
   nps: {
     label: 'NPS',
     title: 'Nodes per second',
-    aria: 'nps',
     value: (m) => {
       const s = npsSeconds(m);
       return s && m.nodes != null ? Math.round(m.nodes / s) : null;
@@ -72,7 +65,6 @@ export const GRAPH_TYPES: Record<GraphId, GraphType> = {
   time: {
     label: 'Time',
     title: 'Time per move',
-    aria: 'time',
     value: (m) => m.time,
     tick: (v) => `${Math.round(v)}s`,
     tip: (v) => `${v}s`,
@@ -102,50 +94,33 @@ export const GRAPH_IDS = Object.keys(GRAPH_TYPES) as GraphId[];
 export const plyX = (m: MoveMetaData): number => m.number + (m.color === 'b' ? 0.5 : 0);
 
 /**
- * One dataset per side plus the kibitzer and, on the depth graph, each side's seldepth. Dataset order is
- * white, black, kibitzer, whiteSel, blackSel. plies[d][i] is the nav index of dataset d's point i (for clicks).
- * raw[d][i] is the unclamped value, for the tooltip (a mate reads +M, not +10.00).
+ * One dataset per side plus the kibitzer, then each side's sub series (seldepth on the depth graph). Dataset
+ * order is white, black, kibitzer, white sub, black sub; pts, plies and raw share that index. plies[d][i] is the
+ * nav index of dataset d's point i (for clicks). raw[d][i] is the unclamped value, for the tooltip (a mate reads
+ * +M, not +10.00).
  */
-export type Series = {
-  white: Pt[];
-  black: Pt[];
-  kibitzer: Pt[];
-  whiteSel: Pt[];
-  blackSel: Pt[];
-  plies: [number[], number[], number[], number[], number[]];
-  raw: [number[], number[], number[], number[], number[]];
-};
+export type Series = { pts: Pt[][]; plies: number[][]; raw: number[][] };
+
+function add(s: Series, d: number, ply: number, x: number, y: number, raw: number): void {
+  s.pts[d].push({ x, y });
+  s.plies[d].push(ply);
+  s.raw[d].push(raw);
+}
+
 export function buildSeries(moves: MoveMetaData[], id: GraphId): Series {
-  const s: Series = {
-    white: [],
-    black: [],
-    kibitzer: [],
-    whiteSel: [],
-    blackSel: [],
-    plies: [[], [], [], [], []],
-    raw: [[], [], [], [], []],
-  };
+  const s: Series = { pts: [[], [], [], [], []], plies: [[], [], [], [], []], raw: [[], [], [], [], []] };
   const t = GRAPH_TYPES[id];
   moves.forEach((m, i) => {
     const x = plyX(m);
     const ply = i + 1;
     const v = isBook(m) ? null : t.value(m);
-    if (v != null) {
-      const d = m.color === 'w' ? 0 : 1;
-      (d === 0 ? s.white : s.black).push({ x, y: id === 'eval' ? clampEval(v) : v });
-      s.plies[d].push(ply);
-      s.raw[d].push(v);
-    }
+    if (v != null) add(s, m.color === 'w' ? 0 : 1, ply, x, id === 'eval' ? clampEval(v) : v, v);
     if (id === 'eval' && m.kibitzer?.score != null) {
-      s.kibitzer.push({ x, y: clampEval(m.kibitzer.score) });
-      s.plies[2].push(ply);
-      s.raw[2].push(m.kibitzer.score); // already White's view
+      add(s, 2, ply, x, clampEval(m.kibitzer.score), m.kibitzer.score); // already White's view
     }
-    if (id === 'depth' && !isBook(m) && m.seldepth != null) {
-      const d = m.color === 'w' ? 3 : 4;
-      (d === 3 ? s.whiteSel : s.blackSel).push({ x, y: m.seldepth });
-      s.plies[d].push(ply);
-      s.raw[d].push(m.seldepth);
+    if (t.sub && !isBook(m)) {
+      const sv = t.sub.value(m);
+      if (sv != null) add(s, m.color === 'w' ? 3 : 4, ply, x, sv, sv);
     }
   });
   return s;
@@ -241,7 +216,8 @@ export function chartConfig(
   onPick: (ply: number) => void,
 ): ChartConfiguration<'line', Pt[]> {
   const t = GRAPH_TYPES[id];
-  const all = [...s.white, ...s.black, ...s.kibitzer, ...s.whiteSel, ...s.blackSel];
+  const all = s.pts.flat();
+  const sel = t.sub?.label ?? '';
   const xs = all.map((p) => p.x);
   const ys = all.map((p) => p.y);
   const bound = id === 'eval' ? evalBound(ys) : positiveBound(ys);
@@ -266,11 +242,11 @@ export function chartConfig(
     type: 'line',
     data: {
       datasets: [
-        ds(names.white, s.white, c.w, 2, []),
-        ds(names.black, s.black, c.b, 2, []),
-        ds(names.kibitzer, s.kibitzer, c.k, 1.5, [5, 4]), // always present so datasetIndex lines up with s.plies
-        ds(`${names.white} seldepth`, s.whiteSel, c.w, 1.5, [2, 3]),
-        ds(`${names.black} seldepth`, s.blackSel, c.b, 1.5, [2, 3]),
+        ds(names.white, s.pts[0], c.w, 2, []),
+        ds(names.black, s.pts[1], c.b, 2, []),
+        ds(names.kibitzer, s.pts[2], c.k, 1.5, [5, 4]), // always present so datasetIndex lines up with s.plies
+        ds(`${names.white} ${sel}`, s.pts[3], c.w, 1.5, [2, 3]),
+        ds(`${names.black} ${sel}`, s.pts[4], c.b, 1.5, [2, 3]),
       ],
     },
     options: {

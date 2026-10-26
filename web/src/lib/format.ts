@@ -7,7 +7,7 @@ import type { ColorCode, MoveMetaData } from '$shared/types';
 export const DASH = '—';
 
 // Pawns. Kibitzer mate is ±1e6 cp = ±10000 (uci-parser.ts:9). TLCS mate is ±(100000 - moves) cp (uci-to-tlcs
-// src/uci/info.ts), i.e. ±999.9x pawns, so a mate without a known distance still lands past this.
+// src/uci/info.ts), i.e. ±999.9x pawns.
 export const MATE_SCORE_THRESHOLD = 990;
 
 /**
@@ -27,16 +27,23 @@ export const whiteWdl = (wdl: [number, number, number], color: ColorCode): [numb
   color === 'b' ? [wdl[2], wdl[1], wdl[0]] : wdl;
 
 /**
- * Engine score in pawns, white-relative and signed. A mate score reads as +M / -M, plus the distance when `mate` is
- * known (+M7; only its magnitude is used, the sign comes from the score). A `mate` beside a non-mate score is
- * ignored: liveData's comes from the last WINFO, so it can briefly lag a newer WPV score.
+ * Engine score in pawns, white-relative and signed. A TLCS mate encodes its distance in the score
+ * (±(100000 − moves) / 100), so +M7 is 999.93 and reads back as +M7. Kibitzer mates (±10000) carry no
+ * distance and read as plain +M / -M.
  */
-export function formatScore(score: number | null | undefined, mate: number | null = null): string {
+export function formatScore(score: number | null | undefined): string {
   if (score == null) return DASH;
-  const dist = mate == null ? '' : String(Math.abs(mate));
-  if (score >= MATE_SCORE_THRESHOLD) return `+M${dist}`;
-  if (score <= -MATE_SCORE_THRESHOLD) return `-M${dist}`;
+  if (Math.abs(score) >= MATE_SCORE_THRESHOLD) {
+    const moves = 100000 - Math.round(Math.abs(score) * 100);
+    const dist = moves >= 0 && moves < 1000 ? String(moves) : '';
+    return `${score > 0 ? '+' : '-'}M${dist}`;
+  }
   return `${score >= 0 ? '+' : ''}${score.toFixed(2)}`;
+}
+
+/** A permille value as a percentage with one decimal: 214 → '21.4%'. */
+export function formatPermille(p: number): string {
+  return `${(p / 10).toFixed(1)}%`;
 }
 
 const UNITS: [number, string][] = [

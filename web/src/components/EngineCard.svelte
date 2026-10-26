@@ -2,7 +2,7 @@
   import Board from './Board.svelte';
   import type { EngineView } from '$lib/engines';
   import { copyFen, EMPTY_FEN } from '$lib/fen';
-  import { DASH } from '$lib/format';
+  import { DASH, formatPermille } from '$lib/format';
   import { onDestroy } from 'svelte';
 
   type Props = {
@@ -13,20 +13,21 @@
   const { engine, thumb = 0, flipped = false }: Props = $props();
 
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
-  const pct = (permille: number) => `${(permille / 10).toFixed(1)}%`;
   // WDL is per mille in White's view: [win, draw, loss].
   const wdlText = $derived(engine.wdl ? `[${engine.wdl[0]}w, ${engine.wdl[1]}d, ${engine.wdl[2]}l]` : '');
   const wdlAria = $derived(
-    engine.wdl ? `, win ${pct(engine.wdl[0])}, draw ${pct(engine.wdl[1])}, loss ${pct(engine.wdl[2])} for White` : '',
+    engine.wdl
+      ? `, win ${formatPermille(engine.wdl[0])}, draw ${formatPermille(engine.wdl[1])}, loss ${formatPermille(engine.wdl[2])} for White`
+      : '',
   );
   const label = $derived(`${ROLE[engine.role]} engine ${engine.name}, score ${engine.score}${wdlAria}`);
   const pvText = $derived([engine.pv.pre, engine.pv.first, engine.pv.rest].filter(Boolean).join(' '));
   // Stats row: depth/seldepth · nodes · nps · hashfull · tbhits. Absent parts are dropped.
   const stats = $derived(
     [
-      engine.depth === DASH ? null : `d${engine.depth}${engine.seldepth ? `/${engine.seldepth}` : ''}`,
-      engine.nodes === DASH ? null : engine.nodes,
-      engine.nps === DASH ? null : `${engine.nps}/s`,
+      engine.depth && `d${engine.depth}${engine.seldepth != null ? `/${engine.seldepth}` : ''}`,
+      engine.nodes,
+      engine.nps && `${engine.nps}/s`,
       engine.hashfull,
       engine.tbhits,
     ]

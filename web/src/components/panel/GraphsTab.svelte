@@ -14,6 +14,7 @@
   const font = getComputedStyle(document.documentElement).getPropertyValue('--fontMono').trim() || 'monospace';
 
   const series = $derived(buildSeries(game.moves, graph));
+  const noun = $derived(GRAPH_TYPES[graph].aria ?? GRAPH_TYPES[graph].label.toLowerCase());
   // Strings, not one object: the game object changes on every delta and would re-run the chart effect.
   const whiteName = $derived(game.game?.white.name ?? 'White');
   const blackName = $derived(game.game?.black.name ?? 'Black');
@@ -66,18 +67,17 @@
       <span>by move</span>
     </figcaption>
     <div class="chart">
-      <canvas bind:this={canvas} aria-label="Line chart of {GRAPH_TYPES[graph].aria} per move for both engines"
-      ></canvas>
+      <canvas bind:this={canvas} aria-label="Line chart of {noun} per move for both engines"></canvas>
     </div>
   </figure>
   <ul class="legend">
     <li><span class="swatch" style:background="var(--engW)"></span>{whiteName}</li>
     <li><span class="swatch" style:background="var(--engB)"></span>{blackName}</li>
-    {#if graph === 'eval' && series.kibitzer.length}
+    {#if graph === 'eval' && series.pts[2].length}
       <li><span class="swatch dashed"></span>{kibitzerName} (kibitzer)</li>
     {/if}
-    {#if graph === 'depth' && (series.whiteSel.length || series.blackSel.length)}
-      <li><span class="swatch dotted"></span>seldepth</li>
+    {#if GRAPH_TYPES[graph].sub && (series.pts[3].length || series.pts[4].length)}
+      <li><span class="swatch dotted"></span>{GRAPH_TYPES[graph].sub?.label}</li>
     {/if}
   </ul>
   <table class="averages">

@@ -21,7 +21,7 @@ function moveCell(m: MoveMetaData, ply: number): MoveCell {
     kind: 'move',
     ply, // nav index: clicking calls game.goTo(ply)
     san: m.move,
-    score: book || m.score == null ? '' : formatScore(moveScore(m), m.mate),
+    score: book || m.score == null ? '' : formatScore(moveScore(m)),
     sub: book ? 'book' : m.time != null ? `d${m.depth} · ${formatDuration(m.time * 1000)}` : `d${m.depth}`,
     label: `Go to ${moveLabel(m)}`,
   };
@@ -58,7 +58,7 @@ export function ghostCell(
     color,
     number,
     san: searching && ld.pv.length ? ld.pv[0] : '…',
-    score: searching ? formatScore(whiteScore(ld.score, ld.color), ld.mate) : '',
+    score: searching ? formatScore(whiteScore(ld.score, ld.color)) : '',
     sub: thinkMs != null ? `thinking ${formatDuration(thinkMs)}` : 'thinking',
   };
 }
