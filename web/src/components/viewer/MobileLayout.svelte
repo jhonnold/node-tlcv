@@ -16,7 +16,7 @@
   const game = getGameStore();
   const view = getView();
   const kib = $derived(kibitzerView(game));
-  const THUMB = 64; // PV-end board of the short cards (Lichess2Mobile.dc.html)
+  const THUMB = 52; // PV-end board of the short cards (Engine.dc.html, 390 width)
 
   let w = $state(0);
   // Full width. Landscape phones: no taller than the screen less the 52 px header and the 56 px nav bar.

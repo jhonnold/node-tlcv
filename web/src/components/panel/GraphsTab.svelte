@@ -10,7 +10,7 @@
   let graph = $state<GraphId>('eval');
   let canvas = $state<HTMLCanvasElement>();
   let chart: Chart<'line', Pt[]> | null = null; // plain: never put a Chart in $state
-  const markers: Markers = { zero: false, x: null, zeroColor: '', markColor: '' };
+  const markers: Markers = { zero: null, x: null, zeroColor: '', markColor: '' };
   const font = getComputedStyle(document.documentElement).getPropertyValue('--fontMono').trim() || 'monospace';
 
   const series = $derived(buildSeries(game.moves, graph));
@@ -26,7 +26,7 @@
     const c = theme.colors; // reading it here is what re-colours on a theme change
     const cur = !game.following && game.index > 0 ? game.moves[game.index - 1] : null;
     Object.assign(markers, {
-      zero: graph === 'eval',
+      zero: GRAPH_TYPES[graph].zero ?? null,
       x: cur ? plyX(cur) : null,
       zeroColor: c.muted,
       markColor: c.text,
@@ -66,7 +66,8 @@
       <span>by move</span>
     </figcaption>
     <div class="chart">
-      <canvas bind:this={canvas} aria-label="Line chart of {graph} per move for both engines"></canvas>
+      <canvas bind:this={canvas} aria-label="Line chart of {GRAPH_TYPES[graph].aria} per move for both engines"
+      ></canvas>
     </div>
   </figure>
   <ul class="legend">
@@ -74,6 +75,9 @@
     <li><span class="swatch" style:background="var(--engB)"></span>{blackName}</li>
     {#if graph === 'eval' && series.kibitzer.length}
       <li><span class="swatch dashed"></span>{kibitzerName} (kibitzer)</li>
+    {/if}
+    {#if graph === 'depth' && (series.whiteSel.length || series.blackSel.length)}
+      <li><span class="swatch dotted"></span>seldepth</li>
     {/if}
   </ul>
   <table class="averages">
@@ -116,7 +120,9 @@
     background: var(--surface2);
   }
   .seg button {
-    flex: 1;
+    flex: 1 1 auto;
+    padding: 0 2px;
+    white-space: nowrap;
     height: var(--pSegH);
     border: 0;
     background: transparent;
@@ -167,6 +173,10 @@
   .swatch.dashed {
     height: 0;
     border-top: 2px dashed var(--engK);
+  }
+  .swatch.dotted {
+    height: 0;
+    border-top: 2px dotted var(--muted);
   }
   .averages {
     width: 100%;

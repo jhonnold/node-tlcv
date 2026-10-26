@@ -1,6 +1,16 @@
 import type { ColorCode, KibitzerMeta, MoveMetaData, SerializedGame, SerializedKibitzerLiveData } from '$shared/types';
 import { colorName, otherColor } from '$shared/colors';
-import { DASH, formatDuration, formatNodes, formatNps, formatScore, moveScore, npsSeconds, whiteScore } from './format';
+import {
+  DASH,
+  formatCount,
+  formatNodes,
+  formatNps,
+  formatScore,
+  moveScore,
+  npsSeconds,
+  whiteScore,
+  whiteWdl,
+} from './format';
 import { EMPTY_PV, pvParts } from './pv';
 import type { PvParts } from './pv';
 
@@ -8,33 +18,44 @@ export type EngineRole = 'white' | 'black' | 'kibitzer';
 export type EngineView = {
   role: EngineRole;
   name: string;
-  status: string; // 'Thinking…' | 'Expects 21. b3' | ''
   scoreValue: number | null;
   score: string;
   depth: string;
+  // Each null when not sent (archives, kibitzer, a search without WINFO); the card drops it from its stats row.
+  seldepth: string | null;
   nodes: string;
   nps: string;
-  time: string;
+  hashfull: string | null; // '21.4%'
+  tbhits: string | null;
+  // Permille, White's view. Null when not sent.
+  wdl: [number, number, number] | null;
   pv: PvParts;
   pvFen: string | null;
 };
 export type EngineViews = { white: EngineView; black: EngineView; kibitzer: EngineView | null };
 
-export function empty(role: EngineRole, name: string, status = ''): EngineView {
+export function empty(role: EngineRole, name: string): EngineView {
   return {
     role,
     name,
-    status,
     scoreValue: null,
     score: DASH,
     depth: DASH,
+    seldepth: null,
     nodes: DASH,
     nps: DASH,
-    time: DASH,
+    hashfull: null,
+    tbhits: null,
+    wdl: null,
     pv: EMPTY_PV,
     pvFen: null,
   };
 }
+
+const hashText = (permille: number | null | undefined): string | null =>
+  permille == null ? null : `${(permille / 10).toFixed(1)}%`;
+const tbText = (n: number | null | undefined): string | null => (n == null ? null : formatCount(n));
+const seldText = (n: number | null | undefined): string | null => (n == null ? null : String(n));
 
 /** A finished search. Book moves have no depth and render as empty. */
 function fromMeta(game: SerializedGame, color: ColorCode, meta: MoveMetaData | undefined, skip: 0 | 1): EngineView {
@@ -46,41 +67,45 @@ function fromMeta(game: SerializedGame, color: ColorCode, meta: MoveMetaData | u
   return {
     role,
     name: game[role].name,
-    status: skip === 1 && pv.first ? `Expects ${pv.first}` : '',
     scoreValue: s,
-    score: formatScore(s),
+    score: formatScore(s, meta.mate),
     depth: String(meta.depth),
+    seldepth: seldText(meta.seldepth),
     nodes: formatNodes(meta.nodes),
     nps: formatNps(meta.nodes, secs),
-    time: secs != null ? formatDuration(secs * 1000) : DASH,
+    hashfull: hashText(meta.hashfull),
+    tbhits: tbText(meta.tbhits),
+    wdl: meta.wdl ? whiteWdl(meta.wdl, meta.color) : null,
     pv,
     pvFen: meta.pvFen,
   };
 }
 
 /** The search in progress. */
-function fromLive(game: SerializedGame, thinkMs: number | null): EngineView {
+function fromLive(game: SerializedGame): EngineView {
   const ld = game.liveData;
   const role = colorName(ld.color);
   const name = game[role].name;
-  if (ld.depth <= 0) return empty(role, name, 'Thinking…');
+  if (ld.depth <= 0) return empty(role, name);
   const s = whiteScore(ld.score, ld.color);
   return {
     role,
     name,
-    status: 'Thinking…',
     scoreValue: s,
-    score: formatScore(s),
+    score: formatScore(s, ld.mate),
     depth: String(ld.depth),
+    seldepth: seldText(ld.seldepth),
     nodes: formatNodes(ld.nodes),
     nps: formatNps(ld.nodes, ld.usedTime / 1000),
-    time: formatDuration(thinkMs ?? ld.usedTime),
+    hashfull: hashText(ld.hashfull),
+    tbhits: tbText(ld.tbhits),
+    wdl: ld.wdl ? whiteWdl(ld.wdl, ld.color) : null,
     pv: pvParts(ld.pv, ld.pvMoveNumber, ld.color, 0),
     pvFen: ld.pv.length ? ld.pvFen : null,
   };
 }
 
-/** The thread count is hidden, so status and NPS/Time stay empty. */
+/** The kibitzer sends no WINFO extras or NPS, so those stay empty. */
 function fromKibitzer(name: string, k: KibitzerMeta | SerializedKibitzerLiveData): EngineView {
   return {
     ...empty('kibitzer', name),
@@ -93,17 +118,11 @@ function fromKibitzer(name: string, k: KibitzerMeta | SerializedKibitzerLiveData
   };
 }
 
-export function engineViews(
-  game: SerializedGame,
-  index: number,
-  following: boolean,
-  stm: ColorCode,
-  thinkMs: number | null,
-): EngineViews {
+export function engineViews(game: SerializedGame, index: number, following: boolean, stm: ColorCode): EngineViews {
   const { moves } = game;
   if (following) {
     const thinker = game.liveData.color;
-    const live = fromLive(game, thinkMs);
+    const live = fromLive(game);
     const waiting = fromMeta(game, otherColor(thinker), moves[moves.length - 1], 1);
     const k = game.kibitzerLiveData;
     return {

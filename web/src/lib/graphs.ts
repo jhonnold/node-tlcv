@@ -1,43 +1,67 @@
 import { Chart, LineController, LineElement, PointElement, LinearScale, Tooltip } from 'chart.js';
 import type { ChartConfiguration, Plugin } from 'chart.js';
 import type { ColorCode, MoveMetaData } from '$shared/types';
-import { DASH, formatCount, formatDuration, formatNps, formatScore, moveScore, npsSeconds } from './format';
+import { DASH, formatCount, formatDuration, formatNps, formatScore, moveScore, npsSeconds, whiteWdl } from './format';
 import { isBook } from './moves';
 import { moveLabel } from './positions';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, Tooltip);
 
-export type GraphId = 'eval' | 'depth' | 'nodes' | 'nps' | 'time';
+export type GraphId = 'eval' | 'depth' | 'nodes' | 'nps' | 'time' | 'wdl' | 'tbhits';
 export type Pt = { x: number; y: number };
 type GraphType = {
   label: string;
   title: string;
+  // Lower-case noun for the canvas aria label.
+  aria: string;
   value(m: MoveMetaData): number | null;
   tick(v: number): string;
   tip(v: number): string;
+  // Fixed y range; otherwise the range fits the data.
+  range?: [number, number];
+  // Value of the dashed midline, if any.
+  zero?: number;
 };
 
 const clampEval = (v: number): number => Math.max(-10, Math.min(10, v));
+
+/** Expected score in percent, White's view: a win counts 1, a draw half. */
+const expectedPct = (m: MoveMetaData): number | null => {
+  if (!m.wdl) return null;
+  const [w, d] = whiteWdl(m.wdl, m.color);
+  return (w + d / 2) / 10;
+};
 
 export const GRAPH_TYPES: Record<GraphId, GraphType> = {
   eval: {
     label: 'Eval',
     title: 'Evaluation (White’s view)',
+    aria: 'eval',
     value: moveScore, // unclamped: buildSeries clamps the plotted point
     tick: (v) => (v === 0 ? '0' : v > 0 ? `+${v}` : String(v)),
     tip: (v) => formatScore(v),
+    zero: 0,
   },
   depth: {
     label: 'Depth',
     title: 'Search depth',
+    aria: 'depth',
     value: (m) => m.depth,
     tick: (v) => String(Math.round(v)),
     tip: (v) => String(v),
   },
-  nodes: { label: 'Nodes', title: 'Nodes searched', value: (m) => m.nodes, tick: formatCount, tip: formatCount },
+  nodes: {
+    label: 'Nodes',
+    title: 'Nodes searched',
+    aria: 'nodes',
+    value: (m) => m.nodes,
+    tick: formatCount,
+    tip: formatCount,
+  },
   nps: {
     label: 'NPS',
     title: 'Nodes per second',
+    aria: 'nps',
     value: (m) => {
       const s = npsSeconds(m);
       return s && m.nodes != null ? Math.round(m.nodes / s) : null;
@@ -48,9 +72,28 @@ export const GRAPH_TYPES: Record<GraphId, GraphType> = {
   time: {
     label: 'Time',
     title: 'Time per move',
+    aria: 'time',
     value: (m) => m.time,
     tick: (v) => `${Math.round(v)}s`,
     tip: (v) => `${v}s`,
+  },
+  wdl: {
+    label: 'WDL',
+    title: 'Expected score (White’s view)',
+    aria: 'expected score',
+    value: expectedPct,
+    tick: (v) => `${Math.round(v)}%`,
+    tip: (v) => `${v.toFixed(1)}%`,
+    range: [0, 100],
+    zero: 50,
+  },
+  tbhits: {
+    label: 'TB hits',
+    title: 'Tablebase hits',
+    aria: 'tablebase hits',
+    value: (m) => m.tbhits ?? null,
+    tick: formatCount,
+    tip: formatCount,
   },
 };
 export const GRAPH_IDS = Object.keys(GRAPH_TYPES) as GraphId[];
@@ -58,31 +101,51 @@ export const GRAPH_IDS = Object.keys(GRAPH_TYPES) as GraphId[];
 /** x = move number; black's move sits half a move later, so integer ticks label move numbers. */
 export const plyX = (m: MoveMetaData): number => m.number + (m.color === 'b' ? 0.5 : 0);
 
-/** One dataset per side plus the kibitzer. plies[d][i] is the nav index of dataset d's point i (for clicks). */
-/** raw[d][i] is the unclamped value, for the tooltip (a mate reads +M, not +10.00). */
+/**
+ * One dataset per side plus the kibitzer and, on the depth graph, each side's seldepth. Dataset order is
+ * white, black, kibitzer, whiteSel, blackSel. plies[d][i] is the nav index of dataset d's point i (for clicks).
+ * raw[d][i] is the unclamped value, for the tooltip (a mate reads +M, not +10.00).
+ */
 export type Series = {
   white: Pt[];
   black: Pt[];
   kibitzer: Pt[];
-  plies: [number[], number[], number[]];
-  raw: [number[], number[], number[]];
+  whiteSel: Pt[];
+  blackSel: Pt[];
+  plies: [number[], number[], number[], number[], number[]];
+  raw: [number[], number[], number[], number[], number[]];
 };
 export function buildSeries(moves: MoveMetaData[], id: GraphId): Series {
-  const s: Series = { white: [], black: [], kibitzer: [], plies: [[], [], []], raw: [[], [], []] };
+  const s: Series = {
+    white: [],
+    black: [],
+    kibitzer: [],
+    whiteSel: [],
+    blackSel: [],
+    plies: [[], [], [], [], []],
+    raw: [[], [], [], [], []],
+  };
   const t = GRAPH_TYPES[id];
   moves.forEach((m, i) => {
     const x = plyX(m);
+    const ply = i + 1;
     const v = isBook(m) ? null : t.value(m);
     if (v != null) {
       const d = m.color === 'w' ? 0 : 1;
       (d === 0 ? s.white : s.black).push({ x, y: id === 'eval' ? clampEval(v) : v });
-      s.plies[d].push(i + 1);
+      s.plies[d].push(ply);
       s.raw[d].push(v);
     }
     if (id === 'eval' && m.kibitzer?.score != null) {
       s.kibitzer.push({ x, y: clampEval(m.kibitzer.score) });
-      s.plies[2].push(i + 1);
+      s.plies[2].push(ply);
       s.raw[2].push(m.kibitzer.score); // already White's view
+    }
+    if (id === 'depth' && !isBook(m) && m.seldepth != null) {
+      const d = m.color === 'w' ? 3 : 4;
+      (d === 3 ? s.whiteSel : s.blackSel).push({ x, y: m.seldepth });
+      s.plies[d].push(ply);
+      s.raw[d].push(m.seldepth);
     }
   });
   return s;
@@ -130,7 +193,7 @@ export function averages(moves: MoveMetaData[], color: ColorCode): Averages {
 }
 
 /** Mutated in place by GraphsTab before each update; the plugin is registered once per chart. */
-export type Markers = { zero: boolean; x: number | null; zeroColor: string; markColor: string };
+export type Markers = { zero: number | null; x: number | null; zeroColor: string; markColor: string };
 export function markersPlugin(m: Markers): Plugin<'line'> {
   return {
     id: 'tlcvMarkers',
@@ -147,8 +210,8 @@ export function markersPlugin(m: Markers): Plugin<'line'> {
         ctx.stroke();
         ctx.restore();
       };
-      if (m.zero) {
-        const y = scales.y.getPixelForValue(0);
+      if (m.zero != null) {
+        const y = scales.y.getPixelForValue(m.zero);
         seg(a.left, y, a.right, y, m.zeroColor, [4, 4]);
       }
       if (m.x != null) {
@@ -178,7 +241,7 @@ export function chartConfig(
   onPick: (ply: number) => void,
 ): ChartConfiguration<'line', Pt[]> {
   const t = GRAPH_TYPES[id];
-  const all = [...s.white, ...s.black, ...s.kibitzer];
+  const all = [...s.white, ...s.black, ...s.kibitzer, ...s.whiteSel, ...s.blackSel];
   const xs = all.map((p) => p.x);
   const ys = all.map((p) => p.y);
   const bound = id === 'eval' ? evalBound(ys) : positiveBound(ys);
@@ -206,6 +269,8 @@ export function chartConfig(
         ds(names.white, s.white, c.w, 2, []),
         ds(names.black, s.black, c.b, 2, []),
         ds(names.kibitzer, s.kibitzer, c.k, 1.5, [5, 4]), // always present so datasetIndex lines up with s.plies
+        ds(`${names.white} seldepth`, s.whiteSel, c.w, 1.5, [2, 3]),
+        ds(`${names.black} seldepth`, s.blackSel, c.b, 1.5, [2, 3]),
       ],
     },
     options: {
@@ -233,8 +298,8 @@ export function chartConfig(
         },
         y: {
           type: 'linear',
-          min: id === 'eval' ? -bound : 0,
-          max: bound,
+          min: t.range?.[0] ?? (id === 'eval' ? -bound : 0),
+          max: t.range?.[1] ?? bound,
           grid: { color: (ctx) => (ctx.index === 1 ? c.line : 'transparent'), drawTicks: false }, // the mid line
           border: { color: c.line },
           ticks: { count: 3, padding: 6, color: c.muted, font: axisFont, callback: (v) => t.tick(Number(v)) },

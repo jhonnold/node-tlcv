@@ -8,6 +8,7 @@ import type {
   SerializedPlayer,
   SerializedGame,
   SerializedKibitzerLiveData,
+  SearchExtras,
 } from '../shared/types.js';
 
 export type { ColorCode, MoveMetaData, SerializedLiveData, SerializedPlayer, SerializedGame } from '../shared/types.js';
@@ -26,6 +27,7 @@ export class LiveData {
   pvAlg!: Array<string>;
   pvFen!: string;
   pvMoveNumber!: number;
+  ext!: SearchExtras;
 
   constructor() {
     this.reset('w', 1);
@@ -41,6 +43,7 @@ export class LiveData {
     this.pvAlg = [];
     this.pvFen = EMPTY_FEN;
     this.pvMoveNumber = pvMoveNumber;
+    this.ext = { seldepth: null, hashfull: null, tbhits: null, mate: null, wdl: null };
   }
 
   toJSON(): SerializedLiveData {
@@ -54,6 +57,7 @@ export class LiveData {
       pvAlg: this.pvAlg[0] ?? '',
       pvFen: this.pvFen,
       pvMoveNumber: this.pvMoveNumber,
+      ...this.ext,
     };
   }
 }

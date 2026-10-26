@@ -13,7 +13,7 @@ import { parseResults, parseGames, mergeGames, hasTotalGames } from './services/
 import { replayUciFromFen } from './util/uci.js';
 import { colorName } from '../shared/colors.js';
 import type { ColorName } from '../shared/colors.js';
-import type { BroadcastDelta, ColorCode, GameDelta, MoveMetaData } from '../shared/types.js';
+import type { BroadcastDelta, ColorCode, GameDelta, MoveMetaData, SearchExtras } from '../shared/types.js';
 
 type CommandTokens = [Command, ...Array<string>];
 
@@ -33,11 +33,22 @@ type DirtyKey = 'liveData' | 'clocks' | 'move' | 'movesPatched' | 'players' | 's
 // The subset describing the game itself, as opposed to broadcast-level state.
 const GAME_KEYS: DirtyKey[] = ['liveData', 'clocks', 'move', 'movesPatched', 'players', 'site'];
 
+type ParsedPv = {
+  depth: number;
+  score: number;
+  nodes: number;
+  usedTime: number;
+  pv: string[];
+  // Only WINFO/BINFO carry these; null for a WPV/BPV line.
+  ext: SearchExtras | null;
+};
+
 type PvUpdate = {
   depth: number;
   score: number;
   nodes: number;
   usedTime: number;
+  ext: SearchExtras | null;
   pvMoveNumber: number;
   san: string[];
   alg: string[];
@@ -80,6 +91,8 @@ class GameService {
       [Command.BPLAYER]: { fn: this.onPlayer.bind(this), split: false },
       [Command.WPV]: { fn: this.onPV.bind(this), split: true },
       [Command.BPV]: { fn: this.onPV.bind(this), split: true },
+      [Command.WINFO]: { fn: this.onInfo.bind(this), split: true },
+      [Command.BINFO]: { fn: this.onInfo.bind(this), split: true },
       [Command.WTIME]: { fn: this.onTime.bind(this), split: true },
       [Command.BTIME]: { fn: this.onTime.bind(this), split: true },
       [Command.WMOVE]: { fn: this.onMove.bind(this), split: true },
@@ -187,34 +200,97 @@ class GameService {
   }
 
   // WPV/BPV payloads are positional: depth score time nodes pv... Null if any number is malformed.
-  private parsePvTokens(rest: string[]): {
-    depth: number;
-    score: number;
-    nodes: number;
-    usedTime: number;
-    pv: string[];
-  } | null {
+  private parsePvTokens(rest: string[]): ParsedPv | null {
     const [depthStr, scoreStr, timeStr, nodesStr, ...pv] = rest;
-    const parsed = {
+    const parsed: ParsedPv = {
       depth: parseInt(depthStr),
       score: parseInt(scoreStr) / 100,
       nodes: parseInt(nodesStr),
       usedTime: parseInt(timeStr) * 10,
       pv,
+      ext: null,
     };
 
     const { depth, score, nodes, usedTime } = parsed;
     return [depth, score, nodes, usedTime].every(Number.isFinite) ? parsed : null;
   }
 
+  // WINFO/BINFO payloads are tag/value pairs in raw UCI units (ms, engine POV), `pv` last.
+  // Tags are read by walking the line, so unknown ones (nps, lowerbound, ...) are skipped
+  // without knowing their arity. Null if a core field or the pv is missing.
+  private parseInfoTokens(tokens: string[]): ParsedPv | null {
+    let depth = NaN;
+    let score = NaN;
+    let nodes = NaN;
+    let usedTime = NaN;
+    let pv: string[] | null = null;
+    const ext: SearchExtras = { seldepth: null, hashfull: null, tbhits: null, mate: null, wdl: null };
+
+    for (let i = 0; i < tokens.length && pv === null; i++) {
+      const tag = tokens[i];
+      const next = tokens[i + 1];
+      switch (tag) {
+        case 'depth':
+          depth = parseInt(next);
+          i++;
+          break;
+        case 'seldepth':
+          ext.seldepth = parseInt(next);
+          i++;
+          break;
+        case 'score': {
+          const value = parseInt(tokens[i + 2]);
+          if (next === 'cp') score = value / 100;
+          // Same encoding as WPV: the mate distance rides as cp, so ±M renders without special-casing.
+          else if (next === 'mate') {
+            ext.mate = value;
+            score = ((value >= 0 ? 1 : -1) * (100000 - Math.abs(value))) / 100;
+          }
+          i += 2;
+          break;
+        }
+        case 'nodes':
+          nodes = parseInt(next);
+          i++;
+          break;
+        case 'time':
+          usedTime = parseInt(next);
+          i++;
+          break;
+        case 'hashfull':
+          ext.hashfull = parseInt(next);
+          i++;
+          break;
+        case 'tbhits':
+          ext.tbhits = parseInt(next);
+          i++;
+          break;
+        case 'wdl': {
+          const wdl = tokens.slice(i + 1, i + 4).map((t) => parseInt(t));
+          if (wdl.every(Number.isFinite)) ext.wdl = wdl as SearchExtras['wdl'];
+          i += 3;
+          break;
+        }
+        case 'pv':
+          pv = tokens.slice(i + 1);
+          break;
+      }
+    }
+
+    if (pv === null || ![depth, score, nodes, usedTime].every(Number.isFinite)) return null;
+    return { depth, score, nodes, usedTime, pv, ext };
+  }
+
   private applyPvToMeta(
     meta: MoveMetaData,
-    { depth, score, nodes, usedTime, pvMoveNumber, san, alg, fen }: PvUpdate,
+    { depth, score, nodes, usedTime, ext, pvMoveNumber, san, alg, fen }: PvUpdate,
   ): void {
     meta.depth = depth;
     meta.score = score;
     meta.nodes = nodes;
     meta.usedTime = usedTime;
+    // A WPV-only update leaves the extras a prior WINFO set on this move alone.
+    if (ext) Object.assign(meta, ext);
     meta.pv = san.length ? [...san] : null;
     meta.pvFen = fen;
     meta.pvMoveNumber = pvMoveNumber;
@@ -227,13 +303,11 @@ class GameService {
   // A PV for the non-thinking color may be that engine's final flush for the move it
   // just played (see the "optional trailing XPV flush" in docs/protocol.md). If so,
   // patch the recorded move's meta rather than dropping the line.
-  private applyTrailingPv(colorCode: ColorCode, rest: string[]): void {
+  private applyTrailingPv(colorCode: ColorCode, parsed: ParsedPv): void {
     const lastMove = this.game.moveMeta[this.game.moveMeta.length - 1];
     if (!lastMove || lastMove.color !== colorCode || !this.fenBeforeLastMove) return;
 
-    const parsed = this.parsePvTokens(rest);
-    if (!parsed) return;
-    const { depth, score, nodes, usedTime, pv } = parsed;
+    const { depth, score, nodes, usedTime, pv, ext } = parsed;
 
     // A shallower line, or one with fewer nodes (unsequenced XPV reordered), is a stale
     // iteration, not the final flush.
@@ -246,7 +320,15 @@ class GameService {
     // different position and must not overwrite this move's meta.
     if (!playout || playout.san[0] !== lastMove.move) return;
 
-    this.applyPvToMeta(lastMove, { depth, score, nodes, usedTime, pvMoveNumber: lastMove.number, ...playout });
+    this.applyPvToMeta(lastMove, {
+      depth,
+      score,
+      nodes,
+      usedTime,
+      ext,
+      pvMoveNumber: lastMove.number,
+      ...playout,
+    });
 
     logger.info(
       `Updated game ${this.game.name} - Trailing PV for move ${lastMove.number}: Color: ${colorCode}, Depth: ${depth}, Score: ${score}, Nodes: ${nodes}`,
@@ -259,18 +341,25 @@ class GameService {
 
   private onPV(tokens: CommandTokens): void {
     const [command, ...rest] = tokens;
+    this.applyPvLine(command === Command.WPV ? 'w' : 'b', this.parsePvTokens(rest));
+  }
 
-    const color: ColorCode = command === Command.WPV ? 'w' : 'b';
+  // WINFO is sent right after the WPV/BPV it refines, so it carries the same search and
+  // overwrites that line's core fields when the node counts match.
+  private onInfo(tokens: CommandTokens): void {
+    const [command, ...rest] = tokens;
+    this.applyPvLine(command === Command.WINFO ? 'w' : 'b', this.parseInfoTokens(rest));
+  }
+
+  private applyPvLine(color: ColorCode, parsed: ParsedPv | null): void {
+    if (!parsed) return;
 
     // Discard PV updates for the non-thinking color (handles stale post-move flush, issue #9),
     // unless it is the trailing flush for the move that color just played.
     if (color !== this.game.liveData.color) {
-      this.applyTrailingPv(color, rest);
+      this.applyTrailingPv(color, parsed);
       return;
     }
-
-    const parsed = this.parsePvTokens(rest);
-    if (!parsed) return;
 
     // Unsequenced XPV can arrive out of order; node count is the only reliable ordering
     // signal within a search (see docs/protocol.md "XPV lines are unsequenced").
@@ -286,6 +375,7 @@ class GameService {
     this.game.liveData.score = parsed.score;
     this.game.liveData.nodes = parsed.nodes;
     this.game.liveData.usedTime = parsed.usedTime;
+    if (parsed.ext) this.game.liveData.ext = parsed.ext;
 
     const playout = replayUciFromFen(this.game.instance.fen(), parsed.pv);
     if (playout) {
@@ -364,6 +454,11 @@ class GameService {
         pvFollowup: null,
         pvAlg: null,
         kibitzer: null,
+        seldepth: null,
+        hashfull: null,
+        tbhits: null,
+        mate: null,
+        wdl: null,
       };
       this.game.moveMeta.push(meta);
 
@@ -374,6 +469,7 @@ class GameService {
           score: this.game.liveData.score,
           nodes: this.game.liveData.nodes,
           usedTime: this.game.liveData.usedTime,
+          ext: this.game.liveData.ext,
           pvMoveNumber: this.game.liveData.pvMoveNumber,
           san: this.game.liveData.pv,
           alg: this.game.liveData.pvAlg,
