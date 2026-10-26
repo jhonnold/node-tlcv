@@ -226,7 +226,8 @@ class GameService {
     for (let i = 0; i < tokens.length && pv === null; i++) {
       const tag = tokens[i];
       if (INFO_INT_TAGS.has(tag)) {
-        ints[tag] = parseInt(tokens[++i]);
+        const value = parseInt(tokens[++i]);
+        if (Number.isFinite(value)) ints[tag] = value;
         continue;
       }
       switch (tag) {
@@ -253,7 +254,6 @@ class GameService {
     const { depth = NaN, nodes = NaN, time: usedTime = NaN } = ints;
     if (pv === null || ![depth, score, nodes, usedTime].every(Number.isFinite)) return null;
     const ext: SearchExtras = {
-      ...emptyExtras(),
       seldepth: ints.seldepth ?? null,
       hashfull: ints.hashfull ?? null,
       tbhits: ints.tbhits ?? null,
