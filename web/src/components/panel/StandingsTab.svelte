@@ -4,6 +4,7 @@
   import { crosstable } from '$lib/standings';
   import { getTournament } from '$lib/tournament.svelte';
   import type { ViewerSource } from '$lib/url';
+  import Icon from '../viewer/Icon.svelte';
   import StandingsDialog from './StandingsDialog.svelte';
   import StandingsTable from './StandingsTable.svelte';
 
@@ -54,23 +55,7 @@
         title="Open full size"
         onclick={() => (expanded = true)}
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-          ><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line
-            x1="21"
-            y1="3"
-            x2="14"
-            y2="10"
-          ></line><line x1="3" y1="21" x2="10" y2="14"></line></svg
-        >
+        <Icon name="focus" size={14} />
       </button>
     {/if}
   </div>
@@ -87,13 +72,13 @@
           <thead>
             <tr>
               <th scope="col" class="first">Engine</th>
-              {#each rows as r (r.rank + r.name)}
+              {#each rows as r (`${r.rank}:${r.name}`)}
                 <th scope="col" class="h2h" title={r.name}>{r.rank}</th>
               {/each}
             </tr>
           </thead>
           <tbody>
-            {#each rows as r (r.rank + r.name)}
+            {#each rows as r (`${r.rank}:${r.name}`)}
               <tr>
                 <th scope="row" class="first" title={r.name}>
                   <span class="rank">{r.rank}</span>
@@ -112,7 +97,8 @@
     {/if}
     <p class="foot">
       {#if gauntlet}
-        Opponent rows show each engine's score against {hostName}. Each pair is one opening played with both colours.
+        Open full size to see each engine's game pairs against {hostName}. A pair is one opening played with both
+        colours.
       {:else}
         Head-to-head is the row engine's score against each column. * marks a game in progress.
       {/if}

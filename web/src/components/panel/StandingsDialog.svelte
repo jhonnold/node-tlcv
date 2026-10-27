@@ -67,7 +67,9 @@
       </button>
     </div>
     <div class="body">
-      <StandingsTable {rows} wide={true} />
+      {#if open}
+        <StandingsTable {rows} wide={true} />
+      {/if}
     </div>
   </div>
 </dialog>
@@ -87,6 +89,7 @@
   dialog.narrow {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     border: 0;
   }
   dialog::backdrop {

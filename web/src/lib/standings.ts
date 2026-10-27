@@ -1,3 +1,4 @@
+import { formatPermille } from './format';
 import type { H2HCell, ParsedResults, StandingsRow } from '$shared/types';
 
 /** CT names: "ZANGDAR 7.0 64-BIT". Live and record names: "Zangdar 7". Strip the suffixes (src/services/result-parser.ts:133-138) a leading "v" on versions and trailing ".0"s, case-insensitively. */
@@ -53,6 +54,16 @@ function cell(c: H2HCell, inProgress: boolean): XCell {
   return { text: half(v) + star, kind: v > g / 2 ? 'win' : v < g / 2 ? 'loss' : 'even' };
 }
 
+function totals(h2h: H2HCell[]): { w: number; d: number; l: number } {
+  const t = { w: 0, d: 0, l: 0 };
+  for (const c of h2h) {
+    t.w += c.wins;
+    t.d += c.draws;
+    t.l += c.losses;
+  }
+  return t;
+}
+
 const played = (c: H2HCell): boolean => c.wins + c.draws + c.losses > 0;
 
 /** A gauntlet: one row has played every other row, and every other row has played only that row. Null for a round robin. */
@@ -65,24 +76,26 @@ export function gauntletHost(rows: StandingsRow[]): number | null {
 }
 
 const HALF_POINTS: Record<string, number> = { '1': 2, '=': 1, '0': 0 };
-const PAIR: Record<number, { kind: XPairKind; label: string }> = {
-  4: { kind: 'w2', label: '2–0' },
-  3: { kind: 'w1', label: '1½–½' },
-  2: { kind: 'even', label: '1–1' },
-  1: { kind: 'l1', label: '½–1½' },
-  0: { kind: 'l2', label: '0–2' },
-};
-const LIVE = { kind: 'live' as const, label: 'in progress' };
+/** Pair outcomes from the row engine's side, best first (index = 4 − half points), then a pair still being played. Also the legend order. */
+export const PAIR_KEYS: XPair[] = [
+  { kind: 'w2', label: '2–0' },
+  { kind: 'w1', label: '1½–½' },
+  { kind: 'even', label: '1–1' },
+  { kind: 'l1', label: '½–1½' },
+  { kind: 'l2', label: '0–2' },
+  { kind: 'live', label: 'in progress' },
+];
+const LIVE = PAIR_KEYS[5];
 
 /** Gauntlet games come in pairs (one opening, both colours): each two consecutive characters of the CT string are one pair, scored from the row engine's side. A trailing game without its pair, or a game in progress, is a live pair. */
 export function pairs(results: string, inProgress: boolean): XPair[] {
   const games = [...results.replace(/[^10=]/g, '')];
-  const out: { kind: XPairKind; label: string }[] = [];
+  const out: XPair[] = [];
   for (let i = 0; i < games.length; i += 2) {
-    out.push(i + 1 < games.length ? PAIR[HALF_POINTS[games[i]] + HALF_POINTS[games[i + 1]]] : LIVE);
+    out.push(i + 1 < games.length ? PAIR_KEYS[4 - HALF_POINTS[games[i]] - HALF_POINTS[games[i + 1]]] : LIVE);
   }
   if (inProgress && games.length % 2 === 0) out.push(LIVE);
-  return out.map((p, n) => ({ ...p, label: `Pair ${n + 1}: ${p.label}` }));
+  return out;
 }
 
 /** h2h[j] is the score against the engine in standings row j (CT column j+1 = rank j+1). */
@@ -95,10 +108,8 @@ export function crosstable(results: ParsedResults, live: { white: string; black:
     name: r.name,
     games: r.games,
     points: half(r.points),
-    pct: r.games ? `${((r.points / r.games) * 100).toFixed(1)}%` : '—',
-    w: r.h2h.reduce((a, c) => a + c.wins, 0),
-    d: r.h2h.reduce((a, c) => a + c.draws, 0),
-    l: r.h2h.reduce((a, c) => a + c.losses, 0),
+    pct: r.games ? formatPermille((r.points / r.games) * 1000) : '—',
+    ...totals(r.h2h),
     playing: playing[i],
     isHost: i === host,
     cells: r.h2h.map((c, j) => cell(c, j !== i && playing[i] && !!playing[j])),

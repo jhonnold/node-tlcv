@@ -1,23 +1,15 @@
 <script lang="ts">
-  import type { XPairKind, XRow } from '$lib/standings';
+  import { PAIR_KEYS, type XRow } from '$lib/standings';
 
   type Props = { rows: XRow[]; wide: boolean };
   const { rows, wide }: Props = $props();
 
   const gauntlet = $derived(rows.some((r) => r.isHost));
   const hostName = $derived(rows.find((r) => r.isHost)?.name ?? '');
-  const LEGEND: { kind: XPairKind; label: string }[] = [
-    { kind: 'w2', label: '2–0' },
-    { kind: 'w1', label: '1½–½' },
-    { kind: 'even', label: '1–1' },
-    { kind: 'l1', label: '½–1½' },
-    { kind: 'l2', label: '0–2' },
-    { kind: 'live', label: 'in progress' },
-  ];
 </script>
 
 <div class="wrap">
-  <table>
+  <table class:wide>
     <thead>
       <tr>
         <th scope="col" class="rank-h">#</th>
@@ -28,19 +20,19 @@
           <th scope="col" class="num" title="Draws">D</th>
           <th scope="col" class="num" title="Losses">L</th>
         {/if}
-        <th scope="col" class="num" title="Points">Pts</th>
+        <th scope="col" class="num pts" title="Points">Pts</th>
         <th scope="col" class="num score" title="Score percentage">Score</th>
         {#if wide && gauntlet}
           <th scope="col" class="extra-h">Pairs, oldest first</th>
         {:else if wide}
-          {#each rows as r (r.rank + r.name)}
+          {#each rows as r (`${r.rank}:${r.name}`)}
             <th scope="col" class="h2h" title={r.name}>{r.rank}</th>
           {/each}
         {/if}
       </tr>
     </thead>
     <tbody>
-      {#each rows as r (r.rank + r.name)}
+      {#each rows as r (`${r.rank}:${r.name}`)}
         <tr class:host={r.isHost}>
           <td class="rank">{r.rank}</td>
           <th scope="row" class="name" title={r.name}>
@@ -60,7 +52,7 @@
               {#if !r.isHost}
                 <span class="pairs" role="img" aria-label="Game pairs against {hostName}, oldest first">
                   {#each r.pairs as p, n (n)}
-                    <span class="pair {p.kind}" title={p.label}></span>
+                    <span class="pair {p.kind}" title="Pair {n + 1}: {p.label}"></span>
                   {/each}
                 </span>
               {/if}
@@ -76,7 +68,7 @@
   </table>
   {#if wide && gauntlet}
     <ul class="legend" aria-label="Pair key">
-      {#each LEGEND as k (k.kind)}
+      {#each PAIR_KEYS as k (k.kind)}
         <li><span class="pair {k.kind}"></span>{k.label}</li>
       {/each}
     </ul>
@@ -148,6 +140,9 @@
     text-align: left;
     font-weight: 600;
     white-space: nowrap;
+  }
+  table.wide .name {
+    width: 180px;
   }
   .label {
     display: inline-block;
