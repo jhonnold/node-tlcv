@@ -134,6 +134,10 @@
   .board :global(.board-b72b1) {
     border: 0;
   }
+  /* Inline pieces sit on the inherited line box's baseline, which pushes them down in small (thumbnail) squares. */
+  .board :global(.piece-417db) {
+    display: block;
+  }
   .board :global(.white-1e1d7) {
     background: var(--boardLight);
     color: var(--boardDark);

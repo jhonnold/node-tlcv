@@ -23,6 +23,20 @@ export type SerializedKibitzerLiveData = {
   name: string;
 };
 
+// Fields only a WINFO/BINFO line carries (uci-to-tlcs `info()`), engine POV where signed. Null when the
+// engine did not send them, and absent from moves archived before they were recorded.
+export type SearchExtras = {
+  seldepth: number | null;
+  hashfull: number | null;
+  tbhits: number | null;
+  // Permille win / draw / loss, engine POV, as sent.
+  wdl: [number, number, number] | null;
+};
+
+export function emptyExtras(): SearchExtras {
+  return { seldepth: null, hashfull: null, tbhits: null, wdl: null };
+}
+
 export type MoveMetaData = {
   color: ColorCode;
   number: number;
@@ -41,7 +55,7 @@ export type MoveMetaData = {
   pvFollowup: string | null;
   pvAlg: string | null;
   kibitzer: KibitzerMeta | null;
-};
+} & Partial<SearchExtras>;
 
 export type SerializedLiveData = {
   color: ColorCode;
@@ -53,7 +67,7 @@ export type SerializedLiveData = {
   pvAlg: string;
   pvFen: string;
   pvMoveNumber: number;
-};
+} & SearchExtras;
 
 export type SerializedPlayer = {
   name: string;

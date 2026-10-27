@@ -2,7 +2,7 @@
   import Board from './Board.svelte';
   import type { EngineView } from '$lib/engines';
   import { copyFen, EMPTY_FEN } from '$lib/fen';
-  import { DASH } from '$lib/format';
+  import { DASH, formatPermille } from '$lib/format';
   import { onDestroy } from 'svelte';
 
   type Props = {
@@ -13,16 +13,26 @@
   const { engine, thumb = 0, flipped = false }: Props = $props();
 
   const ROLE = { white: 'White', black: 'Black', kibitzer: 'Kibitzer' } as const;
-  const label = $derived(`${ROLE[engine.role]} engine ${engine.name}, score ${engine.score}`);
+  // WDL is per mille in White's view: [win, draw, loss].
+  const wdlText = $derived(engine.wdl ? `[${engine.wdl[0]}w, ${engine.wdl[1]}d, ${engine.wdl[2]}l]` : '');
+  const wdlAria = $derived(
+    engine.wdl
+      ? `, win ${formatPermille(engine.wdl[0])}, draw ${formatPermille(engine.wdl[1])}, loss ${formatPermille(engine.wdl[2])} for White`
+      : '',
+  );
+  const label = $derived(`${ROLE[engine.role]} engine ${engine.name}, score ${engine.score}${wdlAria}`);
   const pvText = $derived([engine.pv.pre, engine.pv.first, engine.pv.rest].filter(Boolean).join(' '));
-  // Row 2: depth · nodes · nps · time. The status sits at the right end of row 1.
+  // Stats row: depth/seldepth · nodes · nps · hashfull · tbhits. Absent parts are dropped.
   const stats = $derived(
     [
-      engine.depth === DASH ? DASH : `d${engine.depth}`,
+      engine.depth && `d${engine.depth}${engine.seldepth != null ? `/${engine.seldepth}` : ''}`,
       engine.nodes,
-      engine.nps === DASH ? DASH : `${engine.nps}/s`,
-      engine.time,
-    ].join(' · '),
+      engine.nps && `${engine.nps}/s`,
+      engine.hashfull,
+      engine.tbhits,
+    ]
+      .filter(Boolean)
+      .join(' · ') || DASH,
   );
 
   let copied = $state(false);
@@ -41,14 +51,13 @@
     <div class="head">
       <span class="swatch" aria-hidden="true"></span>
       <span class="score">{engine.score}</span>
+      {#if wdlText}<span class="wdl" title="Win / draw / loss per mille, White’s view">{wdlText}</span>{/if}
       <!-- White/Black names are in the player bars; only the kibitzer card names its engine. -->
       {#if engine.role === 'kibitzer'}
         <span class="name">{engine.name}</span>
         <!-- Without a live kibitzer name (archives) the name is the 'Kibitzer' fallback (lib/engines.ts): don't repeat it. -->
         {#if engine.name !== ROLE.kibitzer}<span class="role">{ROLE.kibitzer}</span>{/if}
       {/if}
-      <span class="spacer"></span>
-      <span class="status" title={engine.status}>{engine.status}</span>
     </div>
     <span class="sstats">{stats}</span>
     <p class="pv" title={pvText}>
@@ -105,11 +114,13 @@
   }
   .head {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 8px;
     min-width: 0;
+    overflow: hidden;
   }
   .swatch {
+    align-self: center;
     width: 10px;
     height: 10px;
     flex-shrink: 0;
@@ -130,18 +141,18 @@
     text-transform: uppercase;
     color: var(--muted);
   }
-  .spacer {
-    flex: 1;
-  }
   .score {
+    flex-shrink: 0;
     font-family: var(--fontMono);
     font-size: 17px;
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 22px;
   }
-  .status {
+  .wdl {
     min-width: 0;
+    margin-left: -2px;
+    font-family: var(--fontMono);
     font-size: 12px;
     color: var(--muted);
     white-space: nowrap;

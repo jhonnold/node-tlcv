@@ -80,14 +80,7 @@ export class GameStore {
   sideToMove = $derived<ColorCode>(this.fen.split(' ')[1] === 'b' ? 'b' : 'w');
   label = $derived(positionLabel(this.moves, this.index, this.following));
   clocks = $derived(this.game ? liveClocks(this.game, this.now, this.#turnEnd) : null);
-  // Whole seconds (all the engine cards show), so the 250 ms tick doesn't rebuild them three times in four.
-  #thinkMs = $derived.by(() => {
-    const ms = this.following && this.clocks ? (this.clocks.white.thinkMs ?? this.clocks.black.thinkMs) : null;
-    return ms == null ? null : Math.floor(ms / 1000) * 1000;
-  });
-  engines = $derived(
-    this.game ? engineViews(this.game, this.index, this.following, this.sideToMove, this.#thinkMs) : null,
-  );
+  engines = $derived(this.game ? engineViews(this.game, this.index, this.following, this.sideToMove) : null);
   arrows = $derived<Arrow[]>(
     this.game
       ? buildArrows(this.fen, arrowSources(this.game, this.index, this.following), {

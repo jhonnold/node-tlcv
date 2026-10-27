@@ -9,7 +9,7 @@ The chess server pushes messages over UDP. Two delivery modes exist:
 
 **ID-wrapped commands**: `FEN`, `WMOVE`, `BMOVE`, `FMR`, `WPLAYER`, `BPLAYER`, `SITE`, `FEATURE`, `level`, `ADDUSER`, `DELUSER`, `MENU`, `PONG`, `CHAT`, `RESULT`.
 
-**Unwrapped commands**: `WTIME`, `BTIME`, `WPV`, `BPV`, `CTRESET`, `CT:`, `LOGON SUCCESSFUL`.
+**Unwrapped commands**: `WTIME`, `BTIME`, `WPV`, `BPV`, `WINFO`, `BINFO`, `CTRESET`, `CT:`, `LOGON SUCCESSFUL`.
 
 **Out-of-band**: `MSG` — free-text server notices. Delivery mode is unconfirmed; the transport strips any id before the line is logged, so observed samples don't say which channel it arrived on.
 
@@ -22,6 +22,7 @@ For the side about to move (call it X, with opponent Y):
 XTIME: <cs>   otim <cs>          ← X's remaining time, Y's in otim (centiseconds); ~0.3–3s after YMOVE
 XPV: <depth> <cp> <time_cs> <nodes> <pv...>   ← tens per move, ~2 per depth (summary + full PV)
 XPV: ...                          (iterative deepening as X thinks)
+XINFO: ...                        ← after each XPV, same search (see WINFO/BINFO below)
 ...
 < NNN>FEN: <position after X's move>
 < NNN>XMOVE: <n>. <SAN>
@@ -37,6 +38,7 @@ XPV: ...                          (iterative deepening as X thinks)
 | Message | Count | Notes |
 |---------|-------|-------|
 | `XPV` / `BPV` | ~20–60 | Depends on think time; ~2 per UCI depth iterated |
+| `XINFO` / `BINFO` | same as `XPV` | One per `XPV`, sent right after it |
 | `XTIME` / `BTIME` | 1 | At start of thinking side's turn |
 | `FEN` | 1 | Position after the move; +1 at broadcast start |
 | `XMOVE` / `BMOVE` | 1 | |
@@ -52,6 +54,7 @@ XPV: ...                          (iterative deepening as X thinks)
 - **Message-id restarts**: a fresh session restarts the server's id counter, so `UdpTransport.onMessage` reads a backwards jump to exactly `1`, or into the low end of the range (at most `ID_RESTART_WINDOW`) from more than `ID_RESTART_WINDOW` above it, as a restart to follow. Any other backwards step, and a repeat of the last id, is UDP reordering or a retransmit after a lost ACK and is discarded — the size of the step matters because early in every session the high-water mark is itself inside the low range. This covers restarts the client initiates by re-logging in *and* ones the server initiates on its own; without it a re-login succeeds and every datagram of the new session is dropped as out-of-order.
 - **Protocol token indexing**: `CommandTokens` is typed `[Command, ...string[]]`. `tokens[0]` is always the Command enum value (e.g. `'CHAT'`), NOT the message content. The actual data starts at `tokens[1]`. Commands with `split: true` have whitespace-tokenized data; `split: false` commands have a single string at `tokens[1]`.
 - **PV color guard**: `onPV()` discards PV updates for the non-thinking color to prevent a stale post-move flush from corrupting live data. **Retroactive carve-out**: if the last recorded move belongs to that color, the PV may be the engine's *final flush for that move* (the "optional trailing XPV flush" in the per-move cycle above). `applyTrailingPv()` accepts it and patches the move's `moveMeta` entry — including a move that was previously recorded as a book move — gated on four checks: the PV must play out legally from the position *before* the move (replayed from `fenBeforeLastMove`, captured in `onMove`), its first move must equal the move actually played, and its depth and node count must each be ≥ what is already recorded. Patched entries reach the browser via the `updatedMoves` field on `GameDelta`, gated on the `movesPatched` dirty flag.
+- **WINFO/BINFO are the authoritative PV line**: after every `WPV`/`BPV` (same search, the sibling `uci-to-tlcs` `info()` in `src/tlcs/protocol.ts`) the server sends `WINFO:`/`BINFO:`, a latest-only line with tag/value pairs in raw UCI units: `depth`, `seldepth`, `score cp N` or `score mate N`, `wdl w d l`, `nodes`, `nps`, `hashfull`, `tbhits`, `time` (ms), with `lowerbound`/`upperbound` as bare flags and `pv` last. Tags the engine did not send are absent, and any order is valid, so `parseInfoTokens()` walks the line and skips tags it does not read (`nps`, the bounds). `onInfo()` shares `onPV()`'s path: the colour guard, the node-count stale guard and the trailing flush. Because the server sends WPV then WINFO, a WINFO with the same node count overwrites the WPV's core fields and PV; a WPV arriving after a WINFO with the same count rewrites only the core fields and leaves the extras alone. A `score mate N` is stored as `±(100000 − |N|)` cp, the encoding WPV uses, so a reader with no mate support still sees a decisive score and the distance is read back from it. Per move and live, `seldepth`, `hashfull`, `tbhits` and `wdl` (engine POV, permille) are kept; `nps` is still computed as `nodes / usedTime`, and the bounds are not stored. A WPV-only search leaves them null, and moves archived before WINFO existed have no such keys.
 - **XPV lines are unsequenced; NPS comes from them alone**: `XPV` carries no `< NNN>` id, so it is never ACKed or retransmitted and the id-ordering guard in `UdpTransport` does not apply — lines can be lost or reordered, so `onPV()` drops a line whose `nodes` is below the current search's. Neither depth nor time is used: depth legitimately drops between iterations, and some engines (seen from Catalyst) report a `time_cs` that steps backwards on genuine lines while nodes keep growing. `<time_cs>` is the engine's own search time, kept per move as `usedTime` (ms) next to `nodes`, and NPS is `nodes / usedTime` from that same line. The server's wall-clock move `time` is not a substitute: engines often go quiet for seconds before moving, so the last PV's nodes over the full move time under-reports NPS (issue #218). Moves archived before `usedTime` existed fall back to `time`.
 - **Message batching**: The `MessageBuffer` drains every 100ms, so `GameService.onMessages()` receives batches. Every message in a batch is processed in arrival order — nothing is skipped or de-duplicated.
 - **FEN backup recovery**: If `chess.js` fails to parse a move, the game reloads from the most recent FEN command — the `fen` field on `ChessGame` is kept as a backup for this purpose.

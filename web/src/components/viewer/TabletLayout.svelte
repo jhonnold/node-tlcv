@@ -24,8 +24,8 @@
   const EV = 10;
   const EV_GAP = 6;
   const BARS = 112; // 2 player bars (48) + 2 gaps (8)
-  const THUMB = 56;
-  const TABLE_MIN = 270;
+  const THUMB = 0; // the 834 design's engine cards have no PV-end board
+  const TABLE_MIN = 304;
   const TABLE_MAX = 360;
 
   let w = $state(0); // <main> clientWidth

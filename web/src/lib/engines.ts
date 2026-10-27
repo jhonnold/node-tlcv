@@ -1,6 +1,24 @@
-import type { ColorCode, KibitzerMeta, MoveMetaData, SerializedGame, SerializedKibitzerLiveData } from '$shared/types';
+import type {
+  ColorCode,
+  KibitzerMeta,
+  MoveMetaData,
+  SearchExtras,
+  SerializedGame,
+  SerializedKibitzerLiveData,
+} from '$shared/types';
 import { colorName, otherColor } from '$shared/colors';
-import { DASH, formatDuration, formatNodes, formatNps, formatScore, moveScore, npsSeconds, whiteScore } from './format';
+import {
+  DASH,
+  formatCount,
+  formatNodes,
+  formatNps,
+  formatPermille,
+  formatScore,
+  moveScore,
+  npsSeconds,
+  whiteScore,
+  whiteWdl,
+} from './format';
 import { EMPTY_PV, pvParts } from './pv';
 import type { PvParts } from './pv';
 
@@ -8,31 +26,53 @@ export type EngineRole = 'white' | 'black' | 'kibitzer';
 export type EngineView = {
   role: EngineRole;
   name: string;
-  status: string; // 'Thinking…' | 'Expects 21. b3' | ''
   scoreValue: number | null;
   score: string;
-  depth: string;
-  nodes: string;
-  nps: string;
-  time: string;
+  // Null when not sent (archives, kibitzer, a search without WINFO); the card drops null stats from its row.
+  depth: string | null;
+  seldepth: number | null;
+  nodes: string | null;
+  nps: string | null;
+  hashfull: string | null; // '21.4%'
+  tbhits: string | null;
+  // Permille, White's view. Null when not sent.
+  wdl: [number, number, number] | null;
   pv: PvParts;
   pvFen: string | null;
 };
 export type EngineViews = { white: EngineView; black: EngineView; kibitzer: EngineView | null };
 
-export function empty(role: EngineRole, name: string, status = ''): EngineView {
+export function empty(role: EngineRole, name: string): EngineView {
   return {
     role,
     name,
-    status,
     scoreValue: null,
     score: DASH,
-    depth: DASH,
-    nodes: DASH,
-    nps: DASH,
-    time: DASH,
+    depth: null,
+    seldepth: null,
+    nodes: null,
+    nps: null,
+    hashfull: null,
+    tbhits: null,
+    wdl: null,
     pv: EMPTY_PV,
     pvFen: null,
+  };
+}
+
+// The formatters return DASH for unknown; the views carry null instead.
+const known = (s: string): string | null => (s === DASH ? null : s);
+
+/** The WINFO extras in display form, White's view. Each is null when the engine did not send it. */
+function extrasView(
+  x: Partial<SearchExtras>,
+  color: ColorCode,
+): Pick<EngineView, 'seldepth' | 'hashfull' | 'tbhits' | 'wdl'> {
+  return {
+    seldepth: x.seldepth ?? null,
+    hashfull: x.hashfull == null ? null : formatPermille(x.hashfull),
+    tbhits: x.tbhits == null ? null : formatCount(x.tbhits),
+    wdl: x.wdl ? whiteWdl(x.wdl, color) : null,
   };
 }
 
@@ -46,41 +86,39 @@ function fromMeta(game: SerializedGame, color: ColorCode, meta: MoveMetaData | u
   return {
     role,
     name: game[role].name,
-    status: skip === 1 && pv.first ? `Expects ${pv.first}` : '',
     scoreValue: s,
     score: formatScore(s),
     depth: String(meta.depth),
-    nodes: formatNodes(meta.nodes),
-    nps: formatNps(meta.nodes, secs),
-    time: secs != null ? formatDuration(secs * 1000) : DASH,
+    nodes: known(formatNodes(meta.nodes)),
+    nps: known(formatNps(meta.nodes, secs)),
+    ...extrasView(meta, meta.color),
     pv,
     pvFen: meta.pvFen,
   };
 }
 
 /** The search in progress. */
-function fromLive(game: SerializedGame, thinkMs: number | null): EngineView {
+function fromLive(game: SerializedGame): EngineView {
   const ld = game.liveData;
   const role = colorName(ld.color);
   const name = game[role].name;
-  if (ld.depth <= 0) return empty(role, name, 'Thinking…');
+  if (ld.depth <= 0) return empty(role, name);
   const s = whiteScore(ld.score, ld.color);
   return {
     role,
     name,
-    status: 'Thinking…',
     scoreValue: s,
     score: formatScore(s),
     depth: String(ld.depth),
-    nodes: formatNodes(ld.nodes),
-    nps: formatNps(ld.nodes, ld.usedTime / 1000),
-    time: formatDuration(thinkMs ?? ld.usedTime),
+    nodes: known(formatNodes(ld.nodes)),
+    nps: known(formatNps(ld.nodes, ld.usedTime / 1000)),
+    ...extrasView(ld, ld.color),
     pv: pvParts(ld.pv, ld.pvMoveNumber, ld.color, 0),
     pvFen: ld.pv.length ? ld.pvFen : null,
   };
 }
 
-/** The thread count is hidden, so status and NPS/Time stay empty. */
+/** The kibitzer sends no WINFO extras or NPS, so those stay empty. */
 function fromKibitzer(name: string, k: KibitzerMeta | SerializedKibitzerLiveData): EngineView {
   return {
     ...empty('kibitzer', name),
@@ -93,17 +131,11 @@ function fromKibitzer(name: string, k: KibitzerMeta | SerializedKibitzerLiveData
   };
 }
 
-export function engineViews(
-  game: SerializedGame,
-  index: number,
-  following: boolean,
-  stm: ColorCode,
-  thinkMs: number | null,
-): EngineViews {
+export function engineViews(game: SerializedGame, index: number, following: boolean, stm: ColorCode): EngineViews {
   const { moves } = game;
   if (following) {
     const thinker = game.liveData.color;
-    const live = fromLive(game, thinkMs);
+    const live = fromLive(game);
     const waiting = fromMeta(game, otherColor(thinker), moves[moves.length - 1], 1);
     const k = game.kibitzerLiveData;
     return {

@@ -27,7 +27,7 @@
   const NAV = 66; // NavControls desktop block: buttons 40 + gap 6 + status row 20
   const ROW = 8; // gap between table-column rows
   const PANEL_MIN = 240; // the tabs panel never gets shorter; a shorter window scrolls
-  const TABLE_MIN = 340;
+  const TABLE_MIN = 390;
   const TABLE_MAX = 520;
   const EV_GAP = 8;
 

@@ -6,8 +6,9 @@ import type { ColorCode, MoveMetaData } from '$shared/types';
 
 export const DASH = '—';
 
-// Pawns. Kibitzer mate is ±1e6 cp = ±10000 (uci-parser.ts:9); no real eval reaches 1000. TLCS's mate encoding is unverified.
-export const MATE_SCORE_THRESHOLD = 1000;
+// Pawns. Kibitzer mate is ±1e6 cp = ±10000 (uci-parser.ts:9). TLCS mate is ±(100000 - moves) cp (uci-to-tlcs
+// src/uci/info.ts), i.e. ±999.9x pawns.
+export const MATE_SCORE_THRESHOLD = 990;
 
 /**
  * TLCS engine scores (WPV/BPV → MoveMetaData.score, liveData.score) are from the side to move's view
@@ -21,12 +22,28 @@ export function whiteScore(score: number, color: ColorCode): number {
 /** A finished move's engine score in White's view, or null when it has none. */
 export const moveScore = (m: MoveMetaData): number | null => (m.score == null ? null : whiteScore(m.score, m.color));
 
-/** Engine score in pawns, white-relative and signed. Mate scores read as +M / -M. */
+/** A WDL triple (permille) in White's view. */
+export const whiteWdl = (wdl: [number, number, number], color: ColorCode): [number, number, number] =>
+  color === 'b' ? [wdl[2], wdl[1], wdl[0]] : wdl;
+
+/**
+ * Engine score in pawns, white-relative and signed. A TLCS mate encodes its distance in the score
+ * (±(100000 − moves) / 100), so +M7 is 999.93 and reads back as +M7. Kibitzer mates (±10000) carry no
+ * distance and read as plain +M / -M.
+ */
 export function formatScore(score: number | null | undefined): string {
   if (score == null) return DASH;
-  if (score >= MATE_SCORE_THRESHOLD) return '+M';
-  if (score <= -MATE_SCORE_THRESHOLD) return '-M';
+  if (Math.abs(score) >= MATE_SCORE_THRESHOLD) {
+    const moves = 100000 - Math.round(Math.abs(score) * 100);
+    const dist = moves >= 0 && moves < 1000 ? String(moves) : '';
+    return `${score > 0 ? '+' : '-'}M${dist}`;
+  }
   return `${score >= 0 ? '+' : ''}${score.toFixed(2)}`;
+}
+
+/** A permille value as a percentage with one decimal: 214 → '21.4%'. */
+export function formatPermille(p: number): string {
+  return `${(p / 10).toFixed(1)}%`;
 }
 
 const UNITS: [number, string][] = [
