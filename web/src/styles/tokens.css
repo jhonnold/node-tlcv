@@ -21,6 +21,12 @@
   --sel: #4c566a;
   --tabSel: #4c566a;
   --posBg: rgba(136, 192, 208, 0.14);
+  --hostBg: rgba(235, 203, 139, 0.1);
+  --win: #a3be8c;
+  --win2: #7f9871;
+  --loss: #bf616a;
+  --loss2: #8f4f57;
+  --even: #616e88;
   --boardLight: #d8dee9;
   --boardDark: #81a1c1;
   --boardHl: #ebcb8b;
