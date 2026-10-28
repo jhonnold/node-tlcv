@@ -37,7 +37,7 @@
       game.moves,
       series,
       { white: whiteName, black: blackName, kibitzer: kibitzerName },
-      { w: c.engW, b: c.engB, k: c.engK, text: c.text, muted: c.muted, line: c.line, surface2: c.surface2, font },
+      { w: c.graphW, b: c.graphB, k: c.graphK, text: c.text, muted: c.muted, line: c.line, surface2: c.surface2, font },
       (ply) => game.goTo(ply), // bound: goTo is a method, not an arrow field
     );
     if (!chart) chart = new Chart(canvas, { ...cfg, plugins: [markersPlugin(markers)] });
@@ -71,8 +71,8 @@
     </div>
   </figure>
   <ul class="legend">
-    <li><span class="swatch" style:background="var(--engW)"></span>{whiteName}</li>
-    <li><span class="swatch" style:background="var(--engB)"></span>{blackName}</li>
+    <li><span class="swatch" style:background="var(--graphW)"></span>{whiteName}</li>
+    <li><span class="swatch" style:background="var(--graphB)"></span>{blackName}</li>
     {#if graph === 'eval' && series.pts[2].length}
       <li><span class="swatch dashed"></span>{kibitzerName} (kibitzer)</li>
     {/if}
@@ -172,7 +172,7 @@
   }
   .swatch.dashed {
     height: 0;
-    border-top: 2px dashed var(--engK);
+    border-top: 2px dashed var(--graphK);
   }
   .swatch.dotted {
     height: 0;

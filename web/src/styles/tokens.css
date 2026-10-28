@@ -15,6 +15,9 @@
   --engW: #ebcb8b;
   --engB: #88c0d0;
   --engK: #c8a9c2;
+  --graphW: #eceff4;
+  --graphB: #161a21;
+  --graphK: #88c0d0;
   --evalW: #eceff4;
   --evalB: #4c566a;
   --link: #88c0d0;
@@ -30,9 +33,9 @@
   --boardLight: #d8dee9;
   --boardDark: #81a1c1;
   --boardHl: #ebcb8b;
-  --arrowW: #ebcb8b;
-  --arrowB: #88c0d0;
-  --arrowK: #b48ead;
+  --arrowW: #eceff4;
+  --arrowB: #2e3440;
+  --arrowK: #88c0d0;
   --fontUi: Archivo, system-ui, sans-serif;
   --fontMono: 'JetBrains Mono', ui-monospace, monospace;
   color-scheme: dark;
