@@ -33,9 +33,12 @@ export const PAGE_ROWS: ColorRow[] = [
 ];
 export const ADV_ROWS: ColorRow[] = [
   { key: 'link', label: 'Secondary accent' },
-  { key: 'engW', label: 'Graph — white engine' },
-  { key: 'engB', label: 'Graph — black engine' },
-  { key: 'engK', label: 'Graph — kibitzer' },
+  { key: 'graphW', label: 'Graph — white engine' },
+  { key: 'graphB', label: 'Graph — black engine' },
+  { key: 'graphK', label: 'Graph — kibitzer' },
+  { key: 'engW', label: 'Engine accent — white' },
+  { key: 'engB', label: 'Engine accent — black' },
+  { key: 'engK', label: 'Engine accent — kibitzer' },
   { key: 'evalW', label: 'Eval bar — white' },
   { key: 'evalB', label: 'Eval bar — black' },
 ];
