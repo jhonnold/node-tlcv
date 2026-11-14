@@ -1,0 +1,7 @@
+docs/frontend.md
+web/src/components/panel/StandingsDialog.svelte
+web/src/components/panel/StandingsTab.svelte
+web/src/components/panel/StandingsTable.svelte
+web/src/lib/standings.ts
+web/src/lib/theme/presets.ts
+web/src/styles/tokens.css

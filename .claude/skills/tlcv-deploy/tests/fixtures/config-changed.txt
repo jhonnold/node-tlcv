@@ -1,0 +1,2 @@
+web/src/App.svelte
+config/config.json

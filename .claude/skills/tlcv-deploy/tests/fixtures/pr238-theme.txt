@@ -1,0 +1,4 @@
+web/src/components/panel/GraphsTab.svelte
+web/src/components/theme/drawer.ts
+web/src/lib/theme/presets.ts
+web/src/styles/tokens.css

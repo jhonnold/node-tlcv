@@ -1,0 +1,17 @@
+docs/frontend.md
+docs/protocol.md
+shared/types.ts
+src/chess-game.ts
+src/game-service.ts
+src/protocol.ts
+web/src/components/Board.svelte
+web/src/components/EngineCard.svelte
+web/src/components/panel/GraphsTab.svelte
+web/src/components/viewer/DesktopLayout.svelte
+web/src/components/viewer/MobileLayout.svelte
+web/src/components/viewer/TabletLayout.svelte
+web/src/lib/engines.ts
+web/src/lib/format.ts
+web/src/lib/game.svelte.ts
+web/src/lib/graphs.ts
+web/src/lib/replay.ts
