@@ -99,7 +99,8 @@
     <a href="https://www.chessprogramming.org/Martin_Sedlak" target="_blank" rel="noopener noreferrer">Martin Sedlák</a
     >. Broadcasts by
     <a href="https://computerchess.org.uk/ccrl/4040/" target="_blank" rel="noopener noreferrer">CCRL</a>. Built on
-    <a href="https://chessboardjs.com/" target="_blank" rel="noopener noreferrer">chessboard.js</a>. Questions or ideas?
+    <a href="https://github.com/kibitzo/lightsquare" target="_blank" rel="noopener noreferrer">Lightsquare</a>.
+    Questions or ideas?
     <a href="https://github.com/jhonnold/node-tlcv/issues" target="_blank" rel="noopener noreferrer"
       >Open an issue on GitHub</a
     >.

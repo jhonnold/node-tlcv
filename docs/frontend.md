@@ -57,7 +57,7 @@ One layout tree per breakpoint (`ViewState.bp`: mobile < 768 px, tablet 768–12
 
 | Component | Purpose |
 |-----------|---------|
-| `Board.svelte` | chessboardjs wrapper. Props `fen`, `size` (rendered at a multiple of 8 px), `flipped`, `coords`, `lastMove`, `arrows` (SVG overlay), `animate`, `label`. Used for the main board, PV thumbnails, lobby cards and the theme preview. |
+| `Board.svelte` | Lightsquare wrapper. Props `fen`, `size` (rendered at a multiple of 8 px), `flipped`, `coords`, `lastMove`, `arrows` (SVG overlay), `animate`, `label`. Used for the main board, PV thumbnails, lobby cards and the theme preview. |
 | `EvalBar.svelte` | Vertical or horizontal eval bar; `score` is White's view. |
 | `PlayerBar.svelte` | Name, status (Thinking / Last + duration) and clock (`role="timer"`); one 48 px look. |
 | `EngineCard.svelte` | Single short card: row 1 colour square, score (`+M7`), WDL (`[214w, 774d, 12l]`, White's view, omitted when absent), then on the kibitzer card only the engine name (ellipsis) and a "Kibitzer" role label unless the name is that `Kibitzer` fallback (the White/Black names are in the player bars); row 2 stats `d34/51 · nodes · nps/s · hashfull · tbhits`, parts dropped when absent (`seldepth` after `/`, `hashfull` as a percent); no status or time, since the player bar and the board arrow carry those; the `aria-label` still gives role, name and score; the PV clamped to 2 lines (full PV in `title`), so the height is constant; an optional PV-end board (`thumb` px) whose click copies the FEN. |
@@ -82,7 +82,7 @@ One layout tree per breakpoint (`ViewState.bp`: mobile < 768 px, tablet 768–12
 | `viewer/FocusView.svelte` | Focus mode (Esc exits) |
 | `viewer/Icon.svelte` | Inline SVG icon set (`IconName`) used by the viewer headers and nav |
 
-Plain-TS logic in `web/src/lib/`: `arrows.ts` (PV arrows), `chat.ts` (line parsing, markdown + DOMPurify), `chessboard.ts` + `jquery-global.ts` (chessboardjs bootstrap), `clocks.ts`, `color.ts` (arrow colour blending), `delta.ts` (Socket.IO delta merge), `engines.ts` (engine card views), `fen.ts`, `format.ts` (scores, counts, times), `games.ts` (Games tab rows), `graphs.ts` (series + Chart.js config), `moves.ts` (move grid), `positions.ts` (SAN → FEN list), `pv.ts`, `replay.ts`, `standings.ts` (crosstable, W/D/L, gauntlet detection, pairs), `storage.ts`, `url.ts`.
+Plain-TS logic in `web/src/lib/`: `arrows.ts` (PV arrows), `chat.ts` (line parsing, markdown + DOMPurify), `clocks.ts`, `color.ts` (arrow colour blending), `delta.ts` (Socket.IO delta merge), `engines.ts` (engine card views), `fen.ts`, `format.ts` (scores, counts, times), `games.ts` (Games tab rows), `graphs.ts` (series + Chart.js config), `moves.ts` (move grid), `positions.ts` (SAN → FEN list), `pv.ts`, `replay.ts`, `standings.ts` (crosstable, W/D/L, gauntlet detection, pairs), `storage.ts`, `url.ts`.
 
 ## Theming
 
@@ -135,8 +135,7 @@ Admin (`src/routes/admin.ts`; 503 without `TLCV_PASSWORD`, then basic auth). Mut
 
 ## Gotchas
 
-- **chessboardjs needs a global `$`.** `lib/jquery-global.ts` sets `window.$` / `window.jQuery` and must load before chessboardjs; `lib/chessboard.ts` (the only module importing chessboardjs) does this.
-- **Board leaks without `createBoard()`.** chessboardjs's `destroy()` leaves un-namespaced `$(window)` / `$('body')` handlers. `createBoard()` diffs jQuery's handler registry around the build and removes the added handlers on destroy. Always build boards through it (`Board.svelte` does).
+- **The board is Lightsquare** (`@kibitzo/lightsquare`), used only by `components/Board.svelte`. It moves pieces with CSS transitions, so a slide needs no script per frame. Its colours, coordinates and the 12 piece images are CSS variables set in `Board.svelte` (`--ls-light`, `--ls-wk` …), from the theme tokens and `pieceSrc()`; the PV arrows stay the component's own SVG over it.
 - **Score orientation.** TLCS engine scores (`MoveMetaData.score`, `liveData.score`) are from the side to move's view; `whiteScore()` in `lib/format.ts` is the one place they become White's view. Kibitzer scores are already White's: never pass them through `whiteScore()`. `formatScore(score)` shows `+M` / `-M` from |score| ≥ 990 (`MATE_SCORE_THRESHOLD`), with the distance appended when the score encodes one (`+M7`: TLCS mate is ±(100000 − moves)/100 pawns, i.e. ±999.9x, so 1000 would miss it; kibitzer mates are ±10000 and read plain).
 - **Graph tabs.** `graphs.ts` `GRAPH_TYPES`: Eval, Depth, Nodes, NPS, Time, WDL (expected score, White's view, fixed 0–100 with a dashed 50 midline) and TB hits. The Depth graph adds a dotted seldepth dataset per side (dataset order: white, black, kibitzer, whiteSel, blackSel; `Series.plies`/`raw` index the same order). Stored WINFO fields are read only by these graphs and `EngineCard`.
 - **Replay generations.** `GameStore.beginReplay()` returns a generation; `loadReplay(meta, n, gen)` applies only if no `beginReplay()` / `exitReplay()` happened since. Start every replay fetch with `beginReplay()`, so a slow response can't override a newer Replay, Back to live or Watch.

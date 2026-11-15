@@ -1,9 +1,10 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { lightsquare } from '@kibitzo/lightsquare';
+  import type { Board, Options } from '@kibitzo/lightsquare';
+  import '@kibitzo/lightsquare/lightsquare.css';
   import { arrowPoints } from '$lib/arrows';
   import type { Arrow } from '$lib/arrows';
-  import { createBoard } from '$lib/chessboard';
-  import type { ChessboardInstance } from '$lib/chessboard';
   import type { LastMove } from '$lib/positions';
   import { pieceSrc } from '$lib/theme/piece-sets';
   import { theme } from '$lib/theme/theme.svelte';
@@ -32,60 +33,36 @@
   const px = $derived(Math.max(8, Math.floor(size / 8) * 8));
   const notation = $derived(coords && px >= 160); // Board.dc.html:64
   const coordPx = $derived(Math.max(9, Math.round(px / 48)));
+  // Lightsquare draws each piece from a CSS variable (--ls-wk … --ls-bp), so a piece set is twelve URLs.
+  const pieces = $derived(
+    ['w', 'b']
+      .flatMap((c) => [...'KQRBNP'].map((p) => `--ls-${c}${p.toLowerCase()}: url(${pieceSrc(theme.pieceSet, c + p)})`))
+      .join('; '),
+  );
+  const state = $derived<Options>({
+    position: fen,
+    orientation: flipped ? 'black' : 'white',
+    coordinates: notation,
+    lastMove: lastMove ? [lastMove.from, lastMove.to] : null,
+  });
 
   let host: HTMLDivElement;
-  let board: ChessboardInstance | null = null;
+  let board: Board | null = null;
 
-  function paintHighlight(): void {
-    for (const el of host.querySelectorAll('.hl')) el.classList.remove('hl');
-    if (!lastMove) return;
-    for (const sq of [lastMove.from, lastMove.to]) host.querySelector(`[data-square="${sq}"]`)?.classList.add('hl');
-  }
-
-  // Every chessboardjs call runs untracked, so pieceTheme's read of theme.pieceSet is not a dependency here.
+  // One board per component. Lightsquare compares each new state with what is on screen and moves only the
+  // pieces that changed; the slide itself is a CSS transition, so no script runs while a piece moves.
   $effect(() => {
-    const showNotation = notation; // the only dependency: coords change → rebuild
-    const { board: b, destroy } = untrack(() =>
-      createBoard(host, {
-        position: fen,
-        orientation: flipped ? 'black' : 'white',
-        showNotation,
-        pieceTheme: (piece: string) => pieceSrc(theme.pieceSet, piece),
-      }),
-    );
+    const b = untrack(() => lightsquare(host, state));
     board = b;
-    untrack(paintHighlight);
     return () => {
-      destroy(); // also removes chessboardjs's leftover window/body handlers
+      b.destroy();
       board = null;
     };
   });
-  // resize() and orientation() rebuild every square, so the highlight is repainted after each.
   $effect(() => {
-    void px;
-    untrack(() => {
-      board?.resize();
-      paintHighlight();
-    });
+    const [next, a] = [state, animate];
+    untrack(() => board?.set(next, { animate: a }));
   });
-  $effect(() => {
-    const o = flipped ? 'black' : 'white';
-    untrack(() => {
-      if (!board || board.orientation() === o) return;
-      board.orientation(o);
-      paintHighlight();
-    });
-  });
-  $effect(() => {
-    const [f, a] = [fen, animate];
-    untrack(() => board?.position(f, a));
-  });
-  // New piece set: redraw pieces in place (pieceTheme is consulted on every render).
-  $effect(() => {
-    void theme.pieceSet;
-    untrack(() => board?.position(fen, false));
-  });
-  $effect(paintHighlight); // tracks lastMove only
 </script>
 
 <div
@@ -93,12 +70,9 @@
   role="img"
   aria-label={label}
   data-fen={fen}
-  style:width="{px}px"
-  style:height="{px}px"
-  style:--coord="{coordPx}px"
+  style="{pieces}; width: {px}px; height: {px}px; --coord: {coordPx}px"
 >
-  <!-- chessboardjs sizes squares from floor((width - 1) / 8), so the host is one pixel wider than the grid. -->
-  <div class="host" bind:this={host} style:width="{px + 1}px"></div>
+  <div class="host" bind:this={host}></div>
   {#if arrows.length}
     <!-- The outline is theme-invariant (Board.dc.html:33). -->
     <svg viewBox="0 0 800 800" aria-hidden="true">
@@ -129,42 +103,25 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+    /* Over the pieces: Lightsquare's layers stack up to z-index 8 inside its own stacking context. */
+    z-index: 1;
   }
-  /* chessboardjs's class names are fixed (chessboard.js:199-216), so its markup is styled globally under .board. */
-  .board :global(.board-b72b1) {
-    border: 0;
+  /* Lightsquare's look is set through its CSS variables (lightsquare.css). */
+  .host {
+    width: 100%;
+    --ls-light: var(--boardLight);
+    --ls-dark: var(--boardDark);
+    /* Board.dc.html:88: square mixed 55% toward the highlight. A 55% layer over the square gives the same colour. */
+    --ls-last: color-mix(in srgb, var(--boardHl) 55%, transparent);
+    --ls-coord-on-light: var(--boardDark);
+    --ls-coord-on-dark: var(--boardLight);
+    --ls-coord-font: var(--fontMono);
+    --ls-coord-size: var(--coord);
+    --ls-move-ms: 200ms;
   }
-  /* Inline pieces sit on the inherited line box's baseline, which pushes them down in small (thumbnail) squares. */
-  .board :global(.piece-417db) {
-    display: block;
-  }
-  .board :global(.white-1e1d7) {
-    background: var(--boardLight);
-    color: var(--boardDark);
-  }
-  .board :global(.black-3c85d) {
-    background: var(--boardDark);
-    color: var(--boardLight);
-  }
-  /* Board.dc.html:88: square mixed 55% toward the highlight */
-  .board :global(.white-1e1d7.hl) {
-    background: color-mix(in srgb, var(--boardHl) 55%, var(--boardLight));
-  }
-  .board :global(.black-3c85d.hl) {
-    background: color-mix(in srgb, var(--boardHl) 55%, var(--boardDark));
-  }
-  .board :global(.notation-322f9) {
-    font-family: var(--fontMono);
-    font-size: var(--coord);
-    font-weight: 600;
-    line-height: 1;
-  }
-  .board :global(.numeric-fc462) {
-    top: 4%;
-    left: 6%;
-  }
-  .board :global(.alpha-d2270) {
-    bottom: 4%;
-    right: 7%;
+  /* Where the labels sat before: numbers 4% from the top and 6% from the left of their square, letters 4% from
+     the bottom and 7% from the right (cqw is 1% of the board's width, so one square is 12.5cqw). */
+  .host :global(.ls-coord) {
+    padding: 0.5cqw 0.875cqw 0.5cqw 0.75cqw;
   }
 </style>
