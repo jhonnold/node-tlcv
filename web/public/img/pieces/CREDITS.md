@@ -1,7 +1,7 @@
 # Piece set credits
 
 Each subdirectory holds one chess piece set (12 SVGs named `wK.svg`…`bP.svg`, i.e.
-lowercase color + uppercase piece, the chessboardjs `{piece}` convention).
+lowercase color + uppercase piece, the names `pieceSrc()` in `lib/theme/piece-sets.ts` builds).
 
 - **classic** — the viewer's original/default set.
 - **livius**, **meridian**, **meridian_shaded** — by Martin Sedlák, released under

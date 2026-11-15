@@ -4,7 +4,7 @@
 
 <footer>
   <p>
-    {#if !mobile}Chessboard by <a href="https://chessboardjs.com/">chessboard.js</a>.{/if}
+    {#if !mobile}Chessboard by <a href="https://github.com/kibitzo/lightsquare">Lightsquare</a>.{/if}
     Pieces by <a href="https://en.wikipedia.org/wiki/User:Cburnett">Cburnett</a> and
     <a href="https://www.chessprogramming.org/Martin_Sedlak">Martin Sedlák</a>. Broadcasts by
     <a href="https://computerchess.org.uk/ccrl/4040/">CCRL</a>. Hosting and development by
