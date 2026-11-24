@@ -43,7 +43,7 @@ export class GameStore {
   #gen = $state(0); // replay generation: bumped by beginReplay and exitReplay
 
   chat = $state.raw<string[]>([]);
-  /** Bumped by each live `new-chat` batch holding a result line (never by the `state` backlog); Viewer refreshes on it. */
+  /** Bumped per live `new-chat` batch holding a result line (never by the `state` backlog); Viewer refreshes on it. */
   resultLines = $state(0);
   connected = $state(false);
   cursor = $state<number | null>(null); // null follows the latest position
