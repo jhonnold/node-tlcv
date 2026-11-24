@@ -4,9 +4,9 @@ Prometheus metrics via `prom-client`. `src/metrics.ts` owns a single `Registry` 
 
 ## Gauges
 
-Recomputed at scrape time via `collect()`:
-
 Per-broadcast gauges are labeled `port`/`event`; `ccrl_game_move_number` adds `board`.
+
+Recomputed at scrape time via `collect()`:
 
 | Metric | Description |
 |--------|-------------|
