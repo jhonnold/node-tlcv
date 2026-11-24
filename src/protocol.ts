@@ -43,7 +43,8 @@ const KNOWN_COMMANDS = new Set<string>(Object.values(Command));
  * spectator list, our own name included (see `onAddUser`), and join/leave traffic
  * says nothing about the game feed anyway. Counting any of them would let a
  * re-login that is acknowledged but restores nothing look like recovery, which is
- * exactly what `ccrl_broadcast_seconds_since_data` exists to catch. The TLCS-MG handshake replies (`MULTIGAME`, `BOARDS`) are re-login responses too.
+ * exactly what `ccrl_broadcast_seconds_since_data` exists to catch. The TLCS-MG
+ * handshake replies (`MULTIGAME`, `BOARDS`) are re-login responses too.
  *
  * Typed as a total map on purpose: adding a `Command` forces a decision here
  * rather than silently defaulting to "this counts". Lines `splitOnCommand`

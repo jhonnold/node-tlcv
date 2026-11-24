@@ -122,10 +122,10 @@ class BoardService {
       [Command.BMOVE]: { fn: this.onMove.bind(this), split: true },
       [Command.RESULT]: { fn: this.onResult.bind(this), split: false },
       [Command.FMR]: { fn: this.onFmr.bind(this), split: false },
+      [Command.GAMENO]: { fn: this.onGameNo.bind(this), split: false },
       // Recognized but intentionally ignored — connection-time handshake/config
       // lines the viewer derives nothing from (see docs/protocol.md "No-op protocol commands").
       [Command.LEVEL]: { fn: () => {}, split: false },
-      [Command.GAMENO]: { fn: this.onGameNo.bind(this), split: false },
     };
   }
 
@@ -570,17 +570,18 @@ class BoardService {
       gameDelta.tablebase = this.game.tablebase;
 
       // reset() / resetFromFen() replace moveMeta. If the browser had moves it drops them, and
-      // every move since the reset is new to it, even at indices it already had.
-      const wasReset = this.moveCountBefore > 0 && this.game.moveMeta !== this.movesAtBatchStart;
+      // every move since the reset is new to it, even at indices it already had. The start
+      // position goes out either way: a setup position loaded after an earlier batch's reset
+      // finds the browser with no moves but still on the old start.
+      const replaced = this.game.moveMeta !== this.movesAtBatchStart;
+      const wasReset = replaced && this.moveCountBefore > 0;
       const newMoves = this.game.moveMeta.slice(wasReset ? 0 : this.moveCountBefore);
       if (newMoves.length > 0) {
         gameDelta.newMoves = newMoves;
       }
 
-      if (wasReset) {
-        gameDelta.resetMoves = true;
-        gameDelta.startFen = this.game.startFen;
-      }
+      if (replaced) gameDelta.startFen = this.game.startFen;
+      if (wasReset) gameDelta.resetMoves = true;
     }
 
     if (d.has('movesPatched')) {
