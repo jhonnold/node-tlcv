@@ -33,7 +33,12 @@
   const siteName = $derived(game.live?.game.site || site);
   const info = $derived<HeaderInfo>({
     site: siteName,
-    game: game.isReplay ? game.replayNumber : tournament.currentGameNumber,
+    // Live: no number before the socket state says whether this is TLCS-MG ("Board N"), so it never flashes "Game N".
+    game: game.isReplay
+      ? game.replayNumber
+      : source.kind === 'live' && !game.live
+        ? null
+        : tournament.currentGameNumber,
     // TLCS-MG: the live game is "Board N" (the CT-derived number is the broadcast's, not this board's).
     board: !game.isReplay && game.live && game.live.boards.length > 1 ? game.live.board : null,
     archive: source.kind === 'archive' || game.isReplay,
@@ -62,6 +67,11 @@
     if (prevLen >= 0 && (pair !== prevPair || g.moves.length < prevLen)) tournament.refreshSoon();
     prevPair = pair;
     prevLen = g.moves.length;
+  });
+  // TLCS-MG: the other boards' games end too, which the pair check above never sees. Their result chat lines reach
+  // every board's page (GameStore.resultLines). Classic TLCS keeps the pair check alone.
+  $effect(() => {
+    if (game.resultLines > 0 && untrack(() => (game.live?.boards.length ?? 0) > 1)) tournament.refreshSoon();
   });
   // Leaving focus remounts the layout: refocus its trigger (Header's Focus button or MobileNavBar's More options).
   async function exitFocus(): Promise<void> {

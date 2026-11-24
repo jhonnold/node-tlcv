@@ -22,7 +22,7 @@ export class TournamentStore {
     void this.refresh();
   }
 
-  /** Live: the last gameNumber + 1. Archive: the latest game. During a replay, show game.replayNumber instead. */
+  /** Live: the last gameNumber + 1 (classic TLCS; on TLCS-MG boards play concurrently, so it is wrong and the header and Games tab show the board instead). Archive: the latest game. During a replay, show game.replayNumber instead. */
   get currentGameNumber(): number | null {
     return this.#currentGameNumber;
   }

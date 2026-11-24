@@ -37,13 +37,15 @@ export type GameRow = {
   black: string;
   result: string;
   live: boolean;
+  /** TLCS-MG live row: the viewed board, shown instead of a number (`num` is null). */
+  board?: number;
   metaUrl?: string;
   pgnUrl?: string;
 };
 /** The filtered games plus the live row on top. Records are newest-first (result-parser.ts:177-185). */
 export function gameRows(
   games: GameRecord[] | null,
-  live: { number: number | null; white: string; black: string } | null,
+  live: { number: number | null; board: number | null; white: string; black: string } | null,
   query: string,
   decisiveOnly: boolean,
 ): GameRow[] {
@@ -52,7 +54,15 @@ export function gameRows(
     (!q || fuzzyMatches(q, w) || fuzzyMatches(q, b)) && (!decisiveOnly || isDecisive(r));
   const rows: GameRow[] = [];
   if (live && keep(live.white, live.black, '*'))
-    rows.push({ key: 'live', num: live.number, white: live.white, black: live.black, result: '*', live: true });
+    rows.push({
+      key: 'live',
+      num: live.number,
+      board: live.board ?? undefined,
+      white: live.white,
+      black: live.black,
+      result: '*',
+      live: true,
+    });
   for (const g of games ?? []) {
     if (live && g.result === '*') continue; // the CT may list the game in progress
     if (keep(g.white, g.black, g.result))

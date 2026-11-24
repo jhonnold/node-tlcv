@@ -4,7 +4,7 @@
   import { formatScore } from '$lib/format';
   import { pagePath } from '$lib/url';
   import type { LobbyBroadcast } from '$shared/types';
-  import { cardLabel, clock, moveNumber, title } from './lobby';
+  import { cardLabel, clock, moveNumber, plural, title } from './lobby';
 
   type Props = { b: LobbyBroadcast; mobile: boolean };
   const { b, mobile }: Props = $props();
@@ -30,7 +30,10 @@
 >
   <Board fen={b.fen} size={mobile ? 104 : 150} coords={false} label="{b.white} vs {b.black}" />
   <div class="info">
-    <div class="site">{title(b)}</div>
+    <div class="site">
+      <span class="ellipsis">{title(b)}</span>
+      {#if b.boardCount > 1}<span class="badge">{plural(b.boardCount, 'board')}</span>{/if}
+    </div>
     {#if mobile}
       {@render row('white')}
       {@render row('black')}
@@ -83,14 +86,28 @@
     gap: 6px;
   }
   .site {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 14px;
     font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .live-card.mobile .site {
     font-size: 13px;
+  }
+  /* TLCS-MG "N boards", like EventLine's grey badge. */
+  .badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    height: 16px;
+    padding: 0 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--surface2);
+    color: var(--muted);
   }
   .player {
     display: flex;

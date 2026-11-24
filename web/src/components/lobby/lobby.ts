@@ -14,9 +14,11 @@ export const clock = (ms: number): string => (ms > 0 ? msToString(ms) : '--:--')
 
 export const title = (b: LobbyBroadcast): string => b.site || `Broadcast ${b.port}`;
 
-/** "Site — White vs Black, move N". */
+/** "Site — White vs Black, move N"; TLCS-MG adds the card's board: "…, board 2 of 3, move N". */
 export const cardLabel = (b: LobbyBroadcast): string =>
-  `${b.site ? `${b.site} — ` : ''}${b.white} vs ${b.black}, move ${moveNumber(b)}`;
+  `${b.site ? `${b.site} — ` : ''}${b.white} vs ${b.black}${
+    b.boardCount > 1 ? `, board ${b.board} of ${b.boardCount}` : ''
+  }, move ${moveNumber(b)}`;
 
 export const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`;
 
