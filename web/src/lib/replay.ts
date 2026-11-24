@@ -9,6 +9,8 @@ import { apiBase } from './url';
 /** A saved game shaped like a live broadcast, so the same components can render it. */
 export function metaToGameData(meta: StoredGameMeta): GameData {
   return {
+    board: 1,
+    boards: [1],
     game: {
       site: meta.site,
       white: { name: meta.white.name, clockTime: 0, startTime: 0 },

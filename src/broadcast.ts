@@ -2,7 +2,7 @@ import Connection from './connection.js';
 import GameService from './game-service.js';
 import BoardService from './board-service.js';
 import { ChessGame } from './chess-game.js';
-import { emitUpdate, emitChat } from './socket-io-adapter.js';
+import { emitUpdate, emitGameUpdate, emitChat } from './socket-io-adapter.js';
 import { logger } from './util/index.js';
 import { env } from './config/env.js';
 import { reloginAttempts } from './metrics.js';
@@ -60,7 +60,6 @@ export class Broadcast {
   parsedResults: ParsedResults | null = null;
   parsedGames: GameRecord[] | null = null;
   currentGameNumber = 1;
-  browserCount = 0;
 
   private gameService: GameService;
   private conn: Connection;
@@ -207,10 +206,11 @@ export class Broadcast {
     // mid-batch, and the data that preceded it must not read as arriving after that
     // attempt (which would lift the rate limit for the notice's duplicates).
     const receivedAt = performance.now();
-    const { update, chat, sawLiveData } = await this.gameService.onMessages(messages);
+    const { update, games, chat, sawLiveData } = await this.gameService.onMessages(messages);
     if (sawLiveData) this.lastDataAt = receivedAt;
 
     if (update) emitUpdate(this.port, update);
+    for (const { board, game } of games) emitGameUpdate(this.port, board, game);
     if (chat.length) emitChat(this.port, chat);
   }
 
@@ -237,9 +237,14 @@ export class Broadcast {
     setTimeout(() => this.conn.close(), 500);
   }
 
-  toJSON(): SerializedBroadcast {
+  /** What a browser joining `boardId` is sent; a board that doesn't exist reads as board 1. */
+  toJSON(boardId = 1): SerializedBroadcast {
+    const board = this.boards.get(boardId) ?? this.boards.get(1)!;
     return {
-      game: this.game.toJSON(this.kibitzerManager?.getLiveData(this.port) ?? null),
+      board: board.id,
+      boards: this.boardIds,
+      // The kibitzer follows board 1 only.
+      game: board.game.toJSON(board.id === 1 ? (this.kibitzerManager?.getLiveData(this.port) ?? null) : null),
       spectators: Array.from(this.spectators),
       chat: this.chat.slice(-CHAT_EMIT_LIMIT),
       menu: Object.fromEntries(this.menu),
@@ -261,6 +266,18 @@ export class Broadcast {
   /** Board 1's game, the only one in classic TLCS. */
   get game(): ChessGame {
     return this.boards.get(1)!.game;
+  }
+
+  /** Board ids, ascending (`[1]` for classic TLCS). */
+  get boardIds(): number[] {
+    return [...this.boards.keys()].sort((a, b) => a - b);
+  }
+
+  /** Browsers watching any board of this broadcast. */
+  get browserCount(): number {
+    let count = 0;
+    for (const board of this.boards.values()) count += board.browserCount;
+    return count;
   }
 
   get multigameMode(): MultigameMode {

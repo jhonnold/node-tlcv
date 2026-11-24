@@ -90,6 +90,10 @@ export type SerializedGame = {
 };
 
 export type SerializedBroadcast = {
+  /** The board this state is for: the one joined, or 1 if that board doesn't exist. */
+  board: number;
+  /** Every board on the broadcast, ascending; `[1]` for classic TLCS. */
+  boards: number[];
   game: SerializedGame;
   spectators: Array<string>;
   chat: Array<string>;
@@ -117,10 +121,14 @@ export type GameDelta = {
   kibitzerLiveData?: SerializedKibitzerLiveData | null;
 };
 
+/** Either one board's game delta (`board` + `game`, that board's room) or broadcast-level changes (the port room). */
 export type BroadcastDelta = {
+  board?: number;
   game?: GameDelta;
   spectators?: Array<string>;
   menu?: { [key: string]: string };
+  /** Every board, ascending, after one was added. */
+  boards?: number[];
 };
 
 export type H2HCell = {

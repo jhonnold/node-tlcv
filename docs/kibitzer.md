@@ -17,12 +17,12 @@ The kibitzer runs chess engines (local or remote via SSH) that independently ana
 ## Data Flow
 
 1. Engine emits UCI `info` lines → `parseInfoLine()` normalizes score → per-slot `currentInfo` updated
-2. Every 1s: `emitKibitzerUpdates()` iterates all active slots, plays out PV via chess.js → emits `{ game: { kibitzerLiveData } }` delta to Socket.IO room
+2. Every 1s: `emitKibitzerUpdates()` iterates all active slots, plays out PV via chess.js → emits a `{ board: 1, game: { kibitzerLiveData } }` delta to the `<port>:1` Socket.IO room (the kibitzer follows board 1; skipped while board 1 has no viewers)
 3. On each move: `snapshotForMove()` captures current analysis into `moveMeta[n].kibitzer` before state reset, then `onPositionChange()` sends new FEN to engine
 
 ## Targeting
 
-`poll()` runs every 10s (and once immediately at startup), ranks broadcasts by viewer count, assigns the top N transports (where N = number of configured kibitzers). Highest-priority transport gets the most-viewed broadcast. Hysteresis threshold of 2 gives currently-analyzed broadcasts a ranking bonus. Broadcasts with zero viewers are excluded.
+`poll()` runs every 10s (and once immediately at startup), ranks broadcasts by viewer count (all boards), assigns the top N transports (where N = number of configured kibitzers). Highest-priority transport gets the most-viewed broadcast. Hysteresis threshold of 2 gives currently-analyzed broadcasts a ranking bonus. Broadcasts with zero viewers are excluded.
 
 ## Kibitzer Gotchas
 
