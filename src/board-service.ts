@@ -207,18 +207,17 @@ class BoardService {
       if (this.startColorsSeen.size === 2) {
         this.gameStartArmed = false;
         this.startColorsSeen.clear();
-        // Board 1 only for now: the event names no board, and its CT-derived number
-        // means nothing for a concurrent game.
-        if (this.id === 1) {
-          getWebhookManager()?.dispatch({
-            kind: 'game-started',
-            port: this.broadcast.port,
-            gameNumber: this.broadcast.currentGameNumber,
-            white: this.game.white.name,
-            black: this.game.black.name,
-            site: this.broadcast.site,
-          });
-        }
+        // Every board (outside TLCS-MG only board 1 gets lines). A TLCS-MG game's number comes
+        // with its result; the CT-derived one means nothing for concurrent games.
+        getWebhookManager()?.dispatch({
+          kind: 'game-started',
+          port: this.broadcast.port,
+          board: this.id,
+          gameNumber: this.broadcast.multigameMode === 'mg' ? null : this.broadcast.currentGameNumber,
+          white: this.game.white.name,
+          black: this.game.black.name,
+          site: this.broadcast.site,
+        });
       }
     }
   }
@@ -518,6 +517,7 @@ class BoardService {
       getWebhookManager()?.dispatch({
         kind: 'game-finished',
         port: this.broadcast.port,
+        board: this.id,
         gameNumber,
         white: this.game.white.name,
         black: this.game.black.name,
