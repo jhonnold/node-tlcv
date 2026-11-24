@@ -98,6 +98,9 @@ class BoardService {
   private startColorsSeen = new Set<ColorName>();
   // TLCS-MG: the tournament number of the game whose `result:` comes next (spec §5.1).
   private pendingGameNo: number | null = null;
+  // What the last move left for the Lichess lookups, run by lookUpPosition(): once per batch, not
+  // per move (a snapshot batch holds thousands). A reset replaces uciHistory and so voids it.
+  private pendingLookup: { fen: string; turn: ColorCode; uciHistory: string[] } | null = null;
 
   constructor(broadcast: Broadcast, id: number) {
     this.broadcast = broadcast;
@@ -406,7 +409,7 @@ class BoardService {
     this.dirty.add('clocks');
   }
 
-  private async onMove(tokens: CommandTokens): Promise<void> {
+  private onMove(tokens: CommandTokens): void {
     const [command, ...rest] = tokens;
 
     const code: ColorCode = command === Command.WMOVE ? 'w' : 'b';
@@ -483,26 +486,15 @@ class BoardService {
 
     this.kibitzer?.onPositionChange(this.broadcast.port, this.game.instance.fen());
 
-    const skipOpening = this.game.openingLookupDisabled || this.game.startFen !== null;
-
-    const [openingResult, tablebase] = await Promise.all([
-      skipOpening
-        ? Promise.resolve<OpeningResult>({ failed: false, opening: null })
-        : fetchOpening(this.game.name, this.game.uciHistory),
-      fetchTablebase(this.game.name, this.game.fen, this.game.instance.turn()),
-    ]);
-
-    if (openingResult.failed) {
-      this.game.openingLookupDisabled = true;
-    } else if (openingResult.opening) {
-      this.game.opening = openingResult.opening;
-    }
-    this.game.tablebase = tablebase;
-
+    // Captured now: the batch may end on the next move's FEN line, which game.fen would then hold.
+    this.pendingLookup = { fen: this.game.fen, turn: this.game.instance.turn(), uciHistory: this.game.uciHistory };
     this.dirty.add('move').add('liveData');
   }
 
   private async onResult(tokens: CommandTokens): Promise<string> {
+    // The archived meta and the webhook carry the opening and tablebase of the final position.
+    await this.lookUpPosition();
+
     const result = tokens[1].trim();
     // TLCS-MG names each game by the GAMENO sent just before its result: with concurrent games
     // the CT-derived number is wrong. Without one the game has no number and is not saved.
@@ -626,6 +618,34 @@ class BoardService {
   /** SITE is a broadcast-level line, but its value rides in each board's GameDelta. */
   markSiteDirty(): void {
     this.dirty.add('site');
+  }
+
+  /**
+   * The opening and tablebase lookups for the position the last move left, if a reset has not
+   * discarded that game since. Run once per batch (GameService.onMessages) and before a result is saved.
+   */
+  async lookUpPosition(): Promise<void> {
+    const pending = this.pendingLookup;
+    this.pendingLookup = null;
+    if (!pending || pending.uciHistory !== this.game.uciHistory) return;
+
+    const skipOpening = this.game.openingLookupDisabled || this.game.startFen !== null;
+
+    const [openingResult, tablebase] = await Promise.all([
+      skipOpening
+        ? Promise.resolve<OpeningResult>({ failed: false, opening: null })
+        : fetchOpening(this.game.name, pending.uciHistory),
+      fetchTablebase(this.game.name, pending.fen, pending.turn),
+    ]);
+
+    if (openingResult.failed) {
+      this.game.openingLookupDisabled = true;
+    } else if (openingResult.opening) {
+      this.game.opening = openingResult.opening;
+    }
+    this.game.tablebase = tablebase;
+    // Already set when this batch played the move; not when the lookup was left over from a rejected batch.
+    this.dirty.add('move');
   }
 
   /** End of a batch: this board's delta, or null if none of its state changed. */

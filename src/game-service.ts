@@ -281,8 +281,8 @@ class GameService {
     for (const b of this.broadcast.boards.values()) b.beginBatch();
     const chatEmit: string[] = [];
     let sawLiveData = false;
-    // Game lines are queued per board: in order within a board, boards concurrently (a move
-    // awaits its Lichess lookups). A broadcast line first waits for every queued line — SITE
+    // Game lines are queued per board: in order within a board, boards concurrently (a result
+    // awaits its saves). A broadcast line first waits for every queued line — SITE
     // must not overtake a result's save, MULTIGAME/BOARDS change where later lines go — and
     // the lines after it queue behind it.
     const queued = new Map<BoardService, Promise<void>>();
@@ -315,6 +315,8 @@ class GameService {
     }
 
     await this.settle(queued);
+    // One Lichess lookup per board, for the position its game is left in, rather than one per move.
+    await Promise.all([...this.broadcast.boards.values()].map((b) => b.lookUpPosition()));
 
     // Only board 1 reaches browsers for now; boards >= 2 are tracked and archived silently.
     const gameDelta = this.broadcast.boards.get(1)!.takeDelta();
