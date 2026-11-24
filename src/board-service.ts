@@ -83,6 +83,8 @@ class BoardService {
   // moveCountBefore 0) are exactly what it would set for a fresh game.
   private dirty = new Set<DirtyKey>();
   private moveCountBefore = 0;
+  // The moveMeta array the batch started with; reset() / resetFromFen() replace it.
+  private movesAtBatchStart: MoveMetaData[] = [];
   // Moves whose meta was patched retroactively this batch, and the position the most
   // recent move was played from (the base a trailing PV replays against).
   private patchedMoves = new Set<MoveMetaData>();
@@ -530,13 +532,15 @@ class BoardService {
       gameDelta.opening = this.game.opening;
       gameDelta.tablebase = this.game.tablebase;
 
-      const newMoves = this.game.moveMeta.slice(this.moveCountBefore);
+      // reset() / resetFromFen() replace moveMeta. If the browser had moves it drops them, and
+      // every move since the reset is new to it, even at indices it already had.
+      const wasReset = this.moveCountBefore > 0 && this.game.moveMeta !== this.movesAtBatchStart;
+      const newMoves = this.game.moveMeta.slice(wasReset ? 0 : this.moveCountBefore);
       if (newMoves.length > 0) {
         gameDelta.newMoves = newMoves;
       }
 
-      // If moveMeta was cleared (resetFromFen / reset), signal a reset
-      if (this.game.moveMeta.length < this.moveCountBefore) {
+      if (wasReset) {
         gameDelta.resetMoves = true;
         gameDelta.startFen = this.game.startFen;
       }
@@ -561,6 +565,7 @@ class BoardService {
   beginBatch(): void {
     this.dirty.clear();
     this.moveCountBefore = this.game.moveMeta.length;
+    this.movesAtBatchStart = this.game.moveMeta;
     this.patchedMoves.clear();
   }
 
