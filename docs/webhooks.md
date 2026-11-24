@@ -20,6 +20,8 @@ Outbound webhooks POST a notification when a game **starts** or **finishes**. Co
 
 `onPlayer()` fires once per color. `BoardService` uses a re-arm state machine (`gameStartArmed` + `startColorsSeen`) — armed at construction and re-armed after each `RESULT`, it fires exactly once per game when both colors have been announced. This avoids keying on the 100ms-debounced `currentGameNumber`.
 
+On a TLCS-MG broadcast (see [protocol.md](./protocol.md#tlcs-mg-multigame)) `game-finished` fires for every board whose result follows a `GAMENO`, numbered by it, and is skipped without one; `game-started` fires for board 1 only, with the CT-derived number. Both still link to `/${port}` (board 1's viewer).
+
 ## Webhook Gotchas
 
 - **Fire-and-forget**: Do not `await` `dispatch()`. `DiscordSender.send()` catches every error and always resolves, so a slow or failing webhook never blocks `onResult()` / the message batch.

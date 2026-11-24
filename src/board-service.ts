@@ -1,6 +1,7 @@
 import { ChessGame } from './chess-game.js';
 import { logger } from './util/index.js';
 import type { Broadcast } from './broadcast.js';
+import type { KibitzerManager } from './kibitzer/kibitzer-manager.js';
 import { getWebhookManager } from './broadcast-manager.js';
 import { fetchOpening, fetchTablebase } from './services/lichess.js';
 import type { OpeningResult } from './services/lichess.js';
@@ -38,6 +39,7 @@ const BOARD_COMMANDS = [
   Command.RESULT,
   Command.FMR,
   Command.LEVEL,
+  Command.GAMENO,
 ] as const;
 
 export type BoardCommand = (typeof BOARD_COMMANDS)[number];
@@ -77,6 +79,7 @@ const INFO_INT_TAGS = new Set(['depth', 'seldepth', 'nodes', 'time', 'hashfull',
 /** One game on a broadcast: its ChessGame, the per-game command handlers, and the state behind its GameDelta. */
 class BoardService {
   readonly commandConfig: BoardCommandConfig;
+  readonly id: number;
   readonly game: ChessGame;
   private broadcast: Broadcast;
   // A board created mid-batch never sees beginBatch(); these defaults (empty sets,
@@ -93,10 +96,17 @@ class BoardService {
   // RESULT. Fires once both colors have been (re)announced for the new game.
   private gameStartArmed = true;
   private startColorsSeen = new Set<ColorName>();
+  // TLCS-MG: the tournament number of the game whose `result:` comes next (spec §5.1).
+  private pendingGameNo: number | null = null;
 
-  constructor(broadcast: Broadcast) {
+  constructor(broadcast: Broadcast, id: number) {
     this.broadcast = broadcast;
-    this.game = new ChessGame(String(broadcast.port), () => broadcast.site);
+    this.id = id;
+    this.game = new ChessGame(id === 1 ? String(broadcast.port) : `${broadcast.port}:${id}`, () => broadcast.site);
+    // Board 1 starts unloaded so classic TLCS's first FEN (possibly mid-game) loads as is. A
+    // TLCS-MG board's first FEN is always startpos (a new game, or a snapshot's position steps),
+    // which only a loaded game treats as a plain new game rather than a SetUp position.
+    if (id !== 1) this.game.reset();
 
     this.commandConfig = {
       [Command.FEN]: { fn: this.onFen.bind(this), split: true },
@@ -115,7 +125,19 @@ class BoardService {
       // Recognized but intentionally ignored — connection-time handshake/config
       // lines the viewer derives nothing from (see docs/protocol.md "No-op protocol commands").
       [Command.LEVEL]: { fn: () => {}, split: false },
+      [Command.GAMENO]: { fn: this.onGameNo.bind(this), split: false },
     };
+  }
+
+  // One kibitzer per broadcast; it follows board 1.
+  private get kibitzer(): KibitzerManager | null {
+    return this.id === 1 ? this.broadcast.kibitzerManager : null;
+  }
+
+  private onGameNo(tokens: CommandTokens): void {
+    const gameNo = parseInt(tokens[1]);
+    this.pendingGameNo = gameNo > 0 ? gameNo : null;
+    logger.debug(`Updated game ${this.game.name} - GAMENO: ${this.pendingGameNo}`, { port: this.broadcast.port });
   }
 
   private onFmr(tokens: CommandTokens): void {
@@ -160,6 +182,8 @@ class BoardService {
     const name = rest.join(' ');
 
     const color = colorName(command === Command.WPLAYER ? 'w' : 'b');
+    // A new game: a GAMENO still pending belongs to a game whose result was lost (spec §7).
+    if (command === Command.WPLAYER) this.pendingGameNo = null;
     this.game[color].reset();
     this.game[color].name = name;
     this.game.liveData.reset(this.game.instance.turn(), this.game.moveNumber);
@@ -177,14 +201,18 @@ class BoardService {
       if (this.startColorsSeen.size === 2) {
         this.gameStartArmed = false;
         this.startColorsSeen.clear();
-        getWebhookManager()?.dispatch({
-          kind: 'game-started',
-          port: this.broadcast.port,
-          gameNumber: this.broadcast.currentGameNumber,
-          white: this.game.white.name,
-          black: this.game.black.name,
-          site: this.broadcast.site,
-        });
+        // Board 1 only for now: the event names no board, and its CT-derived number
+        // means nothing for a concurrent game.
+        if (this.id === 1) {
+          getWebhookManager()?.dispatch({
+            kind: 'game-started',
+            port: this.broadcast.port,
+            gameNumber: this.broadcast.currentGameNumber,
+            white: this.game.white.name,
+            black: this.game.black.name,
+            site: this.broadcast.site,
+          });
+        }
       }
     }
   }
@@ -423,7 +451,7 @@ class BoardService {
       this.game.moveMeta.push(meta);
 
       if (this.game.liveData.depth > 0) {
-        meta.kibitzer = this.broadcast.kibitzerManager?.snapshotForMove(this.broadcast.port) ?? null;
+        meta.kibitzer = this.kibitzer?.snapshotForMove(this.broadcast.port) ?? null;
         this.applyPvToMeta(meta, {
           depth: this.game.liveData.depth,
           score: this.game.liveData.score,
@@ -453,7 +481,7 @@ class BoardService {
     this.game[notColor].startTime = new Date().getTime();
     this.dirty.add('clocks');
 
-    this.broadcast.kibitzerManager?.onPositionChange(this.broadcast.port, this.game.instance.fen());
+    this.kibitzer?.onPositionChange(this.broadcast.port, this.game.instance.fen());
 
     const skipOpening = this.game.openingLookupDisabled || this.game.startFen !== null;
 
@@ -475,27 +503,36 @@ class BoardService {
   }
 
   private async onResult(tokens: CommandTokens): Promise<string> {
-    const message = `[Server] - Game ${this.broadcast.currentGameNumber}: ${this.game.white.name} - ${
+    const result = tokens[1].trim();
+    // TLCS-MG names each game by the GAMENO sent just before its result: with concurrent games
+    // the CT-derived number is wrong. Without one the game has no number and is not saved.
+    const gameNumber = this.broadcast.multigameMode === 'mg' ? this.pendingGameNo : this.broadcast.currentGameNumber;
+    this.pendingGameNo = null;
+
+    const message = `[Server] - ${gameNumber === null ? '' : `Game ${gameNumber}: `}${this.game.white.name} - ${
       this.game.black.name
-    } (${tokens[1].trim()})`;
+    } (${result})`;
     this.broadcast.pushChat(message);
 
-    const result = tokens[1].trim();
     this.game.instance.header('Result', result);
 
-    await savePgn(this.game, this.broadcast.port, this.broadcast.currentGameNumber);
-    await saveGameMeta(this.game, this.broadcast.port, this.broadcast.currentGameNumber, result);
+    if (gameNumber === null) {
+      logger.info(`No GAMENO for game ${this.game.name} (${message}), not saving it`, { port: this.broadcast.port });
+    } else {
+      await savePgn(this.game, this.broadcast.port, gameNumber);
+      await saveGameMeta(this.game, this.broadcast.port, gameNumber, result);
 
-    getWebhookManager()?.dispatch({
-      kind: 'game-finished',
-      port: this.broadcast.port,
-      gameNumber: this.broadcast.currentGameNumber,
-      white: this.game.white.name,
-      black: this.game.black.name,
-      site: this.broadcast.site,
-      result,
-      opening: this.game.opening,
-    });
+      getWebhookManager()?.dispatch({
+        kind: 'game-finished',
+        port: this.broadcast.port,
+        gameNumber,
+        white: this.game.white.name,
+        black: this.game.black.name,
+        site: this.broadcast.site,
+        result,
+        opening: this.game.opening,
+      });
+    }
 
     // Re-arm "game started" detection for the next game.
     this.gameStartArmed = true;
@@ -567,6 +604,22 @@ class BoardService {
     this.moveCountBefore = this.game.moveMeta.length;
     this.movesAtBatchStart = this.game.moveMeta;
     this.patchedMoves.clear();
+  }
+
+  /**
+   * Discards this board's game. Entering TLCS-MG mode drops everything built from bare lines
+   * (spec §3); the server's snapshot then rebuilds each board in progress. The game stays
+   * loaded, so the snapshot's startpos FEN is a plain new game. Game-start arming is left
+   * alone: the snapshot re-announces the players of a game that may already have fired it.
+   */
+  reset(): void {
+    this.game.white.reset();
+    this.game.black.reset();
+    this.game.reset();
+    this.pendingGameNo = null;
+    this.fenBeforeLastMove = null;
+    this.patchedMoves.clear();
+    this.dirty.add('players').add('move').add('liveData');
   }
 
   /** SITE is a broadcast-level line, but its value rides in each board's GameDelta. */
