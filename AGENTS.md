@@ -33,7 +33,7 @@ Development requires two terminals: `dev-server` + `dev-public`. Build runs `pre
 |------|------|
 | Entry point, server setup | `src/main.ts`, `src/app.ts` |
 | Broadcast lifecycle, state | `src/broadcast.ts`, `src/connection.ts` |
-| Chess server protocol parsing | `src/game-service.ts`, `src/protocol.ts` |
+| Chess server protocol parsing | `src/game-service.ts` (broadcast lines), `src/board-service.ts` (per-game lines), `src/protocol.ts` |
 | UDP transport | `src/transport/` |
 | Kibitzers (engine analysis) | `src/kibitzer/` |
 | Webhooks (Discord) | `src/webhooks/` |

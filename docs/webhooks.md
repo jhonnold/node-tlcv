@@ -14,11 +14,11 @@ Outbound webhooks POST a notification when a game **starts** or **finishes**. Co
 
 ## Data Flow
 
-`GameService` calls `getWebhookManager()?.dispatch(event)` from `onPlayer()` (game-started) and `onResult()` (game-finished). `dispatch()` is **fire-and-forget** — it filters each webhook by `ports` (empty = all) and `events` (empty = both), then calls `sender.send()` without awaiting. Senders catch all errors internally and never throw, so a failed webhook never blocks game processing.
+`BoardService` calls `getWebhookManager()?.dispatch(event)` from `onPlayer()` (game-started) and `onResult()` (game-finished). `dispatch()` is **fire-and-forget** — it filters each webhook by `ports` (empty = all) and `events` (empty = both), then calls `sender.send()` without awaiting. Senders catch all errors internally and never throw, so a failed webhook never blocks game processing.
 
 ## Game-Started Detection
 
-`onPlayer()` fires once per color. `GameService` uses a re-arm state machine (`gameStartArmed` + `startColorsSeen`) — armed at construction and re-armed after each `RESULT`, it fires exactly once per game when both colors have been announced. This avoids keying on the 100ms-debounced `currentGameNumber`.
+`onPlayer()` fires once per color. `BoardService` uses a re-arm state machine (`gameStartArmed` + `startColorsSeen`) — armed at construction and re-armed after each `RESULT`, it fires exactly once per game when both colors have been announced. This avoids keying on the 100ms-debounced `currentGameNumber`.
 
 ## Webhook Gotchas
 
