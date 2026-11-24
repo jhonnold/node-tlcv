@@ -64,10 +64,35 @@ export const broadcastBrowserConnections = perBroadcastGauge(
   (b) => b.browserCount,
 );
 
-export const gameMoveNumber = perBroadcastGauge(
-  'ccrl_game_move_number',
-  'Current move number in the active game per broadcast',
-  (b) => b.game.moveMeta.length,
+// One series per board (`board="1"` on a classic broadcast), so not a perBroadcastGauge.
+export const gameMoveNumber = new Gauge({
+  name: 'ccrl_game_move_number',
+  help: 'Current move number in the active game per board',
+  labelNames: ['port', 'event', 'board'] as const,
+  registers: [register],
+  collect() {
+    this.reset();
+    for (const [port, broadcast] of broadcasts) {
+      for (const board of broadcast.boards.values()) {
+        this.set(
+          { port: String(port), event: broadcast.eventLabel, board: String(board.id) },
+          board.game.moveMeta.length,
+        );
+      }
+    }
+  },
+});
+
+export const broadcastBoards = perBroadcastGauge(
+  'ccrl_broadcast_boards',
+  'Boards (concurrent games) per broadcast: 1 for classic TLCS, every board seen for TLCS-MG',
+  (b) => b.boards.size,
+);
+
+export const broadcastMultigame = perBroadcastGauge(
+  'ccrl_broadcast_multigame',
+  'Whether a broadcast is in TLCS-MG mode (1) or not (0: classic, or the handshake is pending)',
+  (b) => (b.multigameMode === 'mg' ? 1 : 0),
 );
 
 // The alarm-worthy signal: UDP message rate can't distinguish a live broadcast
