@@ -11,6 +11,8 @@ export type Side = 'white' | 'black';
 export type HeaderInfo = {
   site: string;
   game: number | null;
+  /** TLCS-MG live game (not a replay): its board, shown as "Board N" instead of the CT-derived game number. */
+  board: number | null;
   archive: boolean; // archive page or a replay: ARCHIVE badge, no LIVE / watching
   watching: number;
 };
@@ -57,8 +59,9 @@ export class ViewState {
 
 export const [getView, setView] = createContext<ViewState>();
 
-/** "Game 111", or '' when unknown. No "of M": totalGames counts games played, not scheduled. */
+/** "Board 2" for a TLCS-MG live game, else "Game 111", or '' when unknown. No "of M": totalGames counts games played, not scheduled. */
 export function gameText(info: HeaderInfo): string {
+  if (info.board != null) return `Board ${info.board}`;
   return info.game == null ? '' : `Game ${info.game}`;
 }
 

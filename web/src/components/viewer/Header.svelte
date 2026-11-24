@@ -1,19 +1,22 @@
 <script lang="ts">
   import BrandMark from '../BrandMark.svelte';
+  import BoardSelect from './BoardSelect.svelte';
   import EventLine from './EventLine.svelte';
   import Icon from './Icon.svelte';
   import { getView } from '$lib/view.svelte';
   import type { Breakpoint, HeaderInfo } from '$lib/view.svelte';
+  import type { ViewerSource } from '$lib/url';
   import { sound, toggleSound } from '$lib/sounds.svelte';
 
-  type Props = { bp: Breakpoint; info: HeaderInfo };
-  const { bp, info }: Props = $props();
+  type Props = { bp: Breakpoint; info: HeaderInfo; source: ViewerSource };
+  const { bp, info, source }: Props = $props();
 
   const view = getView();
   const iconSize = $derived(bp === 'tablet' ? 20 : 18);
 </script>
 
-<!-- Lichess2.dc.html header. Desktop: brand and view buttons; site, game and LIVE/ARCHIVE are in the EventCard.
+<!-- Lichess2.dc.html header. Desktop: brand and view buttons; the TLCS-MG board picker (BoardSelect) sits before the
+     buttons; site, game and LIVE/ARCHIVE are in the EventCard.
      Tablet (headerMeta): brand mark only, then the site over EventLine; there is no EventCard. -->
 <header class="hdr {bp}">
   {#if bp === 'tablet'}
@@ -29,6 +32,7 @@
     </a>
     <span class="spacer"></span>
   {/if}
+  {#if source.kind === 'live'}<BoardSelect port={source.port} touch={bp === 'tablet'} />{/if}
   <nav aria-label="View options">
     <button type="button" class="icon" aria-label="Focus mode" title="Focus mode" onclick={() => (view.focus = true)}>
       <Icon name="focus" size={iconSize} />

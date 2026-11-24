@@ -3,7 +3,7 @@
   import { copyFen } from '$lib/fen';
   import { onDestroy } from 'svelte';
   import type { ViewerSource } from '$lib/url';
-  import { apiBase } from '$lib/url';
+  import { livePgnUrl } from '$lib/url';
   import { DASH } from '$lib/format';
 
   type Props = { source: ViewerSource };
@@ -20,7 +20,7 @@
   const links = $derived.by(() => {
     const menu = game.live?.menu ?? {};
     const out: { label: string; href: string }[] = [{ label: 'PGN archive', href: '/pgns' }];
-    if (source.kind === 'live') out.push({ label: 'Current game PGN', href: `${apiBase(source)}/pgn` });
+    if (source.kind === 'live') out.push({ label: 'Current game PGN', href: livePgnUrl(source) });
     for (const [key, label] of MENU_ORDER) if (isUrl(menu[key])) out.push({ label, href: menu[key] });
     for (const key of Object.keys(menu).sort()) {
       if (!KNOWN.has(key) && isUrl(menu[key]))
