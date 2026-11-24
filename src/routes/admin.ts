@@ -61,7 +61,7 @@ router.get('/broadcasts', (_: Request, res: Response) => {
       connection: b.connection,
       host: b.host,
       port: b.port,
-      site: b.game.site,
+      site: b.site,
       ephemeral: b.ephemeral,
       viewerCount: b.browserCount,
     })),

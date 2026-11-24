@@ -121,7 +121,7 @@ function lobbyBroadcasts(): LobbyBroadcast[] {
       black: b.game.black.name,
       whiteTime: b.game.white.clockTime,
       blackTime: b.game.black.clockTime,
-      site: b.game.site,
+      site: b.site,
       fen: b.game.instance.fen(),
       // Only the score is shown here; getLiveData() would replay the whole PV per card.
       score: b.kibitzerManager?.getScore(b.port) ?? null,
@@ -141,8 +141,8 @@ router.get('/broadcasts', (_: Request, res: Response): void => {
 router.use('/broadcasts/:port([0-9]+)', withBroadcast(notFound('Broadcast')));
 
 router.get('/broadcasts/:port([0-9]+)', (req: Request, res: Response): void => {
-  const { port, game } = (req as RequestWithBroadcast).broadcast;
-  res.json({ port, site: game.site, white: game.white.name, black: game.black.name } satisfies BroadcastSummary);
+  const { port, site, game } = (req as RequestWithBroadcast).broadcast;
+  res.json({ port, site, white: game.white.name, black: game.black.name } satisfies BroadcastSummary);
 });
 
 router.get('/broadcasts/:port([0-9]+)/results', (req: Request, res: Response): void => {
@@ -158,7 +158,7 @@ router.get('/broadcasts/:port([0-9]+)/games', async (req: Request, res: Response
     return;
   }
 
-  const slug = siteSlug(broadcast.game.site);
+  const slug = siteSlug(broadcast.site);
   const games = await enrichGames(slug, broadcast.parsedGames);
 
   res.status(200).json(games);
@@ -168,7 +168,7 @@ router.get(
   '/broadcasts/:port([0-9]+)/games/:gameNumber([0-9]+)',
   async (req: Request, res: Response): Promise<void> => {
     const { broadcast } = req as RequestWithBroadcast;
-    await sendGameMeta(siteSlug(broadcast.game.site), parseInt(req.params.gameNumber, 10), res);
+    await sendGameMeta(siteSlug(broadcast.site), parseInt(req.params.gameNumber, 10), res);
   },
 );
 
@@ -181,7 +181,7 @@ router.get('/archives', async (_: Request, res: Response): Promise<void> => {
   // does no per-request disk I/O when warm. The liveSlugs filter stays per-request
   // because the live set changes independently of the cached scan; it's a cheap
   // in-memory Set lookup over the broadcasts map.
-  const liveSlugs = new Set(Array.from(broadcasts.values()).map((b) => siteSlug(b.game.site)));
+  const liveSlugs = new Set(Array.from(broadcasts.values()).map((b) => siteSlug(b.site)));
   const archived = (await listArchivedTournaments()).filter((t) => !liveSlugs.has(t.slug));
 
   res.json(archived);
