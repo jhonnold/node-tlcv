@@ -181,19 +181,25 @@ export type ArchiveSummary = {
 /** A lobby card — `GET /broadcasts`. Sorted by viewerCount desc. */
 export type LobbyBroadcast = {
   port: number;
+  /** The board this card shows: the most-watched, ties to the lowest id. The game fields are its game's. */
+  board: number;
+  /** Boards on the broadcast (1 for classic TLCS). */
+  boardCount: number;
   white: string;
   black: string;
   whiteTime: number;
   blackTime: number;
   site: string;
   fen: string;
+  /** Kibitzer eval; null unless `board` is 1 (the kibitzer follows board 1 only). */
   score: number | null;
   opening: string;
   moveCount: number;
+  /** Browsers watching any board. */
   viewerCount: number;
 };
-/** `GET /broadcasts/:port` */
-export type BroadcastSummary = { port: number; site: string; white: string; black: string };
+/** `GET /broadcasts/:port`. `white` / `black` are board 1's; `boards` ascending, `[1]` for classic TLCS. */
+export type BroadcastSummary = { port: number; site: string; white: string; black: string; boards: number[] };
 /** `GET /archives/:slug` */
 export type ArchiveInfo = { site: string; slug: string };
 /** `GET /admin/broadcasts` */

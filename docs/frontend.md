@@ -21,6 +21,7 @@ The frontend is a Svelte 5 single-page app (runes mode) in `web/`, bundled by Vi
 |------|------|------|
 | `/` | `pages/Lobby.svelte` | — |
 | `/:port` | `pages/Viewer.svelte` (live) | redirect to `/` if no broadcast uses that port |
+| `/:port/:board` | shell only for now: `parsePath()` doesn't match it, so the client rewrites the URL to `/` and shows the lobby | redirect to `/` if no broadcast uses that port; any board is served (boards ≥2 appear seconds after a restart; the socket falls back to board 1) |
 | `/archive/:slug` | `pages/Viewer.svelte` (archive) | redirect to `/` unless the slug matches `SAFE_SLUG` and the archive loads |
 | `/admin` | `pages/Admin.svelte` | 503 without `TLCV_PASSWORD`, then HTTP basic auth (user `admin`) |
 
@@ -103,12 +104,15 @@ Public (`src/routes/index.ts`). Missing resources answer `404 {"error": …}`.
 | `GET /broadcasts/:port/results` | `ParsedResults` (404 until the first results arrive) |
 | `GET /broadcasts/:port/games` | `GameRecord[]` with `pgnUrl` / `metaUrl` (404 until known) |
 | `GET /broadcasts/:port/games/:n` | `StoredGameMeta` |
-| `GET /broadcasts/:port/pgn` | current game PGN, `text/plain` |
+| `GET /broadcasts/:port/pgn` | board 1's current game PGN, `text/plain` |
+| `GET /broadcasts/:port/boards/:board/pgn` | that board's current game PGN, `text/plain` (404 for a board the broadcast doesn't have) |
 | `GET /archives` | `ArchiveSummary[]`, excluding tournaments that are live |
 | `GET /archives/:slug` | `ArchiveInfo` |
 | `GET /archives/:slug/results`, `/games`, `/games/:n` | as for broadcasts, except `/games` always answers 200 |
 
-Kept for external links: `GET /:port/pgn` and `GET /:port/result-table` (`text/plain`), and `GET /pgns/` (static files plus a directory listing of `PGNS_DIR`).
+`BroadcastSummary.boards` lists the broadcast's boards (`[1]` for classic TLCS). A `LobbyBroadcast` card shows the broadcast's most-watched board (`board`, ties to the lowest id; `boardCount` boards in all): its game fields are that board's, `viewerCount` is the total over boards, and `score` is null unless `board` is 1 (the kibitzer follows board 1 only).
+
+Kept for external links: `GET /:port/pgn` (board 1), `GET /:port/:board/pgn` and `GET /:port/result-table` (`text/plain`; an unknown port or board redirects to `/`), and `GET /pgns/` (static files plus a directory listing of `PGNS_DIR`).
 
 Admin (`src/routes/admin.ts`; 503 without `TLCV_PASSWORD`, then basic auth). Mutations answer 200, or 400 on failure. The UI's "Edit" is delete + add.
 

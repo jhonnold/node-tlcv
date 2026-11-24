@@ -25,9 +25,9 @@ app.use(express.static('build/public', { index: false }));
 // Serve a folder of PGNs
 app.use('/pgns', express.static(PGNS_ROOT), serveIndex(PGNS_ROOT, { icons: true }));
 
-// SPA shell: GET /, GET /:port, GET /archive/:slug
+// SPA shell: GET /, GET /:port, GET /:port/:board, GET /archive/:slug
 // JSON API: GET /broadcasts[/…], GET /archives[/…]
-// Legacy text: GET /:port/pgn, GET /:port/result-table
+// Legacy text: GET /:port/pgn, GET /:port/:board/pgn, GET /:port/result-table
 app.use(routes);
 
 // SPA shell: GET /admin
