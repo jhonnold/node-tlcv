@@ -59,7 +59,8 @@ export class ViewState {
 
 export const [getView, setView] = createContext<ViewState>();
 
-/** "Board 2" for a TLCS-MG live game, else "Game 111", or '' when unknown. No "of M": totalGames counts games played, not scheduled. */
+/** "Board 2" for a TLCS-MG live game, else "Game 111", or '' when unknown.
+ *  No "of M": totalGames counts games played, not scheduled. */
 export function gameText(info: HeaderInfo): string {
   if (info.board != null) return `Board ${info.board}`;
   return info.game == null ? '' : `Game ${info.game}`;

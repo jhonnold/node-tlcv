@@ -42,9 +42,9 @@
   $effect(() => {
     document.title = siteName ? `${siteName} - CCRL Live` : 'CCRL Live';
   });
-  // The server gave another board than the page's (none such: a stale link, or boards ≥2 not back yet after a
-  // restart, at join or at a reconnect): move to the joined board's URL, so the URL, App's key and the picker agree
-  // and picking the page's board later remounts. Board 1 always exists, so this can't loop.
+  // The server joined another board than the page's, which doesn't exist (a stale link, or boards ≥2 not back yet
+  // after a restart, at join or at a reconnect): move to the joined board's URL, so the URL, App's key and the picker
+  // agree and picking the page's board later remounts. Board 1 always exists, so this can't loop.
   $effect(() => {
     const joined = game.live?.board;
     if (source.kind === 'live' && joined != null && joined !== source.board) {
