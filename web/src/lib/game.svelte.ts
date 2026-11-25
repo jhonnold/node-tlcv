@@ -2,6 +2,7 @@ import { createContext, untrack } from 'svelte';
 import { io, type Socket } from 'socket.io-client';
 import type { BroadcastDelta, ColorCode, SerializedBroadcast, SerializedGame, StoredGameMeta } from '$shared/types';
 import { colorName, otherColor } from '$shared/colors';
+import { isResultLine } from '$shared/result-line';
 import { theme } from './theme/theme.svelte';
 import { KEYS, readString } from './storage';
 import { START_FEN } from './fen';
@@ -42,6 +43,8 @@ export class GameStore {
   #gen = $state(0); // replay generation: bumped by beginReplay and exitReplay
 
   chat = $state.raw<string[]>([]);
+  /** Bumped per live `new-chat` batch holding a result line (never by the `state` backlog); Viewer refreshes on it. */
+  resultLines = $state(0);
   connected = $state(false);
   cursor = $state<number | null>(null); // null follows the latest position
   now = $state(Date.now());
@@ -181,6 +184,7 @@ export class GameStore {
     });
     socket.on('new-chat', (msgs: string[]) => {
       this.chat = trimChat([...this.chat, ...msgs]);
+      if (msgs.some(isResultLine)) this.resultLines++;
     });
     const tick = setInterval(() => {
       this.now = Date.now();

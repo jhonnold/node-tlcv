@@ -25,11 +25,18 @@
   // Strings, so the rows aren't rebuilt on every delta (game.live changes each time).
   const liveWhite = $derived(game.live?.game.white.name ?? null);
   const liveBlack = $derived(game.live?.game.black.name ?? null);
+  // TLCS-MG: the live row is the viewed board's game, whose CT-derived number would be wrong.
+  const liveBoard = $derived(game.live && game.live.boards.length > 1 ? game.live.board : null);
   const rows = $derived(
     gameRows(
       tournament.games,
       source.kind === 'live' && liveWhite != null && liveBlack != null
-        ? { number: tournament.currentGameNumber, white: liveWhite, black: liveBlack }
+        ? {
+            number: liveBoard == null ? tournament.currentGameNumber : null,
+            board: liveBoard,
+            white: liveWhite,
+            black: liveBlack,
+          }
         : null,
       query,
       decisive,
@@ -67,7 +74,10 @@
   <ul class="games" aria-label="Games">
     {#each rows as r (r.key)}
       <li class:current={!r.live && game.replayNumber === r.num}>
-        <span class="num">{r.num}</span>
+        <span class="num" title={r.board != null ? `Board ${r.board}` : undefined}
+          >{#if r.board != null}<span aria-hidden="true">B{r.board}</span><span class="sr-only">Board {r.board}</span
+            >{:else}{r.num}{/if}</span
+        >
         <div class="names">
           <span class="name" class:win={r.result === '1-0'}>
             <span class="disc white" aria-hidden="true"></span>{r.white}

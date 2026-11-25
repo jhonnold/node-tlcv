@@ -11,6 +11,7 @@ import { Command } from './protocol.js';
 import { replayUciFromFen } from './util/uci.js';
 import { colorName } from '../shared/colors.js';
 import type { ColorName } from '../shared/colors.js';
+import { resultLine } from '../shared/result-line.js';
 import type { ColorCode, GameDelta, MoveMetaData, SearchExtras } from '../shared/types.js';
 import { emptyExtras } from '../shared/types.js';
 
@@ -503,9 +504,7 @@ class BoardService {
     const gameNumber = this.broadcast.multigameMode === 'mg' ? this.pendingGameNo : this.broadcast.currentGameNumber;
     this.pendingGameNo = null;
 
-    const message = `[Server] - ${gameNumber === null ? '' : `Game ${gameNumber}: `}${this.game.white.name} - ${
-      this.game.black.name
-    } (${result})`;
+    const message = resultLine(gameNumber, this.game.white.name, this.game.black.name, result);
     this.broadcast.pushChat(message);
 
     this.game.instance.header('Result', result);
