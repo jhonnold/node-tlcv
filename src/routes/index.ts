@@ -245,8 +245,9 @@ router.get('/:port([0-9]+)/result-table', (req: Request, res: Response): void =>
   res.status(200).contentType('text/plain').send(broadcast.results);
 });
 
-// Any board of a live port: boards ≥2 arrive seconds after a restart; the socket falls back to board 1.
-router.get('/:port([0-9]+)/:board([0-9]+)', sendApp);
+// The board is no longer in the page URL (the viewer remembers the selected board per port),
+// so old `/:port/:board` links redirect to `/:port`.
+router.get('/:port([0-9]+)/:board([0-9]+)', (req, res) => res.redirect(301, `/${req.params.port}`));
 
 router.get('/:port([0-9]+)/:board([0-9]+)/pgn', withBoard(redirectHome), sendPgn);
 

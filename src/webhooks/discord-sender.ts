@@ -7,9 +7,6 @@ import type { WebhookEvent, WebhookSender } from './types.js';
 const PUBLIC_BASE = env.publicBaseUrl;
 const PUBLIC_HOST = PUBLIC_BASE.replace(/^https?:\/\//, '');
 
-// A board's viewer page; board 1 keeps the bare `/:port` (mirrors pagePath in web/src/lib/url.ts).
-const boardPath = (port: number, board: number): string => (board === 1 ? `/${port}` : `/${port}/${board}`);
-
 const COLOR_STARTED = 0x4caf50; // green
 const COLOR_FINISHED = 0x2196f3; // blue
 
@@ -47,7 +44,7 @@ export class DiscordSender implements WebhookSender {
   }
 
   private buildEmbed(event: WebhookEvent): DiscordEmbed {
-    const path = boardPath(event.port, event.board);
+    const path = `/${event.port}`;
     const broadcastUrl = `${PUBLIC_BASE}${path}`;
     const matchup = `${event.white} vs ${event.black}`;
     const link = `[${PUBLIC_HOST}${path}](${broadcastUrl})`;
