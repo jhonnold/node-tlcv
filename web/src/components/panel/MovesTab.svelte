@@ -4,7 +4,7 @@
   import { copyFen } from '$lib/fen';
   import { ghostCell, moveRows, placeGhost, prettyResult, splitOpening } from '$lib/moves';
   import { getTournament } from '$lib/tournament.svelte';
-  import { apiBase } from '$lib/url';
+  import { livePgnUrl } from '$lib/url';
   import type { ViewerSource } from '$lib/url';
   import { DASH } from '$lib/format';
 
@@ -31,7 +31,7 @@
   );
   const pgnHref = $derived.by(() => {
     if (game.isReplay) return tournament.games?.find((r) => r.gameNumber === game.replayNumber)?.pgnUrl ?? null;
-    return source.kind === 'live' ? `${apiBase(source)}/pgn` : null;
+    return source.kind === 'live' ? livePgnUrl(source) : null;
   });
   const pgnName = $derived(`${game.game?.white.name ?? 'White'} vs ${game.game?.black.name ?? 'Black'}.pgn`);
 

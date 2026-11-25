@@ -2,6 +2,7 @@
   import Board from '../Board.svelte';
   import EvalBar from '../EvalBar.svelte';
   import { formatScore } from '$lib/format';
+  import { pagePath } from '$lib/url';
   import type { LobbyBroadcast } from '$shared/types';
   import { cardLabel, clock, moveNumber, title } from './lobby';
 
@@ -20,7 +21,13 @@
   </div>
 {/snippet}
 
-<a class="live-card" class:mobile href="/{b.port}" data-port={b.port} aria-label={cardLabel(b)}>
+<a
+  class="live-card"
+  class:mobile
+  href={pagePath({ kind: 'live', port: b.port, board: b.board })}
+  data-port={b.port}
+  aria-label={cardLabel(b)}
+>
   <Board fen={b.fen} size={mobile ? 104 : 150} coords={false} label="{b.white} vs {b.black}" />
   <div class="info">
     <div class="site">{title(b)}</div>

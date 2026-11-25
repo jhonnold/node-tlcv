@@ -1,12 +1,14 @@
 <script lang="ts">
   import BrandMark from '../BrandMark.svelte';
+  import BoardSelect from './BoardSelect.svelte';
   import EventLine from './EventLine.svelte';
   import Icon from './Icon.svelte';
   import { getView } from '$lib/view.svelte';
   import type { HeaderInfo } from '$lib/view.svelte';
+  import type { ViewerSource } from '$lib/url';
 
-  type Props = { info: HeaderInfo };
-  const { info }: Props = $props();
+  type Props = { info: HeaderInfo; source: ViewerSource };
+  const { info, source }: Props = $props();
 
   const view = getView();
 </script>
@@ -18,6 +20,7 @@
     <span class="site">{info.site}</span>
     <EventLine {info} />
   </div>
+  {#if source.kind === 'live'}<BoardSelect port={source.port} touch />{/if}
   <button type="button" class="icon" aria-label="Flip board" aria-pressed={view.flipped} onclick={view.toggleFlip}>
     <Icon name="flip" size={20} />
   </button>

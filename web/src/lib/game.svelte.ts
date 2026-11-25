@@ -147,13 +147,14 @@ export class GameStore {
 
   // ---- live connection ------------------------------------------------------
 
-  /** Connects to a broadcast port. Returns the disconnect function. */
-  connect(port: number): () => void {
+  /** Connects to one board of a broadcast port; `live.board` is the board the server gave (1 if that one is gone).
+   *  Returns the disconnect function. */
+  connect(port: number, board: number): () => void {
     const socket = io({ autoConnect: false });
     this.#socket = socket;
     socket.on('connect', () => {
       this.connected = true;
-      socket.emit('join', { port, user: readString(KEYS.username) || 'Anonymous' });
+      socket.emit('join', { port, user: readString(KEYS.username) || 'Anonymous', board });
     });
     socket.on('disconnect', () => {
       this.connected = false;

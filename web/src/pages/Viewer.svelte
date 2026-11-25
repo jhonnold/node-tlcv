@@ -2,7 +2,7 @@
   import { onMount, tick, untrack } from 'svelte';
   import { getJson, HttpError } from '$lib/http';
   import { navigate } from '$lib/router.svelte';
-  import { apiBase } from '$lib/url';
+  import { apiBase, pagePath } from '$lib/url';
   import type { ViewerSource } from '$lib/url';
   import { GameStore, setGameStore } from '$lib/game.svelte';
   import { loadLatestReplay } from '$lib/replay';
@@ -34,11 +34,22 @@
   const info = $derived<HeaderInfo>({
     site: siteName,
     game: game.isReplay ? game.replayNumber : tournament.currentGameNumber,
+    // TLCS-MG: the live game is "Board N" (the CT-derived number is the broadcast's, not this board's).
+    board: !game.isReplay && game.live && game.live.boards.length > 1 ? game.live.board : null,
     archive: source.kind === 'archive' || game.isReplay,
     watching: game.live?.spectators.length ?? 0,
   });
   $effect(() => {
     document.title = siteName ? `${siteName} - CCRL Live` : 'CCRL Live';
+  });
+  // The server joined another board than the page's, which doesn't exist (a stale link, or boards ≥2 not back yet
+  // after a restart, at join or at a reconnect): move to the joined board's URL, so the URL, App's key and the picker
+  // agree and picking the page's board later remounts. Board 1 always exists, so this can't loop.
+  $effect(() => {
+    const joined = game.live?.board;
+    if (source.kind === 'live' && joined != null && joined !== source.board) {
+      navigate(pagePath({ ...source, board: joined }), { replace: true });
+    }
   });
   // A new live game: refresh standings and games once the CT dump has landed. Lives here, not in Panel, so focus mode
   // (which unmounts Panel) still refreshes.
@@ -67,7 +78,7 @@
         if (ac.signal.aborted) return; // no socket may be created after unmount
         site = summary.site;
         if (source.kind === 'live') {
-          disconnect = game.connect(source.port);
+          disconnect = game.connect(source.port, source.board);
         } else {
           // Its own catch: a failed game fetch leaves the page up, and only the summary 404 goes home.
           const gen = game.beginReplay();
@@ -97,10 +108,10 @@
 {:else}
   <div class="viewer" class:fixed={bp === 'desktop'}>
     {#if bp === 'mobile'}
-      <MobileHeader {info} />
+      <MobileHeader {info} {source} />
       <MobileLayout {source} />
     {:else}
-      <Header {bp} {info} />
+      <Header {bp} {info} {source} />
       {#if bp === 'tablet'}
         <TabletLayout {source} />
       {:else}
