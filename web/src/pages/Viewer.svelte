@@ -2,7 +2,7 @@
   import { onMount, tick, untrack } from 'svelte';
   import { getJson, HttpError } from '$lib/http';
   import { navigate } from '$lib/router.svelte';
-  import { apiBase, pagePath } from '$lib/url';
+  import { apiBase } from '$lib/url';
   import type { ViewerSource } from '$lib/url';
   import { GameStore, setGameStore } from '$lib/game.svelte';
   import { loadLatestReplay } from '$lib/replay';
@@ -47,22 +47,20 @@
   $effect(() => {
     document.title = siteName ? `${siteName} - CCRL Live` : 'CCRL Live';
   });
-  // The server joined another board than the page's, which doesn't exist (a stale link, or boards ≥2 not back yet
-  // after a restart, at join or at a reconnect): move to the joined board's URL, so the URL, App's key and the picker
-  // agree and picking the page's board later remounts. Board 1 always exists, so this can't loop.
-  $effect(() => {
-    const joined = game.live?.board;
-    if (source.kind === 'live' && joined != null && joined !== source.board) {
-      navigate(pagePath({ ...source, board: joined }), { replace: true });
-    }
-  });
   // A new live game: refresh standings and games once the CT dump has landed. Lives here, not in Panel, so focus mode
   // (which unmounts Panel) still refreshes.
   let prevPair = '';
   let prevLen = -1;
+  let prevBoard = -1;
   $effect(() => {
-    const g = game.live?.game;
-    if (!g) return;
+    const live = game.live;
+    if (!live) return;
+    const g = live.game;
+    // A board switch resets the baseline instead, so it never reads as a new game.
+    if (live.board !== prevBoard) {
+      prevBoard = live.board;
+      prevLen = -1;
+    }
     const pair = `${g.white.name}|${g.black.name}`;
     if (prevLen >= 0 && (pair !== prevPair || g.moves.length < prevLen)) tournament.refreshSoon();
     prevPair = pair;

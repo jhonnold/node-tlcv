@@ -48,6 +48,7 @@
         lastMove={game.lastMove}
         arrows={game.arrows}
         label="Main board"
+        jump={game.boardGen}
       />
     </div>
     {@render row(view.bottom)}

@@ -31,7 +31,7 @@
   );
   const pgnHref = $derived.by(() => {
     if (game.isReplay) return tournament.games?.find((r) => r.gameNumber === game.replayNumber)?.pgnUrl ?? null;
-    return source.kind === 'live' ? livePgnUrl(source) : null;
+    return source.kind === 'live' ? livePgnUrl({ port: source.port, board: game.live?.board ?? 1 }) : null;
   });
   const pgnName = $derived(`${game.game?.white.name ?? 'White'} vs ${game.game?.black.name ?? 'Black'}.pgn`);
 

@@ -32,7 +32,7 @@
     </a>
     <span class="spacer"></span>
   {/if}
-  {#if source.kind === 'live'}<BoardSelect port={source.port} touch={bp === 'tablet'} />{/if}
+  {#if source.kind === 'live'}<BoardSelect touch={bp === 'tablet'} />{/if}
   <nav aria-label="View options">
     <button type="button" class="icon" aria-label="Focus mode" title="Focus mode" onclick={() => (view.focus = true)}>
       <Icon name="focus" size={iconSize} />

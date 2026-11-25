@@ -41,11 +41,16 @@ export class GameStore {
   // Keyed by side, set when that side's turn ends. Plain, not state: it always changes together with #live.
   #turnEnd: Partial<Record<ColorCode, TurnEnd>> = {};
   #gen = $state(0); // replay generation: bumped by beginReplay and exitReplay
+  #board = 1; // the requested board: every join asks for it, so a reconnect rejoins the selection
+  #joining = false; // a join is awaiting its state, the one that reseeds chat
 
   chat = $state.raw<string[]>([]);
   /** Bumped per live `new-chat` batch holding a result line (never by the `state` backlog); Viewer refreshes on it. */
   resultLines = $state(0);
   connected = $state(false);
+  /** Bumped when a `state` serves a different board than the one shown, or when a pick leaves a replay: the main board
+   *  then snaps instead of animating. */
+  boardGen = $state(0);
   cursor = $state<number | null>(null); // null follows the latest position
   now = $state(Date.now());
 
@@ -150,23 +155,33 @@ export class GameStore {
 
   // ---- live connection ------------------------------------------------------
 
-  /** Connects to one board of a broadcast port; `live.board` is the board the server gave (1 if that one is gone).
+  /** Connects to `board` of a broadcast port. Every `connect` rejoins the selected board (`#board`), so a reconnect keeps
+   *  a board picked by `switchBoard`. `live.board` is the board the server gave (1 if that one is gone).
    *  Returns the disconnect function. */
   connect(port: number, board: number): () => void {
+    this.#board = board;
     const socket = io({ autoConnect: false });
     this.#socket = socket;
     socket.on('connect', () => {
       this.connected = true;
-      socket.emit('join', { port, user: readString(KEYS.username) || 'Anonymous', board });
+      this.#joining = true;
+      socket.emit('join', { port, user: readString(KEYS.username) || 'Anonymous', board: this.#board });
     });
     socket.on('disconnect', () => {
       this.connected = false;
     });
     socket.on('state', (data: SerializedBroadcast) => {
       const { chat, ...rest } = data;
+      if (this.#live && data.board !== this.#live.board) this.boardGen++;
       this.#turnEnd = {};
       this.#live = rest;
-      this.chat = trimChat(chat);
+      this.#board = data.board; // a fallback to board 1 becomes the selection
+      // Socket.IO keeps per-socket order, so the first `state` after a connect is the join's answer. A switch-board
+      // answer never touches chat: it carries the last 1000 lines, which would replace the scrollback.
+      if (this.#joining) {
+        this.#joining = false;
+        this.chat = trimChat(chat);
+      }
       if (!this.#replay) this.cursor = null; // full sync re-follows live, but never disturbs a replay
     });
     socket.on('update', (delta: BroadcastDelta) => {
@@ -197,6 +212,19 @@ export class GameStore {
       this.#socket = null;
       this.connected = false;
     };
+  }
+
+  /** Moves this socket to board `n` of the same broadcast, without a reconnect. A pick during a replay exits it, even
+   *  of the board already shown; the `boardGen` bump makes that jump to live snap. No-op for the live board already
+   *  shown. While disconnected, the next `join` carries `n`. */
+  switchBoard(n: number): void {
+    if (this.#replay) {
+      this.exitReplay();
+      this.boardGen++;
+    }
+    if (n === this.#live?.board && n === this.#board) return;
+    this.#board = n;
+    if (this.#socket?.connected) this.#socket.emit('switch-board', n);
   }
 
   /** The side that just finished its turn keeps the clock it had, so the new mover's stale clock can be bounded. */
