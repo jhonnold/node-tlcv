@@ -21,7 +21,7 @@ The frontend is a Svelte 5 single-page app (runes mode) in `web/`, bundled by Vi
 |------|------|------|
 | `/` | `pages/Lobby.svelte` | — |
 | `/:port` | `pages/Viewer.svelte` (live, board 1) | redirect to `/` if no broadcast uses that port |
-| `/:port/:board` | `pages/Viewer.svelte` (live, that board; board 1's canonical path is `/:port`) | redirect to `/` if no broadcast uses that port; any board is served (boards ≥2 appear seconds after a restart; the socket falls back to board 1) |
+| `/:port/:board` | unknown port redirects to `/` (the `withBroadcast` guard runs first); a known port gets a 301 to `/:port` | (the board is no longer in the page URL) |
 | `/archive/:slug` | `pages/Viewer.svelte` (archive) | redirect to `/` unless the slug matches `SAFE_SLUG` and the archive loads |
 | `/admin` | `pages/Admin.svelte` | 503 without `TLCV_PASSWORD`, then HTTP basic auth (user `admin`) |
 
