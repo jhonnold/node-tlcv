@@ -7,13 +7,15 @@ import { logger } from './util/index.js';
 import { env } from './config/env.js';
 import { reloginAttempts } from './metrics.js';
 import type { ParsedResults, GameRecord } from './services/result-parser.js';
-import type { SerializedBroadcast, StoredTournamentResults } from '../shared/types.js';
+import type { BoardSummary, SerializedBroadcast, StoredTournamentResults } from '../shared/types.js';
 import type { KibitzerManager } from './kibitzer/kibitzer-manager.js';
+import { boardSummary, engineScore } from './board-summary.js';
 
 export type { SerializedBroadcast } from '../shared/types.js';
 
 export const username = 'tlcv.net';
 const PING_INTERVAL_MS = 10000;
+const SUMMARY_PUSH_MS = 1000;
 
 // Floor on how often a broadcast may re-send LOGON, applied to both triggers:
 // without it the watchdog retries on every ping once the timeout is exceeded, and
@@ -64,6 +66,9 @@ export class Broadcast {
   private gameService: GameService;
   private conn: Connection;
   private pings!: NodeJS.Timeout;
+  // Set by any board change that moves a summary; the summary timer pushes and clears it.
+  private summariesDirty = false;
+  private summaryTimer!: NodeJS.Timeout;
   // Two clocks, deliberately. `lastDataAt` backs `ccrl_broadcast_seconds_since_data`,
   // the signal production alarms on, so it has to keep climbing across re-logins that
   // fix nothing — reset it and a permanently dead broadcast just sawtooths below the
@@ -90,6 +95,14 @@ export class Broadcast {
 
     this.connect();
     this.reloadResults();
+
+    this.summaryTimer = setInterval(() => {
+      // Throttled: engine scores move several times a second, and the Boards tab needs one push a second.
+      // No browsers: nothing to push. The flag stays set; a joiner gets the summaries in `state`.
+      if (!this.summariesDirty || this.boards.size <= 1 || this.browserCount === 0) return;
+      this.summariesDirty = false;
+      emitUpdate(this.port, { summaries: this.boardSummaries() });
+    }, SUMMARY_PUSH_MS);
   }
 
   private connect(): void {
@@ -212,6 +225,12 @@ export class Broadcast {
     if (update) emitUpdate(this.port, update);
     for (const { board, game } of games) emitGameUpdate(this.port, board, game);
     if (chat.length) emitChat(this.port, chat);
+    if (games.length > 0 || update?.boards) this.markSummariesDirty();
+  }
+
+  /** Flags the summaries for the next throttled push: a board's game or browser count changed. */
+  markSummariesDirty(): void {
+    this.summariesDirty = true;
   }
 
   reloadResults() {
@@ -231,6 +250,7 @@ export class Broadcast {
   close(): void {
     this.closed = true;
     clearInterval(this.pings);
+    clearInterval(this.summaryTimer);
     this.stopMultigameRetry();
     this.conn.send('LOGOFF');
 
@@ -243,12 +263,21 @@ export class Broadcast {
     return {
       board: board.id,
       boards: this.boardIds,
+      summaries: this.boardSummaries(),
       // The kibitzer follows board 1 only.
       game: board.game.toJSON(board.id === 1 ? (this.kibitzerManager?.getLiveData(this.port) ?? null) : null),
       spectators: Array.from(this.spectators),
       chat: this.chat.slice(-CHAT_EMIT_LIMIT),
       menu: Object.fromEntries(this.menu),
     };
+  }
+
+  /** Every board's summary, ascending. */
+  boardSummaries(): BoardSummary[] {
+    return this.boardIds.map((id) => {
+      const b = this.boards.get(id)!;
+      return boardSummary(b, engineScore(b));
+    });
   }
 
   /** The persisted shape of this tournament's standings + schedule. */

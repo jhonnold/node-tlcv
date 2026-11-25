@@ -36,6 +36,7 @@ io.on('connection', (socket: Socket) => {
     // says which. Only existing boards: a client never creates one.
     board = broadcast.boards.get(requested ?? 1) ?? broadcast.boards.get(1)!;
     board.browserCount++;
+    broadcast.markSummariesDirty();
     spectatorJoins.inc({ port: String(port) });
 
     username = uniqueName(user, broadcast.spectators);
@@ -60,6 +61,7 @@ io.on('connection', (socket: Socket) => {
       socket.leave(boardRoom(broadcast.port, board.id));
       board.browserCount--;
       next.browserCount++;
+      broadcast.markSummariesDirty();
       board = next;
       socket.join(boardRoom(broadcast.port, next.id));
 
@@ -94,6 +96,7 @@ io.on('connection', (socket: Socket) => {
     if (!broadcast || !board) return;
 
     board.browserCount--;
+    broadcast.markSummariesDirty();
     spectatorLeaves.inc({ port: String(broadcast.port) });
 
     if (username) broadcast.spectators.delete(username);

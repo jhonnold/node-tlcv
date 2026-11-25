@@ -136,8 +136,8 @@ A socket joins two rooms: `<port>` (chat, spectators, menu, the board list) and 
 |-------|-----------|---------|
 | `join` | client → server | `{ port, user, board? }`; no `board`, or one that doesn't exist, gets board 1. The server answers with `state` |
 | `switch-board` | client → server | board number. Ignored before `join`; an unknown board gets board 1. Moves the socket's board room and counts; spectators aren't touched. The server answers with `state` for that board, except for a re-pick of the board already selected |
-| `state` | server → client | `SerializedBroadcast`: `board` (the one joined), `boards` (all, ascending; `[1]` for classic TLCS), that board's game, spectators, chat history, menu |
-| `update` | server → client | `BroadcastDelta`: `{ board, game }` from the board room (a new game arrives as a game delta with `resetMoves`), or `spectators` / `menu` / `boards` from the port room. One batch can send both, as separate events |
+| `state` | server → client | `SerializedBroadcast`: `board` (the one joined), `boards` (all, ascending; `[1]` for classic TLCS), `summaries` (a `BoardSummary` per board), that board's game, spectators, chat history, menu |
+| `update` | server → client | `BroadcastDelta`: `{ board, game }` from the board room (a new game arrives as a game delta with `resetMoves`), or `spectators` / `menu` / `boards` / `summaries` from the port room. `summaries` is the full list, pushed at most once a second on TLCS-MG. One batch can send both, as separate events |
 | `new-chat` | server → client | `string[]` |
 | `chat` | client → server | message text; relayed to TLCS as `CHAT: …` |
 | `nick` | client → server | new name; stays in node-tlcv (spectator list only) |
