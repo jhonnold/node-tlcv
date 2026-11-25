@@ -192,7 +192,7 @@ class GameService {
           gameNumber: this.broadcast.currentGameNumber,
           white: this.game.white.name,
           black: this.game.black.name,
-          site: this.game.site,
+          site: this.broadcast.site,
         });
       }
     }
@@ -484,17 +484,17 @@ class GameService {
   }
 
   private async onSite(tokens: CommandTokens): Promise<void> {
-    const previousSite = this.game.site;
+    const previousSite = this.broadcast.site;
 
-    this.game.site = normalizeSite(tokens.slice(1).join(' '));
+    this.broadcast.site = normalizeSite(tokens.slice(1).join(' '));
     this.dirty.add('site');
 
-    logger.info(`Updated game ${this.game.name} - Site: ${this.game.site}`, { port: this.broadcast.port });
+    logger.info(`Updated game ${this.game.name} - Site: ${this.broadcast.site}`, { port: this.broadcast.port });
 
     // SITE is re-announced once per game, so only a genuine tournament change is worth
     // acting on — dropping the caches on every announcement forces a full archive
     // re-scan per finished game.
-    const slug = siteSlug(this.game.site);
+    const slug = siteSlug(this.broadcast.site);
     if (slug === this.hydratedSlug) return;
 
     // The old slug has moved out of the live set (it is archived now) and a new
@@ -617,7 +617,7 @@ class GameService {
       gameNumber: this.broadcast.currentGameNumber,
       white: this.game.white.name,
       black: this.game.black.name,
-      site: this.game.site,
+      site: this.broadcast.site,
       result,
       opening: this.game.opening,
     });
@@ -648,7 +648,7 @@ class GameService {
     }
 
     if (d.has('site')) {
-      gameDelta.site = this.game.site;
+      gameDelta.site = this.broadcast.site;
     }
 
     if (d.has('move')) {

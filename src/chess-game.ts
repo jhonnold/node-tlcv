@@ -94,7 +94,8 @@ export class ChessGame {
   readonly white: Player;
   readonly black: Player;
   readonly liveData: LiveData;
-  site: string;
+  // The tournament name lives on the owning Broadcast (SITE is a broadcast-level line).
+  private readonly getSite: () => string;
   fen!: string;
   opening!: string;
   openingLookupDisabled!: boolean;
@@ -109,9 +110,9 @@ export class ChessGame {
   // so it never has to rebuild the game from chess.js's history.
   uciHistory!: Array<string>;
 
-  constructor(name: string) {
+  constructor(name: string, getSite: () => string) {
+    this.getSite = getSite;
     this.name = name;
-    this.site = '';
     this.white = new Player();
     this.black = new Player();
     this.liveData = new LiveData();
@@ -120,6 +121,10 @@ export class ChessGame {
     // Nothing has been received from the server yet — the first FEN announcement is
     // what loads a position. reset() marks the game loaded; construction must not.
     this.loaded = false;
+  }
+
+  get site(): string {
+    return this.getSite();
   }
 
   private setPGNHeaders(): void {

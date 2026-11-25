@@ -36,6 +36,8 @@ export class Broadcast {
   readonly game: ChessGame;
   readonly kibitzerManager: KibitzerManager | null;
 
+  // Tournament name from the broadcast-level SITE line; every ChessGame reads it from here.
+  site = '';
   // Private so pushChat() is the only way in — that's what bounds the buffer.
   private readonly chat: Array<string> = [];
   readonly spectators = new Set<string>();
@@ -66,7 +68,7 @@ export class Broadcast {
     this.ephemeral = ephemeral;
 
     this.kibitzerManager = kibitzerManager ?? null;
-    this.game = new ChessGame(String(this.port));
+    this.game = new ChessGame(String(this.port), () => this.site);
     this.gameService = new GameService(this);
     this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this), this.ephemeral);
 
@@ -160,7 +162,7 @@ export class Broadcast {
   /** The persisted shape of this tournament's standings + schedule. */
   toStoredResults(): StoredTournamentResults {
     return {
-      site: this.game.site,
+      site: this.site,
       port: this.port,
       updated: new Date().toISOString(),
       results: this.results,
@@ -180,7 +182,7 @@ export class Broadcast {
 
   /** Metrics/display label for the tournament, falling back before an event is announced. */
   get eventLabel(): string {
-    return this.game.site || 'unknown';
+    return this.site || 'unknown';
   }
 }
 
