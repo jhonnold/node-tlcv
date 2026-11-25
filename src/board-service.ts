@@ -81,6 +81,8 @@ class BoardService {
   readonly commandConfig: BoardCommandConfig;
   readonly id: number;
   readonly game: ChessGame;
+  // Browsers watching this board (socket-io-adapter); Broadcast.browserCount sums them.
+  browserCount = 0;
   private broadcast: Broadcast;
   // A board created mid-batch never sees beginBatch(); these defaults (empty sets,
   // moveCountBefore 0) are exactly what it would set for a fresh game.

@@ -20,10 +20,13 @@ function toTokens(cmd: Command, arg: string, split: boolean): CommandTokens {
   return split ? [cmd, ...arg.trim().split(/\s+/)] : [cmd, arg];
 }
 
-type DirtyKey = 'spectators' | 'menu';
+type DirtyKey = 'spectators' | 'menu' | 'boards';
 
 export type GameServiceResult = {
+  /** Broadcast-level changes (spectators, menu, boards) for the port room, or null. */
   update: BroadcastDelta | null;
+  /** Every board whose game changed, with its delta, for that board's room. */
+  games: Array<{ board: number; game: GameDelta }>;
   chat: string[];
   /** Whether the batch held anything proving the session still feeds us — see `PROVES_LIVENESS`. */
   sawLiveData: boolean;
@@ -241,12 +244,8 @@ class GameService {
     this.dirty.add('menu');
   }
 
-  private buildDelta(game: GameDelta | null): BroadcastDelta {
+  private buildDelta(): BroadcastDelta {
     const delta: BroadcastDelta = {};
-
-    if (game) {
-      delta.game = game;
-    }
 
     if (this.dirty.has('spectators')) {
       delta.spectators = Array.from(this.broadcast.spectators);
@@ -254,6 +253,10 @@ class GameService {
 
     if (this.dirty.has('menu')) {
       delta.menu = Object.fromEntries(this.broadcast.menu);
+    }
+
+    if (this.dirty.has('boards')) {
+      delta.boards = this.broadcast.boardIds;
     }
 
     return delta;
@@ -279,6 +282,7 @@ class GameService {
   async onMessages(messages: string[]): Promise<GameServiceResult> {
     this.dirty.clear();
     for (const b of this.broadcast.boards.values()) b.beginBatch();
+    const boardCount = this.broadcast.boards.size;
     const chatEmit: string[] = [];
     let sawLiveData = false;
     // Game lines are queued per board: in order within a board, boards concurrently (a result
@@ -318,13 +322,19 @@ class GameService {
     // One Lichess lookup per board, for the position its game is left in, rather than one per move.
     await Promise.all([...this.broadcast.boards.values()].map((b) => b.lookUpPosition()));
 
-    // Only board 1 reaches browsers for now; boards >= 2 are tracked and archived silently.
-    const gameDelta = this.broadcast.boards.get(1)!.takeDelta();
-    const update = gameDelta || this.dirty.size > 0 ? this.buildDelta(gameDelta) : null;
+    // A BOARDS line or an unlisted BOARD <id> added boards (they are never removed).
+    if (this.broadcast.boards.size !== boardCount) this.dirty.add('boards');
+
+    const games: GameServiceResult['games'] = [];
+    for (const [id, service] of this.broadcast.boards) {
+      const game = service.takeDelta();
+      if (game) games.push({ board: id, game });
+    }
+    const update = this.dirty.size > 0 ? this.buildDelta() : null;
 
     logger.debug(`Successfully processed ${messages.length} message(s)`, { port: this.broadcast.port });
 
-    return { update, chat: chatEmit, sawLiveData };
+    return { update, games, chat: chatEmit, sawLiveData };
   }
 }
 

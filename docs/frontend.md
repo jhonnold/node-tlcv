@@ -124,11 +124,13 @@ Admin (`src/routes/admin.ts`; 503 without `TLCV_PASSWORD`, then basic auth). Mut
 
 ## Socket.IO
 
+A socket joins two rooms: `<port>` (chat, spectators, menu, the board list) and `<port>:<board>` (that board's game deltas, the kibitzer's included). One `join` per socket (a second is ignored), so showing another board takes a new socket; the Viewer remounts per page (`App.svelte` keys it by `pagePath`). `BoardService.browserCount` counts each board's sockets; `Broadcast.browserCount` (lobby, admin, metrics, kibitzer ranking) is their sum.
+
 | Event | Direction | Payload |
 |-------|-----------|---------|
-| `join` | client → server | `{ port, user }`; the server answers with `state` |
-| `state` | server → client | `SerializedBroadcast` (game, spectators, chat history) |
-| `update` | server → client | `BroadcastDelta` (game delta, `spectators`); a new game arrives as a delta with `resetMoves` |
+| `join` | client → server | `{ port, user, board? }`; no `board`, or one that doesn't exist, gets board 1. The server answers with `state` |
+| `state` | server → client | `SerializedBroadcast`: `board` (the one joined), `boards` (all, ascending; `[1]` for classic TLCS), that board's game, spectators, chat history, menu |
+| `update` | server → client | `BroadcastDelta`: `{ board, game }` from the board room (a new game arrives as a game delta with `resetMoves`), or `spectators` / `menu` / `boards` from the port room. One batch can send both, as separate events |
 | `new-chat` | server → client | `string[]` |
 | `chat` | client → server | message text; relayed to TLCS as `CHAT: …` |
 | `nick` | client → server | new name; stays in node-tlcv (spectator list only) |

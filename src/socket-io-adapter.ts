@@ -1,9 +1,10 @@
 import { Server, Socket } from 'socket.io';
 import broadcasts, { Broadcast } from './broadcast.js';
+import type BoardService from './board-service.js';
 import { logger, uniqueName } from './util/index.js';
 import { spectatorJoins, spectatorLeaves, socketEmissions } from './metrics.js';
 import { EmitType } from '../shared/types.js';
-import type { BroadcastDelta } from '../shared/types.js';
+import type { BroadcastDelta, GameDelta } from '../shared/types.js';
 
 export { EmitType } from '../shared/types.js';
 
@@ -13,24 +14,37 @@ const io = new Server({
   },
 });
 
+// A socket joins two rooms: `<port>` for what every viewer of the broadcast shares (chat,
+// spectators, menu, the board list) and `<port>:<board>` for that board's game deltas.
+function boardRoom(port: number, board: number): string {
+  return `${port}:${board}`;
+}
+
 io.on('connection', (socket: Socket) => {
   let broadcast: Broadcast | undefined;
+  let board: BoardService | undefined;
   let username: string | undefined;
 
-  socket.on('join', ({ port, user }: { port: number; user: string }) => {
+  socket.on('join', ({ port, user, board: requested }: { port: number; user: string; board?: number }) => {
+    // One join per socket (the viewer changes board on a new socket); a second would count it twice.
+    if (broadcast) return;
+
     broadcast = broadcasts.get(port);
     if (!broadcast) return;
 
-    broadcast.browserCount++;
+    // No board (a tab from before boards) or one that doesn't exist gets board 1; `state.board`
+    // says which. Only existing boards: a client never creates one.
+    board = broadcast.boards.get(requested ?? 1) ?? broadcast.boards.get(1)!;
+    board.browserCount++;
     spectatorJoins.inc({ port: String(port) });
 
     username = uniqueName(user, broadcast.spectators);
     if (username) broadcast.spectators.add(username);
 
-    logger.info(`${username} joined at port ${port}!`, { port: broadcast.port });
+    logger.info(`${username} joined board ${board.id} at port ${port}!`, { port: broadcast.port });
 
-    socket.join(String(port));
-    socket.emit('state', broadcast.toJSON());
+    socket.join([String(port), boardRoom(port, board.id)]);
+    socket.emit('state', broadcast.toJSON(board.id));
     emitSpectators(broadcast);
   });
 
@@ -56,9 +70,9 @@ io.on('connection', (socket: Socket) => {
   });
 
   socket.on('disconnect', () => {
-    if (!broadcast) return;
+    if (!broadcast || !board) return;
 
-    broadcast.browserCount--;
+    board.browserCount--;
     spectatorLeaves.inc({ port: String(broadcast.port) });
 
     if (username) broadcast.spectators.delete(username);
@@ -68,9 +82,17 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
+/** Broadcast-level changes (spectators, menu, boards), to every viewer of the port. */
 export function emitUpdate(port: number, data: BroadcastDelta): void {
   socketEmissions.inc({ port: String(port), type: 'update' });
   io.to(String(port)).emit(EmitType.UPDATE, data);
+}
+
+/** One board's game delta, to the viewers of that board. */
+export function emitGameUpdate(port: number, board: number, game: GameDelta): void {
+  socketEmissions.inc({ port: String(port), type: 'update' });
+  const delta: BroadcastDelta = { board, game };
+  io.to(boardRoom(port, board)).emit(EmitType.UPDATE, delta);
 }
 
 // Broadcast the current spectator list to everyone in the room. Used after

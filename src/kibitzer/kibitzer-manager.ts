@@ -1,5 +1,5 @@
 import broadcasts from '../broadcast.js';
-import { emitUpdate } from '../socket-io-adapter.js';
+import { emitGameUpdate } from '../socket-io-adapter.js';
 import { kibitzerAssignments } from '../metrics.js';
 import { logger } from '../util/index.js';
 import { replayUciFromFen, sideToMove } from '../util/uci.js';
@@ -205,11 +205,12 @@ export class KibitzerManager {
       if (!slot.dirty) continue;
 
       const broadcast = broadcasts.get(port);
-      if (!broadcast || broadcast.browserCount === 0) continue;
+      // The kibitzer follows board 1: only its viewers see the analysis.
+      if (!broadcast || broadcast.boards.get(1)!.browserCount === 0) continue;
 
       slot.dirty = false;
       const liveData = this.getLiveData(port);
-      if (liveData) emitUpdate(port, { game: { kibitzerLiveData: liveData } });
+      if (liveData) emitGameUpdate(port, 1, { kibitzerLiveData: liveData });
     }
   }
 

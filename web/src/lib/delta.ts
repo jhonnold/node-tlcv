@@ -4,9 +4,10 @@ import type { BroadcastDelta, SerializedBroadcast } from '$shared/types';
 export type GameData = Omit<SerializedBroadcast, 'chat'>;
 
 export function applyDelta(prev: GameData, delta: BroadcastDelta): GameData {
-  let { game, spectators, menu } = prev;
+  let { game, spectators, menu, boards } = prev;
   if (delta.spectators !== undefined) spectators = delta.spectators;
   if (delta.menu !== undefined) menu = delta.menu;
+  if (delta.boards !== undefined) boards = delta.boards;
   if (delta.game) {
     const { resetMoves, newMoves, updatedMoves, ...fields } = delta.game;
     let moves = resetMoves ? [] : game.moves;
@@ -18,5 +19,6 @@ export function applyDelta(prev: GameData, delta: BroadcastDelta): GameData {
     }
     game = { ...game, ...fields, moves };
   }
-  return { game, spectators, menu };
+  // delta.board needs no check: a socket only gets its own board's game deltas.
+  return { board: prev.board, boards, game, spectators, menu };
 }
