@@ -24,6 +24,11 @@ export enum Command {
   FEATURE = 'FEATURE',
   LEVEL = 'level',
   MSG = 'MSG',
+  // TLCS-MG v1 (uci-to-tlcs docs/tlcs-multigame-spec.md)
+  MULTIGAME = 'MULTIGAME',
+  BOARDS = 'BOARDS',
+  BOARD = 'BOARD',
+  GAMENO = 'GAMENO',
 }
 
 const KNOWN_COMMANDS = new Set<string>(Object.values(Command));
@@ -38,7 +43,8 @@ const KNOWN_COMMANDS = new Set<string>(Object.values(Command));
  * spectator list, our own name included (see `onAddUser`), and join/leave traffic
  * says nothing about the game feed anyway. Counting any of them would let a
  * re-login that is acknowledged but restores nothing look like recovery, which is
- * exactly what `ccrl_broadcast_seconds_since_data` exists to catch.
+ * exactly what `ccrl_broadcast_seconds_since_data` exists to catch. The TLCS-MG
+ * handshake replies (`MULTIGAME`, `BOARDS`) are re-login responses too.
  *
  * Typed as a total map on purpose: adding a `Command` forces a decision here
  * rather than silently defaulting to "this counts". Lines `splitOnCommand`
@@ -71,6 +77,11 @@ export const PROVES_LIVENESS: Record<Command, boolean> = {
   [Command.MENU]: false,
   [Command.ADDUSER]: false,
   [Command.DELUSER]: false,
+  [Command.MULTIGAME]: false,
+  [Command.BOARDS]: false,
+  [Command.GAMENO]: true,
+  // Never consulted: parseLine() unwraps a BOARD line, which then counts as its inner command.
+  [Command.BOARD]: false,
 };
 
 /**
@@ -94,4 +105,29 @@ export function splitOnCommand(line: string): [Command, string] | null {
   if (!KNOWN_COMMANDS.has(command)) return null;
 
   return [command as Command, argSplit < 0 ? '' : line.substring(argSplit + 1).trim()];
+}
+
+/** A protocol line: its command and argument, and for a TLCS-MG `BOARD <id> <game line>` the board it belongs to. */
+export type ParsedLine = { board: number | null; command: Exclude<Command, Command.BOARD>; arg: string };
+
+/**
+ * `splitOnCommand`, plus TLCS-MG unwrapping: `BOARD 2 WMOVE: 14. Nf3` parses as the inner
+ * `WMOVE` line tagged with board 2. Null for an unknown command, a malformed id, or a
+ * wrapped line that doesn't parse. Whether the inner command is a game line is the caller's call.
+ */
+export function parseLine(line: string): ParsedLine | null {
+  const split = splitOnCommand(line);
+  if (!split) return null;
+
+  const [command, arg] = split;
+  if (command !== Command.BOARD) return { board: null, command, arg };
+
+  const match = /^([1-9]\d*) (.+)$/.exec(arg);
+  const inner = match ? splitOnCommand(match[2]) : null;
+  if (!match || !inner) return null;
+
+  const [innerCommand, innerArg] = inner;
+  if (innerCommand === Command.BOARD) return null;
+
+  return { board: Number(match[1]), command: innerCommand, arg: innerArg };
 }

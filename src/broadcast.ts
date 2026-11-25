@@ -20,6 +20,17 @@ const PING_INTERVAL_MS = 10000;
 // a server that repeats the logout notice gets a LOGON back for each one.
 const RELOGIN_MIN_INTERVAL_MS = 60000;
 
+// TLCS-MG opt-in (spec §3): `MULTIGAME: 1` follows every LOGON SUCCESSFUL and is resent on each
+// tick; without a reply by the last tick (15 s after the LOGON) the server is single-game.
+const MULTIGAME_RETRY_MS = 5000;
+const MULTIGAME_TRIES = 3;
+
+/**
+ * TLCS-MG negotiation. `pending` (after every LOGON, the server forgets the opt-in) and
+ * `single` read bare game lines as board 1, like classic TLCS; `mg` reads only `BOARD <id>` lines.
+ */
+export type MultigameMode = 'pending' | 'mg' | 'single';
+
 /** Why a LOGON was re-sent — a metrics label, so keep the values stable. */
 export type ReloginReason = 'watchdog' | 'server-notice';
 
@@ -63,6 +74,9 @@ export class Broadcast {
   private lastDataAt = performance.now();
   private lastReloginAt = -Infinity;
   private closed = false;
+  private mode: MultigameMode = 'pending';
+  private multigameTimer: NodeJS.Timeout | null = null;
+  private multigameTicks = 0;
 
   constructor(host: string, ip: string, port: number, kibitzerManager?: KibitzerManager, ephemeral = false) {
     this.host = host;
@@ -71,7 +85,7 @@ export class Broadcast {
     this.ephemeral = ephemeral;
 
     this.kibitzerManager = kibitzerManager ?? null;
-    this.boards.set(1, new BoardService(this));
+    this.boards.set(1, new BoardService(this, 1));
     this.gameService = new GameService(this);
     this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this), this.ephemeral);
 
@@ -95,7 +109,76 @@ export class Broadcast {
   }
 
   private login(): void {
+    this.mode = 'pending';
+    this.armMultigameRetry();
     this.conn.send(`LOGONv15:${username}`);
+  }
+
+  private armMultigameRetry(): void {
+    this.stopMultigameRetry();
+    this.multigameTicks = 0;
+    this.multigameTimer = setInterval(() => this.onMultigameRetry(), MULTIGAME_RETRY_MS);
+  }
+
+  private stopMultigameRetry(): void {
+    if (this.multigameTimer) clearInterval(this.multigameTimer);
+    this.multigameTimer = null;
+  }
+
+  /** A tick without a `MULTIGAME:` reply: resend (also covers a lost LOGON SUCCESSFUL), or give up. */
+  private onMultigameRetry(): void {
+    if (this.closed || this.mode !== 'pending') {
+      this.stopMultigameRetry();
+      return;
+    }
+
+    if (++this.multigameTicks < MULTIGAME_TRIES) {
+      this.requestMultigame();
+      return;
+    }
+
+    this.stopMultigameRetry();
+    this.mode = 'single';
+    logger.info('No MULTIGAME reply, treating the server as single-game', { port: this.port });
+  }
+
+  private requestMultigame(): void {
+    this.conn.send('MULTIGAME: 1');
+  }
+
+  /** `LOGON SUCCESSFUL`: opt in to TLCS-MG (forgotten by the server on every LOGON) and refresh the crosstable. */
+  onLogonSuccessful(): void {
+    this.requestMultigame();
+    this.reloadResults();
+  }
+
+  /**
+   * The server's `MULTIGAME:` reply. Entering `mg` discards every board's game — it was built
+   * from bare lines — and the server follows its reply with a wrapped snapshot of each board in progress.
+   */
+  onMultigameReply(version: string): void {
+    if (version !== '1') {
+      logger.warn(`Ignoring MULTIGAME reply with unknown version ${version}`, { port: this.port });
+      return;
+    }
+    // The answer to a resend after success.
+    if (this.mode === 'mg') return;
+
+    this.stopMultigameRetry();
+    this.mode = 'mg';
+    for (const board of this.boards.values()) board.reset();
+    logger.info('Server speaks TLCS-MG v1, following its boards', { port: this.port });
+  }
+
+  /** The board with this id, created if new (a TLCS-MG `BOARDS:` list, or an unlisted `BOARD <id>` line). */
+  ensureBoard(id: number): BoardService {
+    let board = this.boards.get(id);
+    if (!board) {
+      board = new BoardService(this, id);
+      this.boards.set(id, board);
+      logger.info(`Added board ${id} (game ${board.game.name})`, { port: this.port });
+    }
+    return board;
   }
 
   /** Re-establishes the TLCS session. Rate-limited, and never touches `lastDataAt`. */
@@ -148,6 +231,7 @@ export class Broadcast {
   close(): void {
     this.closed = true;
     clearInterval(this.pings);
+    this.stopMultigameRetry();
     this.conn.send('LOGOFF');
 
     setTimeout(() => this.conn.close(), 500);
@@ -177,6 +261,10 @@ export class Broadcast {
   /** Board 1's game, the only one in classic TLCS. */
   get game(): ChessGame {
     return this.boards.get(1)!.game;
+  }
+
+  get multigameMode(): MultigameMode {
+    return this.mode;
   }
 
   get connection(): string {
