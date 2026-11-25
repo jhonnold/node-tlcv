@@ -53,6 +53,7 @@
             lastMove={game.lastMove}
             arrows={game.arrows}
             label="Main board"
+            jump={game.boardGen}
           />
         {/if}
       </div>

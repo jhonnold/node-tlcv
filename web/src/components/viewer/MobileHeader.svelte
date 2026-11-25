@@ -20,7 +20,7 @@
     <span class="site">{info.site}</span>
     <EventLine {info} />
   </div>
-  {#if source.kind === 'live'}<BoardSelect port={source.port} touch />{/if}
+  {#if source.kind === 'live'}<BoardSelect touch />{/if}
   <button type="button" class="icon" aria-label="Flip board" aria-pressed={view.flipped} onclick={view.toggleFlip}>
     <Icon name="flip" size={20} />
   </button>

@@ -17,6 +17,8 @@
     arrows?: Arrow[];
     animate?: boolean;
     label?: string;
+    /** Bumped to place the next position without animation, e.g. a board switch. */
+    jump?: number;
   };
   const {
     fen,
@@ -27,6 +29,7 @@
     arrows = [],
     animate = true,
     label = 'Chess board',
+    jump = 0,
   }: Props = $props();
 
   const px = $derived(Math.max(8, Math.floor(size / 8) * 8));
@@ -35,6 +38,7 @@
 
   let host: HTMLDivElement;
   let board: ChessboardInstance | null = null;
+  let lastJump = untrack(() => jump);
 
   function paintHighlight(): void {
     for (const el of host.querySelectorAll('.hl')) el.classList.remove('hl');
@@ -77,8 +81,11 @@
     });
   });
   $effect(() => {
-    const [f, a] = [fen, animate];
-    untrack(() => board?.position(f, a));
+    const [f, a, j] = [fen, animate, jump];
+    untrack(() => {
+      board?.position(f, a && j === lastJump);
+      lastJump = j;
+    });
   });
   // New piece set: redraw pieces in place (pieceTheme is consulted on every render).
   $effect(() => {

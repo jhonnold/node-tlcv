@@ -20,7 +20,8 @@
   const links = $derived.by(() => {
     const menu = game.live?.menu ?? {};
     const out: { label: string; href: string }[] = [{ label: 'PGN archive', href: '/pgns' }];
-    if (source.kind === 'live') out.push({ label: 'Current game PGN', href: livePgnUrl(source) });
+    if (source.kind === 'live')
+      out.push({ label: 'Current game PGN', href: livePgnUrl({ port: source.port, board: game.live?.board ?? 1 }) });
     for (const [key, label] of MENU_ORDER) if (isUrl(menu[key])) out.push({ label, href: menu[key] });
     for (const key of Object.keys(menu).sort()) {
       if (!KNOWN.has(key) && isUrl(menu[key]))
