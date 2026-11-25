@@ -11,6 +11,7 @@ export function metaToGameData(meta: StoredGameMeta): GameData {
   return {
     board: 1,
     boards: [1],
+    summaries: [],
     game: {
       site: meta.site,
       white: { name: meta.white.name, clockTime: 0, startTime: 0 },

@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import broadcasts, { Broadcast } from '../broadcast.js';
 import type BoardService from '../board-service.js';
 import { siteSlug } from '../util/index.js';
+import { boardSummary } from '../board-summary.js';
 import { getFiles } from '../services/pgn-cache.js';
 import { getMetaFile, getMetaFiles } from '../services/game-meta.js';
 import { pgnUrl } from '../services/pgn-storage.js';
@@ -139,22 +140,14 @@ function lobbyBroadcasts(): LobbyBroadcast[] {
       const board = b.boardIds
         .map((id) => b.boards.get(id)!)
         .reduce((best, next) => (next.browserCount > best.browserCount ? next : best));
-      const { game } = board;
+      // Only the score is shown here; getLiveData() would replay the whole PV per card.
+      // The kibitzer follows board 1 only.
+      const kibitzerScore = board.id === 1 ? (b.kibitzerManager?.getScore(b.port) ?? null) : null;
       return {
+        ...boardSummary(board, kibitzerScore),
         port: b.port,
-        board: board.id,
         boardCount: b.boards.size,
-        white: game.white.name,
-        black: game.black.name,
-        whiteTime: game.white.clockTime,
-        blackTime: game.black.clockTime,
         site: b.site,
-        fen: game.instance.fen(),
-        // Only the score is shown here; getLiveData() would replay the whole PV per card.
-        // The kibitzer follows board 1 only.
-        score: board.id === 1 ? (b.kibitzerManager?.getScore(b.port) ?? null) : null,
-        opening: game.opening,
-        moveCount: game.moveMeta.length,
         viewerCount: b.browserCount,
       };
     })

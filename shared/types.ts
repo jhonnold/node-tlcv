@@ -89,11 +89,30 @@ export type SerializedGame = {
   kibitzerLiveData: SerializedKibitzerLiveData | null;
 };
 
+/**
+ * One board's homepage-style card for the viewer's Boards tab. `score` is the engine's own latest score in
+ * pawns, White's view (null if none); `viewerCount` is that board's browsers.
+ */
+export type BoardSummary = {
+  board: number;
+  white: string;
+  black: string;
+  whiteTime: number;
+  blackTime: number;
+  fen: string;
+  score: number | null;
+  opening: string;
+  moveCount: number;
+  viewerCount: number;
+};
+
 export type SerializedBroadcast = {
   /** The board this state is for: the one joined, or 1 if that board doesn't exist. */
   board: number;
   /** Every board on the broadcast, ascending; `[1]` for classic TLCS. */
   boards: number[];
+  /** Every board's summary, ascending: one per entry of `boards`; empty in replay data, one per board on live data. */
+  summaries: BoardSummary[];
   game: SerializedGame;
   spectators: Array<string>;
   chat: Array<string>;
@@ -129,6 +148,8 @@ export type BroadcastDelta = {
   menu?: { [key: string]: string };
   /** Every board, ascending, after one was added. */
   boards?: number[];
+  /** The full list of board summaries, pushed to the port room at most once a second on TLCS-MG broadcasts. */
+  summaries?: BoardSummary[];
 };
 
 export type H2HCell = {
@@ -178,25 +199,16 @@ export type ArchiveSummary = {
   gameCount: number;
 };
 
-/** A lobby card — `GET /broadcasts`. Sorted by viewerCount desc. */
-export type LobbyBroadcast = {
+/**
+ * A lobby card — `GET /broadcasts`. Sorted by viewerCount desc. A board summary for the broadcast's most-watched
+ * board (`board`, ties to the lowest id), with these differences: `score` is the kibitzer's, not the engine's
+ * own, and null unless `board` is 1 (the kibitzer follows board 1 only); `viewerCount` is browsers on any board.
+ */
+export type LobbyBroadcast = BoardSummary & {
   port: number;
-  /** The board this card shows: the most-watched, ties to the lowest id. The game fields are its game's. */
-  board: number;
   /** Boards on the broadcast (1 for classic TLCS). */
   boardCount: number;
-  white: string;
-  black: string;
-  whiteTime: number;
-  blackTime: number;
   site: string;
-  fen: string;
-  /** Kibitzer eval; null unless `board` is 1 (the kibitzer follows board 1 only). */
-  score: number | null;
-  opening: string;
-  moveCount: number;
-  /** Browsers watching any board. */
-  viewerCount: number;
 };
 /** `GET /broadcasts/:port`. `white` / `black` are board 1's; `boards` ascending, `[1]` for classic TLCS. */
 export type BroadcastSummary = { port: number; site: string; white: string; black: string; boards: number[] };
