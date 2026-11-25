@@ -25,7 +25,8 @@
   setGameStore(game);
   const view = new ViewState();
   setView(view);
-  // App keys Viewer by pagePath(source), so the source never changes for an instance.
+  // App keys Viewer by pagePath(source), which has no board in it: the source never changes for an instance, and a board
+  // switch never remounts.
   const tournament = new TournamentStore(untrack(() => source));
   setTournament(tournament);
   let site = $state('');
@@ -86,7 +87,7 @@
         if (ac.signal.aborted) return; // no socket may be created after unmount
         site = summary.site;
         if (source.kind === 'live') {
-          disconnect = game.connect(source.port, source.board);
+          disconnect = game.connect(source.port);
         } else {
           // Its own catch: a failed game fetch leaves the page up, and only the summary 404 goes home.
           const gen = game.beginReplay();
