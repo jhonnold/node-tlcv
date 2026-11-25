@@ -1,5 +1,6 @@
 import Connection from './connection.js';
 import GameService from './game-service.js';
+import BoardService from './board-service.js';
 import { ChessGame } from './chess-game.js';
 import { emitUpdate, emitChat } from './socket-io-adapter.js';
 import { logger } from './util/index.js';
@@ -33,8 +34,10 @@ export class Broadcast {
   readonly ip: string;
   readonly port: number;
   readonly ephemeral: boolean;
-  readonly game: ChessGame;
   readonly kibitzerManager: KibitzerManager | null;
+  // One per game the server broadcasts, keyed by board number. Board 1 always exists
+  // (classic TLCS only ever has it).
+  readonly boards = new Map<number, BoardService>();
 
   // Tournament name from the broadcast-level SITE line; every ChessGame reads it from here.
   site = '';
@@ -68,7 +71,7 @@ export class Broadcast {
     this.ephemeral = ephemeral;
 
     this.kibitzerManager = kibitzerManager ?? null;
-    this.game = new ChessGame(String(this.port), () => this.site);
+    this.boards.set(1, new BoardService(this));
     this.gameService = new GameService(this);
     this.conn = new Connection(this.ip, this.port, this.processMessages.bind(this), this.ephemeral);
 
@@ -169,6 +172,11 @@ export class Broadcast {
       parsedResults: this.parsedResults,
       parsedGames: this.parsedGames ?? [],
     };
+  }
+
+  /** Board 1's game, the only one in classic TLCS. */
+  get game(): ChessGame {
+    return this.boards.get(1)!.game;
   }
 
   get connection(): string {
