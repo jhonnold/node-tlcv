@@ -26,7 +26,7 @@ io.on('connection', (socket: Socket) => {
   let username: string | undefined;
 
   socket.on('join', ({ port, user, board: requested }: { port: number; user: string; board?: number }) => {
-    // One join per socket (the viewer changes board on a new socket); a second would count it twice.
+    // One join per socket (boards change via `switch-board` on the same socket); a second would count it twice.
     if (broadcast) return;
 
     broadcast = broadcasts.get(port);
@@ -46,6 +46,27 @@ io.on('connection', (socket: Socket) => {
     socket.join([String(port), boardRoom(port, board.id)]);
     socket.emit('state', broadcast.toJSON(board.id));
     emitSpectators(broadcast);
+  });
+
+  socket.on('switch-board', (requested: number) => {
+    if (!broadcast || !board) return;
+
+    const next = broadcast.boards.get(requested) ?? broadcast.boards.get(1)!;
+    // A re-pick of the selected board is a no-op; a fallback to the current board still answers, so the client
+    // corrects `#board`.
+    if (next === board && next.id === requested) return;
+
+    if (next !== board) {
+      socket.leave(boardRoom(broadcast.port, board.id));
+      board.browserCount--;
+      next.browserCount++;
+      board = next;
+      socket.join(boardRoom(broadcast.port, next.id));
+
+      logger.info(`${username} switched to board ${next.id} at port ${broadcast.port}!`, { port: broadcast.port });
+    }
+
+    socket.emit('state', broadcast.toJSON(next.id));
   });
 
   socket.on('chat', (msg: string) => {
