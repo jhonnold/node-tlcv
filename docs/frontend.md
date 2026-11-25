@@ -20,7 +20,7 @@ The frontend is a Svelte 5 single-page app (runes mode) in `web/`, bundled by Vi
 | Path | Page | Server guard before the shell is sent |
 |------|------|------|
 | `/` | `pages/Lobby.svelte` | — |
-| `/:port` | `pages/Viewer.svelte` (live, board 1) | redirect to `/` if no broadcast uses that port |
+| `/:port` | `pages/Viewer.svelte` (live; the board is `tlcv.board.<port>`, default 1) | redirect to `/` if no broadcast uses that port |
 | `/:port/:board` | unknown port redirects to `/` (the `withBroadcast` guard runs first); a known port gets a 301 to `/:port` | (the board is no longer in the page URL) |
 | `/archive/:slug` | `pages/Viewer.svelte` (archive) | redirect to `/` unless the slug matches `SAFE_SLUG` and the archive loads |
 | `/admin` | `pages/Admin.svelte` | 503 without `TLCV_PASSWORD`, then HTTP basic auth (user `admin`) |
@@ -29,7 +29,7 @@ The frontend is a Svelte 5 single-page app (runes mode) in `web/`, bundled by Vi
 - Unknown paths: the client rewrites the URL to `/` and shows the lobby; the server's catch-all also redirects to `/`.
 - Links to `/admin` are never intercepted: the browser always does a full load, so the basic-auth challenge runs.
 - `App.svelte` keys `Viewer` by `pagePath(source)`, so switching broadcast or archive remounts the page. A board pick doesn't: `GameStore.switchBoard` moves the same socket to that board.
-- Client-side navigation skips the server guards, so `Viewer` fetches its summary (`/broadcasts/:port` or `/archives/:slug`) and navigates home on a 404. A board that doesn't exist falls back to board 1 at join or reconnect; the socket's `state.board` is then the selection, and the URL isn't changed.
+- Client-side navigation skips the server guards, so `Viewer` fetches its summary (`/broadcasts/:port` or `/archives/:slug`) and navigates home on a 404. A board that doesn't exist falls back to board 1 at join or reconnect; the socket's `state.board` is then the selection and is written to `tlcv.board.<port>`.
 - TLCS-MG (`boards.length > 1`): `viewer/BoardSelect.svelte` picks the board in place (no URL change, no remount), and the headers show "Board N" for the live game instead of the CT-derived "Game N" (`HeaderInfo.board`, `gameText`); replays keep "Game N". The Moves/Info PGN links use `livePgnUrl` (the board's PGN; board 1 keeps `/broadcasts/:port/pgn`). A live header shows no game number until the socket `state` arrives, so a TLCS-MG page never flashes the CT-derived "Game N". The Games tab's live row is the viewed board (`B2`, no number; `GameRow.board`), and Standings mark only that board's pair as playing. Each board's result chat line (`[Server] - …`, whose format `shared/result-line.ts` shares between `BoardService.onResult` and the client; counted in `GameStore.resultLines`) also refreshes Games and Standings, because the pair-change refresh sees only the viewed board.
 - `lib/http.ts` (`getJson`, `postJson`, `del`) throws `HttpError` with the status. A redirected GET (the catch-all) counts as a 404.
 
@@ -37,14 +37,14 @@ The frontend is a Svelte 5 single-page app (runes mode) in `web/`, bundled by Vi
 
 | Module | Holds |
 |--------|-------|
-| `lib/game.svelte.ts` `GameStore` | One per Viewer (context `setGameStore` / `getGameStore`). Live data from Socket.IO (`connect(port, board)` returns the disconnect function; `switchBoard(n)` moves the socket to another board; `live.board` / `live.boards` are the joined board and the board list; `boardGen` bumps on a board change so the main board snaps), the replayed game, the navigation cursor and arrow-key handler, and derived views (players, engines, arrows, eval, FEN, position label). |
+| `lib/game.svelte.ts` `GameStore` | One per Viewer (context `setGameStore` / `getGameStore`). Live data from Socket.IO (`connect(port)` starts on the stored board and returns the disconnect function; `switchBoard(n)` moves the socket to another board; `live.board` / `live.boards` are the joined board and the board list; `boardGen` bumps on a board change so the main board snaps), the replayed game, the navigation cursor and arrow-key handler, and derived views (players, engines, arrows, eval, FEN, position label). |
 | `lib/tournament.svelte.ts` `TournamentStore` | One per Viewer (context `setTournament` / `getTournament`). Fetches `<base>/games` and `<base>/results` in its constructor; a 404 means "none yet" (`null`). `refreshSoon()` re-fetches 5 s later (Viewer calls it when a new live game starts and, on TLCS-MG, on any board's result chat line); `dispose()` aborts. |
 | `lib/view.svelte.ts` `ViewState` | One per Viewer (context `setView` / `getView`). Breakpoint `bp` from two `MediaQuery` thresholds (768 / 1280 px): mobile, tablet, desktop. Fields `flipped`, `focus`, `themeOpen`, `boardPref`; only `boardPref` persists (`board-width`, written by `commitBoardPref()` when a resize drag ends). Helpers in the same file: `floor8`, `clamp`, `clampBoard` and `MIN_BOARD` (board sizing), `kibitzerView` (the kibitzer card's data) and `gameText` ("Game N", or "Board N" on a TLCS-MG live game). |
 | `lib/theme/theme.svelte.ts` `theme` | Module singleton: preset, base preset, board palette, piece set, custom overrides. |
 | `lib/sounds.svelte.ts` `sound` | Move sounds, off until enabled; `Capture.mp3` for SAN containing `x`, else `Move.mp3`. |
 | `lib/router.svelte.ts` `router` | The current route. |
 
-localStorage keys (`KEYS` in `lib/storage.ts`; every access is wrapped in try/catch): `theme`, `tlcv.themeBase`, `tlcv.customTheme`, `tlcv.pieceSet`, `tlcv.boardPalette`, `soundEnabled`, `tlcv.net-username`, `board-width`.
+localStorage keys (`KEYS` in `lib/storage.ts`; every access is wrapped in try/catch): `theme`, `tlcv.themeBase`, `tlcv.customTheme`, `tlcv.pieceSet`, `tlcv.boardPalette`, `soundEnabled`, `tlcv.net-username`, `board-width`. `tlcv.board.<port>` (`boardKey()` in the same file) is the selected board per broadcast port, written on every socket `state`; other tabs aren't synced.
 
 ## Viewer layouts
 
@@ -69,7 +69,7 @@ One layout tree per breakpoint (`ViewState.bp`: mobile < 768 px, tablet 768–12
 | `panel/*Tab.svelte` | Moves, Chat, Graphs (Chart.js), Standings, Games, Info. |
 | `panel/StandingsTab.svelte` (+ `StandingsTable.svelte`, `StandingsDialog.svelte`) | Rail: compact table (# · Engine · G · Pts · Score). Round robins add a Crosstable view (sticky engine column). The expand button opens a native modal with W/D/L and, on a round robin, the numbered crosstable. A gauntlet (`gauntletHost`: one row has played all others and they have played only it) shows game pairs instead: one square per two consecutive CT characters, oldest first, scored from the opponent's side; a trailing game or a game in progress is a dashed live square. The table's `--pRowH` and the `--pSegH`/`--pIconBtn` sizes follow `touch`. |
 | `panel/ReplayBanner.svelte` | "Replaying game N"; Back to live on live pages only. |
-| `lobby/*` | `LiveCard` (links to the card's board, `pagePath`; a grey "N boards" badge after the site on TLCS-MG, and the `aria-label` names the board), `SiteFooter`; helpers in `lobby.ts` (30 s poll). |
+| `lobby/*` | `LiveCard` (links to `/:port`, `pagePath`, so the page opens on the stored board, not the card's; a grey "N boards" badge after the site on TLCS-MG, and the `aria-label` names the board), `SiteFooter`; helpers in `lobby.ts` (30 s poll). |
 | `admin/*` | `BroadcastsSection`, `KibitzersSection`, `WebhooksSection`; helpers in `forms.ts`; styles in `admin.css`. |
 | `viewer/Header.svelte` | Tablet/desktop header (56 px, 20 px padding). Desktop: brand mark and wordmark; BoardSelect (TLCS-MG); Focus, Flip, Sound, Theme. Tablet: brand mark only, site `<h1>` (ellipsis) over `EventLine`, then the same buttons at 44 px. |
 | `viewer/EventCard.svelte` | Desktop meta box (`section[aria-label="Event"]`): LIVE badge + N watching, or ARCHIVE; site `<h1>`; Game N (Board N on a TLCS-MG live game); opening (bold ECO) · Tablebase. |

@@ -4,7 +4,7 @@ import type { BroadcastDelta, ColorCode, SerializedBroadcast, SerializedGame, St
 import { colorName, otherColor } from '$shared/colors';
 import { isResultLine } from '$shared/result-line';
 import { theme } from './theme/theme.svelte';
-import { KEYS, readString } from './storage';
+import { KEYS, boardKey, readNumber, readString, writeNumber } from './storage';
 import { START_FEN } from './fen';
 import { msToString } from './format';
 import { applyDelta } from './delta';
@@ -155,11 +155,11 @@ export class GameStore {
 
   // ---- live connection ------------------------------------------------------
 
-  /** Connects to `board` of a broadcast port. Every `connect` rejoins the selected board (`#board`), so a reconnect keeps
-   *  a board picked by `switchBoard`. `live.board` is the board the server gave (1 if that one is gone).
-   *  Returns the disconnect function. */
-  connect(port: number, board: number): () => void {
-    this.#board = board;
+  /** Connects to a broadcast port on its stored board (`boardKey`, else 1). Every `connect` rejoins the selected board
+   *  (`#board`), so a reconnect keeps a board picked by `switchBoard`. `live.board` is the board the server gave (1 if
+   *  that one is gone). Returns the disconnect function. */
+  connect(port: number): () => void {
+    this.#board = readNumber(boardKey(port)) ?? 1;
     const socket = io({ autoConnect: false });
     this.#socket = socket;
     socket.on('connect', () => {
@@ -176,6 +176,8 @@ export class GameStore {
       this.#turnEnd = {};
       this.#live = rest;
       this.#board = data.board; // a fallback to board 1 becomes the selection
+      // Stored for the next page load (a switch or a fallback). Other tabs don't sync it.
+      writeNumber(boardKey(port), data.board);
       // Socket.IO keeps per-socket order, so the first `state` after a connect is the join's answer. A switch-board
       // answer never touches chat: it carries the last 1000 lines, which would replace the scrollback.
       if (this.#joining) {

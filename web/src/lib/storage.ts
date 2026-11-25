@@ -8,6 +8,8 @@ export const KEYS = {
   username: 'tlcv.net-username',
   boardWidth: 'board-width',
 } as const;
+/** The selected board of a broadcast port (TLCS-MG), written on every `state`. Other tabs don't sync it. */
+export const boardKey = (port: number): string => `tlcv.board.${port}`;
 
 // None of these throw: storage can be disabled (private mode, blocked cookies) or full.
 

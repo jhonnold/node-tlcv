@@ -24,7 +24,7 @@
 <a
   class="live-card"
   class:mobile
-  href={pagePath({ kind: 'live', port: b.port, board: b.board })}
+  href={pagePath({ kind: 'live', port: b.port })}
   data-port={b.port}
   aria-label={cardLabel(b)}
 >
