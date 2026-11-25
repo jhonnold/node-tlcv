@@ -1,10 +1,10 @@
 import { msToString } from '$lib/format';
-import type { LobbyBroadcast } from '$shared/types';
+import type { BoardSummary, LobbyBroadcast } from '$shared/types';
 
 export const POLL_MS = 30_000;
 
 /** Full-move number = FEN field 6 ("… w - - 0 12" → 12). Correct for custom start FENs; falls back to plies. */
-export function moveNumber(b: LobbyBroadcast): number {
+export function moveNumber(b: Pick<BoardSummary, 'fen' | 'moveCount'>): number {
   const n = Number(b.fen.split(' ')[5]);
   return Number.isInteger(n) && n > 0 ? n : Math.floor(b.moveCount / 2) + 1;
 }

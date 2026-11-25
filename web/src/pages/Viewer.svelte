@@ -117,10 +117,10 @@
 {:else}
   <div class="viewer" class:fixed={bp === 'desktop'}>
     {#if bp === 'mobile'}
-      <MobileHeader {info} {source} />
+      <MobileHeader {info} />
       <MobileLayout {source} />
     {:else}
-      <Header {bp} {info} {source} />
+      <Header {bp} {info} />
       {#if bp === 'tablet'}
         <TabletLayout {source} />
       {:else}

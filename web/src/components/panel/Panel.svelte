@@ -1,5 +1,5 @@
 <script module lang="ts">
-  export type TabId = 'moves' | 'chat' | 'graphs' | 'standings' | 'games' | 'info';
+  export type TabId = 'moves' | 'chat' | 'graphs' | 'standings' | 'games' | 'boards' | 'info';
   export type PanelTabs = 'noChat' | 'chatFirst' | 'chatOnly';
 </script>
 
@@ -7,6 +7,7 @@
   import { getGameStore } from '$lib/game.svelte';
   import { loadReplayGame } from '$lib/replay';
   import type { ViewerSource } from '$lib/url';
+  import BoardsTab from './BoardsTab.svelte';
   import ChatTab from './ChatTab.svelte';
   import GamesTab from './GamesTab.svelte';
   import GraphsTab from './GraphsTab.svelte';
@@ -25,7 +26,7 @@
   const { source, tabs, height = '100%', bordered = true, touch = false }: Props = $props();
 
   const game = getGameStore();
-  const ALL: TabId[] = ['moves', 'chat', 'graphs', 'standings', 'games', 'info'];
+  const ALL: TabId[] = ['moves', 'chat', 'graphs', 'standings', 'games', 'boards', 'info'];
   const NO_CHAT = ALL.filter((id) => id !== 'chat');
   const SETS: Record<PanelTabs, TabId[]> = {
     noChat: NO_CHAT,
@@ -38,10 +39,18 @@
     graphs: 'Graphs',
     standings: 'Standings',
     games: 'Games',
+    boards: 'Boards',
     info: 'Info',
   };
-  // Chat is hidden on archives and during any replay.
-  const ids = $derived(SETS[tabs].filter((id) => id !== 'chat' || (source.kind === 'live' && !game.isReplay)));
+  // Chat is hidden on archives and during any replay. Boards need a live TLCS-MG broadcast; a replay keeps the tab, since
+  // picking a board leaves the replay.
+  const ids = $derived(
+    SETS[tabs].filter(
+      (id) =>
+        (id !== 'chat' || (source.kind === 'live' && !game.isReplay)) &&
+        (id !== 'boards' || (source.kind === 'live' && (game.live?.boards.length ?? 0) > 1)),
+    ),
+  );
   // chatOnly: no tab bar (the spectator row heads the chat), no ReplayBanner (the noChat Panel beside it shows one),
   // and an empty state while chat is hidden (`ids` is empty, so `active` is undefined).
   const solo = $derived(tabs === 'chatOnly');
@@ -123,6 +132,7 @@
     {:else if active === 'graphs'}<GraphsTab />
     {:else if active === 'standings'}<StandingsTab {source} />
     {:else if active === 'games'}<GamesTab {source} {busy} {err} onReplay={startReplay} onWatch={backToLive} />
+    {:else if active === 'boards'}<BoardsTab />
     {:else if active === 'info'}<InfoTab {source} />
     {:else if solo}<p class="empty">
         {source.kind === 'archive'
