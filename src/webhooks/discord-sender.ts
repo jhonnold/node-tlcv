@@ -7,6 +7,9 @@ import type { WebhookEvent, WebhookSender } from './types.js';
 const PUBLIC_BASE = env.publicBaseUrl;
 const PUBLIC_HOST = PUBLIC_BASE.replace(/^https?:\/\//, '');
 
+// A board's viewer page; board 1 keeps the bare `/:port` (mirrors pagePath in web/src/lib/url.ts).
+const boardPath = (port: number, board: number): string => (board === 1 ? `/${port}` : `/${port}/${board}`);
+
 const COLOR_STARTED = 0x4caf50; // green
 const COLOR_FINISHED = 0x2196f3; // blue
 
@@ -35,7 +38,7 @@ export class DiscordSender implements WebhookSender {
       });
       if (!res.ok) {
         logger.warn(
-          `Webhook(discord): POST failed ${res.status} ${res.statusText} for game ${event.gameNumber} on port ${event.port}`,
+          `Webhook(discord): POST failed ${res.status} ${res.statusText} for game ${event.gameNumber ?? '-'} on port ${event.port} board ${event.board}`,
         );
       }
     } catch (err) {
@@ -44,13 +47,15 @@ export class DiscordSender implements WebhookSender {
   }
 
   private buildEmbed(event: WebhookEvent): DiscordEmbed {
-    const broadcastUrl = `${PUBLIC_BASE}/${event.port}`;
+    const path = boardPath(event.port, event.board);
+    const broadcastUrl = `${PUBLIC_BASE}${path}`;
     const matchup = `${event.white} vs ${event.black}`;
-    const link = `[${PUBLIC_HOST}/${event.port}](${broadcastUrl})`;
+    const link = `[${PUBLIC_HOST}${path}](${broadcastUrl})`;
 
     if (event.kind === 'game-started') {
       return {
-        title: `♟ Game ${event.gameNumber} started`,
+        title:
+          event.gameNumber === null ? `♟ Game started on board ${event.board}` : `♟ Game ${event.gameNumber} started`,
         url: broadcastUrl,
         description: `**${matchup}**`,
         color: COLOR_STARTED,

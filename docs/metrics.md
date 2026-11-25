@@ -4,6 +4,8 @@ Prometheus metrics via `prom-client`. `src/metrics.ts` owns a single `Registry` 
 
 ## Gauges
 
+Per-broadcast gauges are labeled `port`/`event`; `ccrl_game_move_number` adds `board`.
+
 Recomputed at scrape time via `collect()`:
 
 | Metric | Description |
@@ -11,7 +13,9 @@ Recomputed at scrape time via `collect()`:
 | `ccrl_broadcasts_active` | Number of active broadcasts |
 | `ccrl_broadcast_spectators` | Total spectators |
 | `ccrl_broadcast_browser_connections` | Browser connections |
-| `ccrl_game_move_number` | Current move number |
+| `ccrl_game_move_number` | Current move number, one series per board (`board="1"` on a classic broadcast). The `board` label arrived with TLCS-MG: every existing series became a new one, so a query for the old per-broadcast value filters `{board="1"}` or aggregates `max by (port)`. Cardinality: one series per board id the broadcast has seen (bounded by the server's concurrency; boards are not removed in v1). |
+| `ccrl_broadcast_boards` | Boards per broadcast: 1 for classic TLCS; for TLCS-MG every board seen (never removed in v1), not only those playing |
+| `ccrl_broadcast_multigame` | 1 while the broadcast is in TLCS-MG mode, else 0 (classic, or the handshake still pending — so it reads 0 for up to the retry window after every re-login) |
 | `ccrl_broadcast_seconds_since_data` | Seconds since the last message proving the session is fed (`PROVES_LIVENESS` in `protocol.ts` — excludes `PONG`, `MSG`, handshake lines and `ADDUSER`/`DELUSER`). Not reset by re-login attempts. The signal to alarm on — `PONG` keeps flowing after TLCS logs the client out, so UDP message rate can't tell a live broadcast from a dead one. |
 | `ccrl_kibitzer_total` | Total kibitzers configured |
 | `ccrl_kibitzer_ready` | Kibitzers in ready state |

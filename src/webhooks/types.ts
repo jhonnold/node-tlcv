@@ -18,7 +18,9 @@ export type WebhookConfig = DiscordWebhookConfig;
 export type GameStartedEvent = {
   kind: 'game-started';
   port: number;
-  gameNumber: number;
+  board: number; // 1 on a classic broadcast
+  // Null on a TLCS-MG broadcast: a game's number arrives with its result (GAMENO).
+  gameNumber: number | null;
   white: string;
   black: string;
   site: string;
@@ -27,6 +29,7 @@ export type GameStartedEvent = {
 export type GameFinishedEvent = {
   kind: 'game-finished';
   port: number;
+  board: number;
   gameNumber: number;
   white: string;
   black: string;
