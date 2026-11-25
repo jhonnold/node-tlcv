@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import broadcasts, { Broadcast } from '../broadcast.js';
+import type BoardService from '../board-service.js';
 import { siteSlug } from '../util/index.js';
 import { getFiles } from '../services/pgn-cache.js';
 import { getMetaFile, getMetaFiles } from '../services/game-meta.js';
@@ -17,6 +18,10 @@ import { sendApp } from './spa.js';
 
 interface RequestWithBroadcast extends Request {
   broadcast: Broadcast;
+}
+
+interface RequestWithBoard extends RequestWithBroadcast {
+  board: BoardService;
 }
 
 interface RequestWithArchive extends Request {
@@ -91,6 +96,20 @@ function withBroadcast(onMissing: OnMissing) {
   };
 }
 
+// A TLCS-MG board of the request's broadcast; routes without `:board` mean board 1 (the pre-multigame URLs).
+// Mounted per route, after withBroadcast, so a miss is still labelled with its route in the HTTP metrics.
+function withBoard(onMissing: OnMissing) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const board = (req as RequestWithBroadcast).broadcast.boards.get(parseInt(req.params.board ?? '1', 10));
+    if (!board) {
+      onMissing(res);
+      return;
+    }
+    (req as RequestWithBoard).board = board;
+    next();
+  };
+}
+
 function withArchive(onMissing: OnMissing) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { slug } = req.params;
@@ -106,29 +125,39 @@ function withArchive(onMissing: OnMissing) {
 }
 
 function sendPgn(req: Request, res: Response): void {
-  const { broadcast } = req as RequestWithBroadcast;
+  const { board } = req as RequestWithBoard;
   res
     .status(200)
     .contentType('text/plain')
-    .send(broadcast.game.instance.pgn({ maxWidth: 80 }));
+    .send(board.game.instance.pgn({ maxWidth: 80 }));
 }
 
 function lobbyBroadcasts(): LobbyBroadcast[] {
   return Array.from(broadcasts.values())
-    .map((b): LobbyBroadcast => ({
-      port: b.port,
-      white: b.game.white.name,
-      black: b.game.black.name,
-      whiteTime: b.game.white.clockTime,
-      blackTime: b.game.black.clockTime,
-      site: b.site,
-      fen: b.game.instance.fen(),
-      // Only the score is shown here; getLiveData() would replay the whole PV per card.
-      score: b.kibitzerManager?.getScore(b.port) ?? null,
-      opening: b.game.opening,
-      moveCount: b.game.moveMeta.length,
-      viewerCount: b.browserCount,
-    }))
+    .map((b): LobbyBroadcast => {
+      // The card shows the most-watched board, ties to the lowest id (boardIds is ascending).
+      const board = b.boardIds
+        .map((id) => b.boards.get(id)!)
+        .reduce((best, next) => (next.browserCount > best.browserCount ? next : best));
+      const { game } = board;
+      return {
+        port: b.port,
+        board: board.id,
+        boardCount: b.boards.size,
+        white: game.white.name,
+        black: game.black.name,
+        whiteTime: game.white.clockTime,
+        blackTime: game.black.clockTime,
+        site: b.site,
+        fen: game.instance.fen(),
+        // Only the score is shown here; getLiveData() would replay the whole PV per card.
+        // The kibitzer follows board 1 only.
+        score: board.id === 1 ? (b.kibitzerManager?.getScore(b.port) ?? null) : null,
+        opening: game.opening,
+        moveCount: game.moveMeta.length,
+        viewerCount: b.browserCount,
+      };
+    })
     .sort((a, b) => b.viewerCount - a.viewerCount);
 }
 
@@ -141,8 +170,8 @@ router.get('/broadcasts', (_: Request, res: Response): void => {
 router.use('/broadcasts/:port([0-9]+)', withBroadcast(notFound('Broadcast')));
 
 router.get('/broadcasts/:port([0-9]+)', (req: Request, res: Response): void => {
-  const { port, site, game } = (req as RequestWithBroadcast).broadcast;
-  res.json({ port, site, white: game.white.name, black: game.black.name } satisfies BroadcastSummary);
+  const { port, site, game, boardIds } = (req as RequestWithBroadcast).broadcast;
+  res.json({ port, site, white: game.white.name, black: game.black.name, boards: boardIds } satisfies BroadcastSummary);
 });
 
 router.get('/broadcasts/:port([0-9]+)/results', (req: Request, res: Response): void => {
@@ -172,7 +201,9 @@ router.get(
   },
 );
 
-router.get('/broadcasts/:port([0-9]+)/pgn', sendPgn);
+router.get('/broadcasts/:port([0-9]+)/pgn', withBoard(notFound('Board')), sendPgn);
+
+router.get('/broadcasts/:port([0-9]+)/boards/:board([0-9]+)/pgn', withBoard(notFound('Board')), sendPgn);
 
 router.get('/archives', async (_: Request, res: Response): Promise<void> => {
   // "Previous Broadcasts": archived tournaments excluding currently-live ones (those
@@ -213,13 +244,18 @@ router.use('/:port([0-9]+)', withBroadcast(redirectHome));
 
 router.get('/:port([0-9]+)', sendApp);
 
-router.get('/:port([0-9]+)/pgn', sendPgn);
+router.get('/:port([0-9]+)/pgn', withBoard(redirectHome), sendPgn);
 
 router.get('/:port([0-9]+)/result-table', (req: Request, res: Response): void => {
   const { broadcast } = req as RequestWithBroadcast;
 
   res.status(200).contentType('text/plain').send(broadcast.results);
 });
+
+// Any board of a live port: boards ≥2 arrive seconds after a restart; the socket falls back to board 1.
+router.get('/:port([0-9]+)/:board([0-9]+)', sendApp);
+
+router.get('/:port([0-9]+)/:board([0-9]+)/pgn', withBoard(redirectHome), sendPgn);
 
 router.use('/archive/:slug', withArchive(redirectHome));
 
